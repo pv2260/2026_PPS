@@ -1,0 +1,67 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 90a31742b4988d64896200d05b98a005, type: 3}
+  m_Name: HitOrMissTermTable
+  m_EditorClassIdentifier: 
+  m_Entries:
+  - key: instruction_title
+    english: Hit or Miss
+    french: "Touche ou Rat\xE9"
+  - key: instruction_body
+    english: 'A ball will approach you from a distance.
+
+      Your task is to predict
+      whether it will HIT you or MISS you.
+
+
+      The ball will disappear before
+      reaching you,
+
+      so you must judge from its trajectory.
+
+
+      Press the
+      LEFT trigger if you think it will HIT you.
+
+      Press the RIGHT trigger if
+      you think it will MISS you.
+
+
+      Respond as quickly and accurately as you
+      can.
+
+      There are 80 trials per block. Please stay still.'
+    french: "Une balle s'approchera de vous depuis une certaine distance.\nVotre
+      t\xE2che est de pr\xE9dire si elle va vous TOUCHER ou vous RATER.\n\nLa balle
+      dispara\xEEtra avant de vous atteindre,\nvous devez donc juger \xE0 partir
+      de sa trajectoire.\n\nAppuyez sur la g\xE2chette GAUCHE si vous pensez qu'elle
+      va vous TOUCHER.\nAppuyez sur la g\xE2chette DROITE si vous pensez qu'elle
+      va vous RATER.\n\nR\xE9pondez aussi vite et pr\xE9cis\xE9ment que possible.\nIl
+      y a 80 essais par bloc. Veuillez rester immobile."
+  - key: block_complete
+    english: "Block completed \u2014 take a small break"
+    french: "Bloc termin\xE9 \u2014 faites une courte pause"
+  - key: experiment_end
+    english: "End of the experiment \u2014 Thank you!"
+    french: "Fin de l'exp\xE9rience \u2014 Merci !"
+  - key: rest_message
+    english: Please rest. The next block will begin shortly.
+    french: "Veuillez vous reposer. Le prochain bloc commencera bient\xF4t."
+  - key: ready
+    english: Ready
+    french: "Pr\xEAt"
+  - key: say_hit
+    english: HIT
+    french: TOUCHE
+  - key: say_miss
+    english: MISS
+    french: "RAT\xC9"
