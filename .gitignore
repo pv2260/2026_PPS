@@ -33,6 +33,7 @@
 
 # Visual Studio cache directory
 .vs/
+.vsconfig
 
 # Gradle cache directory
 .gradle/
@@ -97,3 +98,7 @@ InitTestScene*.unity*
 
 # Auto-generated scenes by play mode tests
 /[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
+
+# Local package/editor user settings that should not be shared
+/[Aa]ssets/CompositionLayers/[Uu]ser[Ss]ettings/
+/[Aa]ssets/[Xx][Rr]/[Uu]serSimulationSettings/
