@@ -8,12 +8,19 @@ namespace HitOrMiss
         Miss       // 30-45 cm from body
     }
 
+    public enum SpeedCondition
+    {
+        Slow,
+        Fast
+    }
+    
     public enum SemanticCommand
     {
         None,
         Hit,
         Miss
     }
+
 
     public enum SupportedLanguage
     {
