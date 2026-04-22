@@ -8,6 +8,12 @@ namespace HitOrMiss
     /// 20 per category: Hit, NearHit, NearMiss, Miss.
     /// Each trial has unique approach angle and curve direction with small random jitter.
     /// Trials are shuffled with a no-consecutive-same-category constraint.
+    /// 
+    /// Added by pam 22.04.26
+    /// Speed is assigned after category shuffling.
+    /// The block is structured in 10-trial chunks using:
+    /// 7/3, 3/7, 6/4, and 4/6 slow/fast compositions.
+    /// This creates local speed regularities without making switches too predictable.
     /// </summary>
     public static class TrialGenerator
     {
@@ -20,21 +26,29 @@ namespace HitOrMiss
         const int TrialsPerCategory = 20;
         const float DefaultSpawnDistance = 7f;
         const float DefaultVanishDistance = 1f;
-        const float DefaultSpeed = 2.5f;
+         const float DefaultSlowSpeed = 0.65f;   // 65 cm/s
+        const float DefaultFastSpeed = 0.85f;   // 85 cm/s
         const float DefaultBallDiameter = 0.175f;
         const float DefaultCurvatureMagnitude = 0.40f; // 30-50 cm displacement from straight line
 
-        public static TrialDefinition[] GenerateBlock(int blockIndex, float spawnDistance = DefaultSpawnDistance,
-            float vanishDistance = DefaultVanishDistance, float speed = DefaultSpeed, float ballDiameter = DefaultBallDiameter)
+        // Added by pam - spped condition 22.04.26
+        public static TrialDefinition[] GenerateBlock(
+            int blockIndex,
+            float spawnDistance = DefaultSpawnDistance,
+            float vanishDistance = DefaultVanishDistance,
+            float slowSpeed = DefaultSlowSpeed,
+            float fastSpeed = DefaultFastSpeed,
+            float ballDiameter = DefaultBallDiameter)
         {
             var trials = new List<TrialDefinition>();
 
-            trials.AddRange(GenerateCategory(blockIndex, TrialCategory.Hit, HitRange, SemanticCommand.Hit, spawnDistance, vanishDistance, speed, ballDiameter));
-            trials.AddRange(GenerateCategory(blockIndex, TrialCategory.NearHit, NearHitRange, SemanticCommand.Hit, spawnDistance, vanishDistance, speed, ballDiameter));
-            trials.AddRange(GenerateCategory(blockIndex, TrialCategory.NearMiss, NearMissRange, SemanticCommand.Miss, spawnDistance, vanishDistance, speed, ballDiameter));
-            trials.AddRange(GenerateCategory(blockIndex, TrialCategory.Miss, MissRange, SemanticCommand.Miss, spawnDistance, vanishDistance, speed, ballDiameter));
+            trials.AddRange(GenerateCategory(blockIndex, TrialCategory.Hit, HitRange, SemanticCommand.Hit, spawnDistance, vanishDistance, slowSpeed, ballDiameter));
+            trials.AddRange(GenerateCategory(blockIndex, TrialCategory.NearHit, NearHitRange, SemanticCommand.Hit, spawnDistance, vanishDistance, slowSpeed, ballDiameter));
+            trials.AddRange(GenerateCategory(blockIndex, TrialCategory.NearMiss, NearMissRange, SemanticCommand.Miss, spawnDistance, vanishDistance, slowSpeed, ballDiameter));
+            trials.AddRange(GenerateCategory(blockIndex, TrialCategory.Miss, MissRange, SemanticCommand.Miss, spawnDistance, vanishDistance, slowSpeed, ballDiameter));
 
             ShuffleNoConsecutive(trials);
+            AssignSpeedConditions(trials, slowSpeed, fastSpeed);
             AssignTimings(trials);
 
             return trials.ToArray();
@@ -72,6 +86,7 @@ namespace HitOrMiss
                     finalLateralOffset = finalOffset,
                     spawnDistance = spawnDist,
                     vanishDistance = vanishDist,
+                    speedCondition = SpeedCondition.Slow, // placeholder, overwritten later
                     speed = speed,
                     ballDiameter = diameter,
                     expectedResponse = expected
@@ -130,6 +145,89 @@ namespace HitOrMiss
                 if (!foundConflict) break;
             }
         }
+
+        static void AssignSpeedConditions(List<TrialDefinition> trials, float slowSpeed, float fastSpeed)
+        {
+            var speedSequence = GenerateBalancedSpeedSequence(trials.Count);
+
+            for (int i = 0; i < trials.Count; i++)
+            {
+                var t = trials[i];
+                t.speedCondition = speedSequence[i];
+                t.speed = (t.speedCondition == SpeedCondition.Fast) ? fastSpeed : slowSpeed;
+                trials[i] = t;
+            }
+        }
+        /// </summary>
+        /// Added by pam: speed condition 22.04.26
+        /// Build a balanced speed sequence over the full block using 10-trial chunks.
+        /// Chunk types:
+        /// (7,3), (3,7), (6,4), (4,6), repeated twice for an 80-trial block.
+        /// Order of chunks is shuffled.
+        /// Within each chunk, speeds are contiguous.
+        /// </summary>
+        static List<SpeedCondition> GenerateBalancedSpeedSequence(int totalTrials)
+        {
+            var sequence = new List<SpeedCondition>(totalTrials);
+
+            if (totalTrials % 10 != 0)
+            {
+                Debug.LogWarning("Total trials is not a multiple of 10. Speed chunking will be approximate.");
+            }
+
+            int chunkCount = totalTrials / 10;
+
+            var chunkTemplates = new List<(int slowCount, int fastCount)>
+            {
+                (7, 3),
+                (3, 7),
+                (6, 4),
+                (4, 6),
+                (7, 3),
+                (3, 7),
+                (6, 4),
+                (4, 6)
+            };
+
+            while (chunkTemplates.Count > chunkCount)
+                chunkTemplates.RemoveAt(chunkTemplates.Count - 1);
+
+            for (int i = chunkTemplates.Count - 1; i > 0; i--)
+            {
+                int j = Random.Range(0, i + 1);
+                (chunkTemplates[i], chunkTemplates[j]) = (chunkTemplates[j], chunkTemplates[i]);
+            }
+
+            foreach (var chunk in chunkTemplates)
+            {
+                bool slowFirst = Random.value > 0.5f;
+                AddSpeedChunk(sequence, chunk.slowCount, chunk.fastCount, slowFirst);
+            }
+
+            return sequence;
+        }
+
+        static void AddSpeedChunk(List<SpeedCondition> sequence, int slowCount, int fastCount, bool slowFirst)
+        {
+            if (slowFirst)
+            {
+                for (int i = 0; i < slowCount; i++)
+                    sequence.Add(SpeedCondition.Slow);
+
+                for (int i = 0; i < fastCount; i++)
+                    sequence.Add(SpeedCondition.Fast);
+            }
+            else
+            {
+                for (int i = 0; i < fastCount; i++)
+                    sequence.Add(SpeedCondition.Fast);
+
+                for (int i = 0; i < slowCount; i++)
+                    sequence.Add(SpeedCondition.Slow);
+            }
+        }
+
+
 
         /// <summary>
         /// Assign block-relative start times with ~4s inter-trial interval + small jitter.

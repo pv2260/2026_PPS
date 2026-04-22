@@ -41,7 +41,8 @@ namespace HitOrMiss
             m_JsonPath = Path.Combine(m_LogDir, baseName + ".json");
 
             m_CsvWriter = new StreamWriter(m_CsvPath, false, Encoding.UTF8);
-            m_CsvWriter.WriteLine("TrialId,Block,Category,Expected,Received,Result,IsCorrect,StimulusOnset,ResponseTime,ReactionTimeMs,LateralOffsetM,ApproachAngleDeg,FailureReason");
+            // Added speed condition column 22.04.26
+            m_CsvWriter.WriteLine("TrialId, Block, Category, SpeedCondition, SpeedMetersPerSecond, Expected, Received, Result, IsCorrect, StimulusOnset, ResponseTime, ReactionTimeMs, LateralOffsetM, ApproachAngleDeg, FailureReason");
             m_CsvWriter.Flush();
 
             m_Judgements.Clear();
@@ -60,6 +61,9 @@ namespace HitOrMiss
                 $"{j.trialId}," +
                 $"{j.blockIndex}," +
                 $"{j.category}," +
+                // Added speed condition
+                $"{j.speedCondition}," +
+                $"{j.speedMetersPerSecond:F2}," +
                 $"{j.expected}," +
                 $"{j.received}," +
                 $"{j.result}," +

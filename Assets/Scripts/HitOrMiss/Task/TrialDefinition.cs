@@ -29,6 +29,7 @@ namespace HitOrMiss
         [Tooltip("Final lateral offset from body center (meters). Sign indicates side.")]
         public float finalLateralOffset;
 
+        //Added by pam: speed condition 22.04.26
         [Header("Distances & Speed")]
         [Tooltip("Distance from player where ball spawns (meters)")]
         public float spawnDistance;
@@ -36,12 +37,14 @@ namespace HitOrMiss
         [Tooltip("Distance from player where ball vanishes (meters)")]
         public float vanishDistance;
 
-        [Tooltip("Constant travel speed (m/s)")]
+        [Tooltip("Speed condition for this trial")]
+        public SpeedCondition speedCondition;
+
+        [Tooltip("Travel speed for this specific trial (m/s)")]
         public float speed;
 
         [Tooltip("Ball diameter in meters")]
         public float ballDiameter;
-
         [Tooltip("The correct response for this trial")]
         public SemanticCommand expectedResponse;
 
@@ -57,6 +60,7 @@ namespace HitOrMiss
             {
                 spawnDistance = 7f,
                 vanishDistance = 1f,
+                speedCondition = SpeedCondition.Slow,
                 speed = 2.5f,
                 ballDiameter = 0.175f,     // 17.5 cm
                 curvatureMagnitude = 0.4f,

@@ -6,6 +6,9 @@ namespace HitOrMiss
         public string trialId;
         public int blockIndex;
         public TrialCategory category;
+    // Added by pam: speed condition, and speed meters per second: 22.04.26
+        public SpeedCondition speedCondition;
+        public float speedMetersPerSecond;
         public SemanticCommand expected;
         public SemanticCommand received;
         public TrialResult result;

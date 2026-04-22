@@ -7,6 +7,13 @@ namespace HitOrMiss
         NearMiss,  // 10-25 cm from body
         Miss       // 30-45 cm from body
     }
+    
+    // Speed condition added by Pam 22.04.26
+    public enum SpeedCondition
+    {
+        Slow,
+        Fast
+    }
 
     public enum SemanticCommand
     {

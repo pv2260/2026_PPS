@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.PlayerLoop;
 
 namespace HitOrMiss
 {
@@ -22,6 +21,10 @@ namespace HitOrMiss
         [Tooltip("Extra seconds after ball vanishes during which the participant can still respond")]
         [SerializeField] float m_ResponseGracePeriod = 1.5f;
 
+        [Header("Timing")]
+        [Tooltip("Gap in seconds between the end of one trial trajectory and the next spawn")]
+        [SerializeField] float m_InterTrialGap = 1.0f;
+
         // Events
         public event Action<string, TrialDefinition> TrialSpawned;
         public event Action<TrialJudgement> TrialJudged;
@@ -37,7 +40,7 @@ namespace HitOrMiss
         readonly List<TrialJudgement> m_AllResults = new();
         int m_CurrentBlock = -1;
         float m_BlockStartTime;
-        float m_InterTrialInterval = 4f;
+        float m_NextSpawnTime;
         bool m_Running;
         IResponseInputSource m_InputSource;
         EegMarkerEmitter m_MarkerEmitter;
@@ -83,6 +86,7 @@ namespace HitOrMiss
             m_NextTrialIndex = 0;
             TrialsCompletedInBlock = 0;
             m_BlockStartTime = Time.time;
+            m_NextSpawnTime = 0f;
             m_ActiveTrials.Clear();
 
             m_Running = true;
@@ -117,14 +121,17 @@ namespace HitOrMiss
 
             float elapsed = Time.time - m_BlockStartTime;
 
-            // Spawn next trial when it's due
+            // Spawn next trial only after the previous one has had time to finish
             if (m_NextTrialIndex < m_BlockTrials.Length)
             {
-                float nextSpawnTime = m_NextTrialIndex * m_InterTrialInterval;
-                if (elapsed >= nextSpawnTime)
+                if (elapsed >= m_NextSpawnTime)
                 {
-                    SpawnTrial(m_BlockTrials[m_NextTrialIndex]);
+                    var trial = m_BlockTrials[m_NextTrialIndex];
+                    SpawnTrial(trial);
                     m_NextTrialIndex++;
+
+                    // Schedule next spawn after this trial's travel duration plus a small gap
+                    m_NextSpawnTime += trial.Duration + m_InterTrialGap;
                 }
             }
 
@@ -195,7 +202,6 @@ namespace HitOrMiss
                 "", "", "", response.rawSource);
 
             // Find the most recent unresolved trial within its full response window
-            // (travel time + grace period after vanish)
             RuntimeTrial bestTrial = null;
             float bestSpawnTime = float.MinValue;
 
@@ -252,6 +258,8 @@ namespace HitOrMiss
                 trialId = trial.Definition.trialId,
                 blockIndex = m_CurrentBlock,
                 category = trial.Definition.category,
+                speedCondition = trial.Definition.speedCondition,
+                speedMetersPerSecond = trial.Definition.speed,
                 expected = trial.Definition.expectedResponse,
                 received = received,
                 result = result,
