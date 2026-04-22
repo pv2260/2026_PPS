@@ -1902,7 +1902,7 @@ MonoBehaviour:
   m_ControllerInput: {fileID: 6519194193464464792}
   m_KeyboardInput: {fileID: 3695617015021489826}
   m_HandPinchInput: {fileID: 6842926774100016312}
-  m_InputMode: 1
+  m_InputMode: 2
   m_TaskLogger: {fileID: 4403324273002708146}
   m_EegMarkerEmitter: {fileID: 3759500561752380470}
   m_TermTable: {fileID: 11400000, guid: 13542c86dfcab394eaafe152eaf33959, type: 2}

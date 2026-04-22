@@ -6,8 +6,6 @@ namespace HitOrMiss
     /// Defines a single trial: a curved trajectory from spawn to vanish point.
     /// The ball spawns at spawnDistance, travels at constant speed, and vanishes at vanishDistance.
     /// The trajectory curves laterally so the final lateral offset determines the category.
-    /// 
-    /// Updated on 22.04.26 to integrate new speed condition
     /// </summary>
     [System.Serializable]
     public struct TrialDefinition
@@ -38,14 +36,7 @@ namespace HitOrMiss
         [Tooltip("Distance from player where ball vanishes (meters)")]
         public float vanishDistance;
 
-        /// Added by pam
-        [Tooltip("Speed condition for this trial")]
-        public SpeedCondition speedCondition;
-
-        /* [Tooltip("Constant travel speed (m/s)")] */
-
-        /// Added by Pam
-        [Tooltip("Travel speed for this specific trial (m/s)")]
+        [Tooltip("Constant travel speed (m/s)")]
         public float speed;
 
         [Tooltip("Ball diameter in meters")]
@@ -68,8 +59,6 @@ namespace HitOrMiss
                 vanishDistance = 1f,
                 speed = 2.5f,
                 ballDiameter = 0.175f,     // 17.5 cm
-                /// Added by pam
-                speedCondition = SpeedCondition.Slow, 
                 curvatureMagnitude = 0.4f,
                 curveDirection = 1f,
                 approachAngleDeg = 0f,
