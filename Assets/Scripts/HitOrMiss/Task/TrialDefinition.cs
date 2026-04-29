@@ -3,9 +3,14 @@ using UnityEngine;
 namespace HitOrMiss
 {
     /// <summary>
-    /// Defines a single trial: a curved trajectory from spawn to vanish point.
-    /// The ball spawns at spawnDistance, travels at constant speed, and vanishes at vanishDistance.
-    /// The trajectory curves laterally so the final lateral offset determines the category.
+    /// Defines a single trial. The ball spawns at a single point in front of the
+    /// player (origin + forward × <see cref="spawnDistance"/>) and travels toward
+    /// the player. The lateral curvature and final lateral offset together determine
+    /// the category:
+    ///   • Hit       — straight line ending at the player (no curve, no offset)
+    ///   • NearHit   — slight outward curve, lands very close to the player
+    ///   • NearMiss  — moderate outward curve, lands within ~10–25 cm of the player
+    ///   • Miss      — pronounced outward curve, passes 30–45 cm to the side
     /// </summary>
     [System.Serializable]
     public struct TrialDefinition
@@ -16,27 +21,17 @@ namespace HitOrMiss
         [Tooltip("Hit, NearHit, NearMiss, or Miss")]
         public TrialCategory category;
 
-        [Header("Trajectory Parameters")]
-        [Tooltip("Initial horizontal approach angle in degrees (0 = straight ahead, positive = from right)")]
-        public float approachAngleDeg;
-
-        [Tooltip("Direction of the curve: +1 = curves right, -1 = curves left")]
-        public float curveDirection;
-
-        [Tooltip("Magnitude of lateral curvature (meters of arc displacement at midpoint)")]
-        public float curvatureMagnitude;
-
-        [Tooltip("Final lateral offset from body center (meters). Sign indicates side.")]
-        public float finalLateralOffset;
-
-        [Header("Distances & Speed")]
-        [Tooltip("Distance from player where ball spawns (meters)")]
+        [Header("Trajectory (player-anchored)")]
+        [Tooltip("Distance from the player where the ball spawns, along the player's forward axis (meters)")]
         public float spawnDistance;
 
-        [Tooltip("Distance from player where ball vanishes (meters)")]
-        public float vanishDistance;
+        [Tooltip("Signed lateral offset from the player at the trajectory's end (meters; sign chooses side)")]
+        public float finalLateralOffset;
 
-        [Tooltip("Constant travel speed (m/s)")]
+        [Tooltip("Peak lateral bow of the arc at the midpoint (meters; always curves outward, away from the player)")]
+        public float curveMagnitude;
+
+        [Tooltip("Travel speed (m/s). Set per-trial by the speed-grouping pattern.")]
         public float speed;
 
         [Tooltip("Ball diameter in meters")]
@@ -45,26 +40,43 @@ namespace HitOrMiss
         [Tooltip("The correct response for this trial")]
         public SemanticCommand expectedResponse;
 
-        /// <summary>Travel duration in seconds.</summary>
-        public float Duration => (spawnDistance - vanishDistance) / Mathf.Max(speed, 0.01f);
-
-        /// <summary>Time window from spawn until vanish (full duration) for response.</summary>
-        public float ResponseWindowDuration => Duration;
+        /// <summary>Travel duration in seconds (straight-line approximation).</summary>
+        public float Duration => spawnDistance / Mathf.Max(speed, 0.01f);
 
         public static TrialDefinition CreateDefault()
         {
             return new TrialDefinition
             {
-                spawnDistance = 7f,
-                vanishDistance = 1f,
-                speed = 2.5f,
-                ballDiameter = 0.175f,     // 17.5 cm
-                curvatureMagnitude = 0.4f,
-                curveDirection = 1f,
-                approachAngleDeg = 0f,
+                spawnDistance = 5f,
                 finalLateralOffset = 0f,
-                expectedResponse = SemanticCommand.Hit
+                curveMagnitude = 0f,
+                speed = 2.5f,
+                ballDiameter = 0.175f,
+                expectedResponse = SemanticCommand.Hit,
             };
+        }
+    }
+
+    /// <summary>
+    /// One speed-grouping pattern. Within each group, <paramref name="fastCount"/>
+    /// trials are assigned the fast speed and <paramref name="slowCount"/> are slow.
+    /// <see cref="fastFirst"/> chooses which run comes first inside the group.
+    /// </summary>
+    [System.Serializable]
+    public struct SpeedGroupPattern
+    {
+        [Min(0)] public int fastCount;
+        [Min(0)] public int slowCount;
+        [Tooltip("If true, the group lays out fast trials first then slow. Otherwise slow first.")]
+        public bool fastFirst;
+
+        public int GroupSize => Mathf.Max(1, fastCount + slowCount);
+
+        public bool IsFastAtIndex(int withinGroup)
+        {
+            int size = GroupSize;
+            int wg = ((withinGroup % size) + size) % size;
+            return fastFirst ? wg < fastCount : wg >= slowCount;
         }
     }
 }

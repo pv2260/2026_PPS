@@ -16,7 +16,18 @@ namespace HitOrMiss
         [Header("References")]
         [SerializeField] TrajectoryTaskAsset m_TaskAsset;
         [SerializeField] GameObject m_LoomingObjectPrefab;
+
+        [Tooltip("Player anchor. Balls spawn at (position + forward × SpawnDistance) and travel toward this point.")]
         [SerializeField] Transform m_SpawnOrigin;
+
+        [Tooltip("Optional: existing scene GameObject to use as the crosshair. If left empty, the manager instantiates CrosshairPrefab (or a built-in default) at the spawn point.")]
+        [SerializeField] GameObject m_CrosshairTarget;
+
+        [Tooltip("Optional prefab used as the crosshair. Auto-instantiated at the spawn point if CrosshairTarget is empty.")]
+        [SerializeField] GameObject m_CrosshairPrefab;
+
+        [Tooltip("Vertical offset added to the spawned/instantiated crosshair (meters). Use this to lift the crosshair to eye level relative to the player anchor.")]
+        [SerializeField] float m_CrosshairHeightOffset = 1.5f;
 
         [Header("Response")]
         [Tooltip("Extra seconds after ball vanishes during which the participant can still respond")]
@@ -37,7 +48,7 @@ namespace HitOrMiss
         readonly List<TrialJudgement> m_AllResults = new();
         int m_CurrentBlock = -1;
         float m_BlockStartTime;
-        float m_InterTrialInterval = 4f;
+        float m_NextSpawnEarliest;
         bool m_Running;
         IResponseInputSource m_InputSource;
         EegMarkerEmitter m_MarkerEmitter;
@@ -83,10 +94,13 @@ namespace HitOrMiss
             m_NextTrialIndex = 0;
             TrialsCompletedInBlock = 0;
             m_BlockStartTime = Time.time;
+            m_NextSpawnEarliest = Time.time; // first trial spawns next frame
             m_ActiveTrials.Clear();
 
             m_Running = true;
             m_InputSource?.Enable();
+            EnsureCrosshair();
+            SetCrosshairActive(true);
 
             m_MarkerEmitter?.Emit("block_start", "", blockIndex.ToString());
             BlockStarted?.Invoke(blockIndex);
@@ -98,6 +112,7 @@ namespace HitOrMiss
         {
             m_Running = false;
             m_InputSource?.Disable();
+            SetCrosshairActive(false);
 
             // Resolve remaining active trials as NoResponse
             foreach (var trial in m_ActiveTrials)
@@ -115,17 +130,18 @@ namespace HitOrMiss
         {
             if (!m_Running) return;
 
-            float elapsed = Time.time - m_BlockStartTime;
-
-            // Spawn next trial when it's due
-            if (m_NextTrialIndex < m_BlockTrials.Length)
+            // Spawn next trial when its earliest spawn time has elapsed.
+            // The earliest is set after each spawn to (just-spawned trial's
+            // deadline + jittered ITI) so trials never overlap their response
+            // windows and there's no fixed dead time.
+            if (m_NextTrialIndex < m_BlockTrials.Length && Time.time >= m_NextSpawnEarliest)
             {
-                float nextSpawnTime = m_NextTrialIndex * m_InterTrialInterval;
-                if (elapsed >= nextSpawnTime)
-                {
-                    SpawnTrial(m_BlockTrials[m_NextTrialIndex]);
-                    m_NextTrialIndex++;
-                }
+                var def = m_BlockTrials[m_NextTrialIndex];
+                SpawnTrial(def);
+                m_NextTrialIndex++;
+
+                float deadline = def.Duration + m_ResponseGracePeriod;
+                m_NextSpawnEarliest = Time.time + deadline + NextItiSeconds();
             }
 
             // Update active trials
@@ -158,9 +174,110 @@ namespace HitOrMiss
             {
                 m_Running = false;
                 m_InputSource?.Disable();
+                SetCrosshairActive(false);
                 m_MarkerEmitter?.Emit("block_end", "", m_CurrentBlock.ToString());
                 BlockEnded?.Invoke(m_CurrentBlock);
             }
+        }
+
+        void SetCrosshairActive(bool active)
+        {
+            if (m_CrosshairTarget != null) m_CrosshairTarget.SetActive(active);
+        }
+
+        /// <summary>
+        /// Ensures a crosshair GameObject exists and is positioned at the spawn point
+        /// (player anchor + forward × SpawnDistance, lifted by CrosshairHeightOffset).
+        /// Order: 1) use the inspector-assigned scene GameObject if present;
+        ///        2) instantiate CrosshairPrefab if assigned;
+        ///        3) build a simple default (white cross of two thin quads) so the
+        ///           participant always has a fixation marker.
+        /// </summary>
+        void EnsureCrosshair()
+        {
+            if (m_SpawnOrigin == null)
+            {
+                Debug.LogWarning("[TrajectoryTaskManager] EnsureCrosshair: m_SpawnOrigin is null. Assign a Transform — the player anchor — in the inspector.");
+                return;
+            }
+            if (m_TaskAsset == null)
+            {
+                Debug.LogWarning("[TrajectoryTaskManager] EnsureCrosshair: m_TaskAsset is null. Cannot compute spawn point distance.");
+                return;
+            }
+
+            if (m_CrosshairTarget != null)
+            {
+                Debug.Log($"[TrajectoryTaskManager] Reusing inspector-assigned crosshair: {m_CrosshairTarget.name}.");
+                PositionCrosshair(m_CrosshairTarget.transform);
+                return;
+            }
+
+            if (m_CrosshairPrefab != null)
+            {
+                m_CrosshairTarget = Instantiate(m_CrosshairPrefab, m_SpawnOrigin);
+                m_CrosshairTarget.name = m_CrosshairPrefab.name + "(Crosshair)";
+                Debug.Log($"[TrajectoryTaskManager] Instantiated crosshair from prefab: {m_CrosshairPrefab.name}.");
+            }
+            else
+            {
+                m_CrosshairTarget = BuildDefaultCrosshair();
+                Debug.Log("[TrajectoryTaskManager] No CrosshairTarget or CrosshairPrefab assigned — built a default crosshair at the spawn point.");
+            }
+
+            PositionCrosshair(m_CrosshairTarget.transform);
+
+            if (m_CrosshairTarget.GetComponent<BillboardToCamera>() == null)
+                m_CrosshairTarget.AddComponent<BillboardToCamera>();
+
+            Debug.Log($"[TrajectoryTaskManager] Crosshair placed at world {m_CrosshairTarget.transform.position}.");
+        }
+
+        void PositionCrosshair(Transform t)
+        {
+            if (m_SpawnOrigin == null || m_TaskAsset == null || t == null) return;
+            Vector3 forward = m_SpawnOrigin.forward.sqrMagnitude > 0.0001f ? m_SpawnOrigin.forward.normalized : Vector3.forward;
+            Vector3 pos = m_SpawnOrigin.position + forward * m_TaskAsset.SpawnDistance + Vector3.up * m_CrosshairHeightOffset;
+            t.SetParent(m_SpawnOrigin, worldPositionStays: false);
+            t.position = pos;
+        }
+
+        GameObject BuildDefaultCrosshair()
+        {
+            var root = new GameObject("DefaultCrosshair");
+            root.transform.SetParent(m_SpawnOrigin, worldPositionStays: false);
+
+            // White unlit cross built from two thin Quads.
+            var horizontal = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            horizontal.name = "Horizontal";
+            DestroyImmediate(horizontal.GetComponent<Collider>());
+            horizontal.transform.SetParent(root.transform, false);
+            horizontal.transform.localScale = new Vector3(0.20f, 0.02f, 1f);
+
+            var vertical = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            vertical.name = "Vertical";
+            DestroyImmediate(vertical.GetComponent<Collider>());
+            vertical.transform.SetParent(root.transform, false);
+            vertical.transform.localScale = new Vector3(0.02f, 0.20f, 1f);
+
+            var unlit = Shader.Find("Universal Render Pipeline/Unlit");
+            if (unlit == null) unlit = Shader.Find("Unlit/Color");
+            if (unlit != null)
+            {
+                var mat = new Material(unlit) { color = Color.white };
+                horizontal.GetComponent<Renderer>().sharedMaterial = mat;
+                vertical.GetComponent<Renderer>().sharedMaterial = mat;
+            }
+
+            return root;
+        }
+
+        float NextItiSeconds()
+        {
+            float min = m_TaskAsset != null ? m_TaskAsset.ItiMinSeconds : 1.5f;
+            float max = m_TaskAsset != null ? m_TaskAsset.ItiMaxSeconds : 2.5f;
+            if (max <= min) return min;
+            return UnityEngine.Random.Range(min, max);
         }
 
         void SpawnTrial(TrialDefinition trial)
@@ -260,7 +377,7 @@ namespace HitOrMiss
                 responseTime = Time.timeAsDouble,
                 reactionTimeMs = reactionMs,
                 lateralOffsetMeters = trial.Definition.finalLateralOffset,
-                approachAngleDeg = trial.Definition.approachAngleDeg,
+                speedMps = trial.Definition.speed,
                 failureReason = failureReason
             };
 

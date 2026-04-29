@@ -3,30 +3,32 @@ using UnityEngine;
 namespace HitOrMiss
 {
     /// <summary>
-    /// Moves a looming sphere along a curved trajectory toward the player.
-    /// The ball starts at spawnDistance, travels at constant speed, curves laterally,
-    /// and vanishes at vanishDistance. A ground shadow blob follows underneath.
+    /// Animates a ball along a curved trajectory toward the player.
+    /// All trials spawn at the same point in front of the player
+    /// (player + forward × spawnDistance) and travel toward the player.
+    ///
+    /// The category is encoded in the lateral curve and end offset:
+    ///   • Hit       — straight line, ends at the player
+    ///   • NearHit   — slight outward curve, ends very close to the player
+    ///   • NearMiss  — moderate outward curve, ends 10–25 cm to the side
+    ///   • Miss      — pronounced outward curve, ends 30–45 cm to the side
     /// </summary>
     public class TrajectoryObjectController : MonoBehaviour
     {
         [Header("Shadow")]
         [SerializeField] GameObject m_ShadowPrefab;
-        [Tooltip("Height of the ground plane for shadow projection (world Y)")]
+        [Tooltip("World Y of the ground plane for shadow projection")]
         [SerializeField] float m_GroundY = 0f;
 
         Transform m_Shadow;
         TrialDefinition m_Trial;
-        Vector3 m_PlayerPosition;
-        Vector3 m_PlayerForward;
-        Vector3 m_PlayerRight;
         float m_StartTime;
         float m_Duration;
         bool m_Active;
 
-        // Precomputed trajectory points
         Vector3 m_StartPos;
         Vector3 m_EndPos;
-        Vector3 m_ControlPoint; // quadratic bezier control for the curve
+        Vector3 m_ControlPoint;
 
         public string TrialId { get; private set; }
         public bool IsComplete { get; private set; }
@@ -35,34 +37,33 @@ namespace HitOrMiss
         {
             m_Trial = trial;
             TrialId = trial.trialId;
-            m_PlayerPosition = playerPosition;
-            m_PlayerForward = playerForward.normalized;
-            m_PlayerRight = Vector3.Cross(Vector3.up, m_PlayerForward).normalized;
+
+            Vector3 forward = playerForward.sqrMagnitude > 0.0001f ? playerForward.normalized : Vector3.forward;
+            Vector3 right = Vector3.Cross(Vector3.up, forward).normalized;
+            if (right.sqrMagnitude < 0.0001f) right = Vector3.right;
+
+            // Single spawn point in front of the player. End at the player with a
+            // signed lateral offset. The arc bows outward (in the direction of the
+            // end offset) by curveMagnitude at the midpoint — Hit has zero curve.
+            m_StartPos = playerPosition + forward * trial.spawnDistance;
+            m_EndPos = playerPosition + right * trial.finalLateralOffset;
+
+            float curveSign = Mathf.Approximately(trial.finalLateralOffset, 0f)
+                ? 0f
+                : Mathf.Sign(trial.finalLateralOffset);
+
+            Vector3 midpoint = (m_StartPos + m_EndPos) * 0.5f;
+            // Quadratic bezier midpoint sits at the average of (P0 + P1)/2 and the
+            // control point — so we need 2× the desired apex offset on the control.
+            m_ControlPoint = midpoint + right * (curveSign * trial.curveMagnitude * 2f);
 
             m_Duration = trial.Duration;
 
-            // Compute start position: offset by approach angle
-            float angleRad = trial.approachAngleDeg * Mathf.Deg2Rad;
-            Vector3 approachDir = (m_PlayerForward * Mathf.Cos(angleRad) + m_PlayerRight * Mathf.Sin(angleRad)).normalized;
-            m_StartPos = m_PlayerPosition + approachDir * trial.spawnDistance;
-
-            // End position: at vanish distance, with final lateral offset
-            m_EndPos = m_PlayerPosition
-                + m_PlayerForward * trial.vanishDistance
-                + m_PlayerRight * trial.finalLateralOffset;
-
-            // Control point: midpoint shifted by curvature
-            Vector3 midpoint = (m_StartPos + m_EndPos) * 0.5f;
-            m_ControlPoint = midpoint + m_PlayerRight * (trial.curveDirection * trial.curvatureMagnitude);
-
-            // Set initial position and scale
             float diameter = trial.ballDiameter > 0f ? trial.ballDiameter : 0.175f;
             transform.localScale = Vector3.one * diameter;
             transform.position = m_StartPos;
 
-            // Create shadow
             CreateShadow(diameter);
-
             SetVisible(false);
             m_Active = false;
             IsComplete = false;
@@ -77,13 +78,11 @@ namespace HitOrMiss
 
         void Update()
         {
-            if (!m_Active || IsComplete)
-                return;
+            if (!m_Active || IsComplete) return;
 
             float elapsed = Time.time - m_StartTime;
-            float t = Mathf.Clamp01(elapsed / m_Duration);
+            float t = Mathf.Clamp01(elapsed / Mathf.Max(m_Duration, 0.0001f));
 
-            // Quadratic bezier: B(t) = (1-t)^2 * P0 + 2(1-t)t * CP + t^2 * P1
             float oneMinusT = 1f - t;
             Vector3 pos = oneMinusT * oneMinusT * m_StartPos
                         + 2f * oneMinusT * t * m_ControlPoint
@@ -111,15 +110,12 @@ namespace HitOrMiss
             }
             else
             {
-                // Fallback: create a simple dark disc as shadow
                 var shadowGo = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
                 shadowGo.name = "BallShadow";
 
-                // Remove collider
                 var col = shadowGo.GetComponent<Collider>();
                 if (col != null) Destroy(col);
 
-                // Make it a flat dark disc
                 shadowGo.transform.localScale = new Vector3(diameter * 1.2f, 0.005f, diameter * 1.2f);
 
                 var renderer = shadowGo.GetComponent<Renderer>();
@@ -127,9 +123,8 @@ namespace HitOrMiss
                 {
                     var mat = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
                     mat.color = new Color(0f, 0f, 0f, 0.35f);
-                    // Enable transparency
-                    mat.SetFloat("_Surface", 1); // Transparent
-                    mat.SetFloat("_Blend", 0);   // Alpha
+                    mat.SetFloat("_Surface", 1);
+                    mat.SetFloat("_Blend", 0);
                     mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
                     mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
                     mat.SetInt("_ZWrite", 0);
@@ -146,18 +141,12 @@ namespace HitOrMiss
         {
             if (m_Shadow == null) return;
 
-            // Project ball position onto ground plane
             m_Shadow.position = new Vector3(ballPos.x, m_GroundY + 0.01f, ballPos.z);
 
-            // Scale shadow based on height (closer to ground = sharper/larger)
             float height = Mathf.Max(ballPos.y - m_GroundY, 0.1f);
             float scaleFactor = Mathf.Clamp(1f / (height * 0.5f + 0.5f), 0.3f, 1.5f);
             float baseDiam = m_Trial.ballDiameter > 0 ? m_Trial.ballDiameter : 0.175f;
-            m_Shadow.localScale = new Vector3(
-                baseDiam * 1.2f * scaleFactor,
-                0.005f,
-                baseDiam * 1.2f * scaleFactor
-            );
+            m_Shadow.localScale = new Vector3(baseDiam * 1.2f * scaleFactor, 0.005f, baseDiam * 1.2f * scaleFactor);
 
             m_Shadow.gameObject.SetActive(m_Active && !IsComplete);
         }
@@ -165,19 +154,15 @@ namespace HitOrMiss
         void SetVisible(bool visible)
         {
             var renderers = GetComponentsInChildren<Renderer>();
-            foreach (var r in renderers)
-                r.enabled = visible;
-
-            if (m_Shadow != null)
-                m_Shadow.gameObject.SetActive(visible);
+            foreach (var r in renderers) r.enabled = visible;
+            if (m_Shadow != null) m_Shadow.gameObject.SetActive(visible);
         }
 
         public void Despawn()
         {
             m_Active = false;
             IsComplete = true;
-            if (m_Shadow != null)
-                Destroy(m_Shadow.gameObject);
+            if (m_Shadow != null) Destroy(m_Shadow.gameObject);
             Destroy(gameObject);
         }
     }

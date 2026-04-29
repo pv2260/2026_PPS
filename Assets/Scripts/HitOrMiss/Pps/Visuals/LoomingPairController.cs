@@ -17,9 +17,6 @@ namespace HitOrMiss.Pps
         [SerializeField] Transform m_RightLed;
         [SerializeField] DistanceLayout m_Layout;
 
-        [Tooltip("Curve from start (t=0) to end (t=1). Ease-in-out is a good looming default.")]
-        [SerializeField] AnimationCurve m_MotionCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
-
         public DistanceLayout Layout
         {
             get => m_Layout;
@@ -44,6 +41,7 @@ namespace HitOrMiss.Pps
 
             float duration = asset.DurationFor(trial.speed);
             float separation = asset.SeparationFor(trial.width);
+            var curve = asset.MotionCurve;
             Vector3 start = m_Layout.StartCenter;
             Vector3 end = m_Layout.EndCenter;
 
@@ -58,7 +56,7 @@ namespace HitOrMiss.Pps
             {
                 elapsed += Time.deltaTime;
                 float t = Mathf.Clamp01(elapsed / duration);
-                float curved = m_MotionCurve.Evaluate(t);
+                float curved = curve != null ? curve.Evaluate(t) : t;
 
                 Vector3 center = Vector3.Lerp(start, end, curved);
                 Vector3 scale = Vector3.Lerp(asset.ScaleAtD4, asset.ScaleAtD1, curved);

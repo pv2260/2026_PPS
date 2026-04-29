@@ -1,6 +1,5 @@
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using UnityEngine;
@@ -20,8 +19,6 @@ namespace HitOrMiss.Pps
     ///   * Response input   → <see cref="IResponseInputSource"/> (reused from HitOrMiss)
     ///   * Haptic delivery  → <see cref="IVibrotactileOutput"/>
     ///   * UI               → <see cref="SessionFlowPanels"/>
-    ///
-    /// Changing any of these does not require editing this class.
     /// </summary>
     public class PpsTaskManager : MonoBehaviour
     {
@@ -46,11 +43,11 @@ namespace HitOrMiss.Pps
         IVibrotactileOutput m_Output;
         IResponseInputSource m_InputSource;
 
-        // Per-trial response capture (time-locked to the vibration event).
         bool m_CaptureResponses;
         double m_VibrationFiredTime;
         double m_FirstResponseTime;
         bool m_Responded;
+        System.Random m_ItiRng;
 
         StreamWriter m_CsvWriter;
         string m_CsvPath;
@@ -120,6 +117,9 @@ namespace HitOrMiss.Pps
             }
 
             m_Loom.Layout = m_Layout;
+            m_ItiRng = m_TaskAsset.RngSeed.HasValue
+                ? new System.Random(m_TaskAsset.RngSeed.Value + 9973)
+                : new System.Random();
             StartCoroutine(RunSession());
         }
 
@@ -150,8 +150,7 @@ namespace HitOrMiss.Pps
                 SetPhase(PpsPhase.Block);
                 yield return RunTrialList(m_TaskAsset.GenerateBlock(b));
 
-                bool hasRest = b < m_TaskAsset.BlockCount - 1;
-                if (hasRest)
+                if (b < m_TaskAsset.BlockCount - 1)
                 {
                     SetPhase(PpsPhase.Rest);
                     yield return m_Ui.ShowRestAndAutoAdvance(m_TaskAsset.RestDurationSeconds);
@@ -174,8 +173,18 @@ namespace HitOrMiss.Pps
             foreach (var trial in trials)
             {
                 yield return RunOneTrial(trial);
-                yield return new WaitForSeconds(m_TaskAsset.InterTrialIntervalSeconds);
+                float iti = NextItiSeconds();
+                if (iti > 0f) yield return new WaitForSeconds(iti);
             }
+        }
+
+        float NextItiSeconds()
+        {
+            float min = m_TaskAsset.ItiMinSeconds;
+            float max = m_TaskAsset.ItiMaxSeconds;
+            if (max <= min) return min;
+            double u = (m_ItiRng ?? new System.Random()).NextDouble();
+            return (float)(min + u * (max - min));
         }
 
         IEnumerator RunOneTrial(PpsTrialDefinition trial)
@@ -184,27 +193,64 @@ namespace HitOrMiss.Pps
             result.vibrationDeviceName = m_Output != null ? m_Output.DeviceName : "None";
 
             TrialStarted?.Invoke(trial);
-            m_MarkerEmitter?.Emit("pps_trial_start", trial.trialId, trial.modality.ToString(), extra: trial.vibrationStage.ToString());
+            m_MarkerEmitter?.Emit("pps_trial_start", trial.trialId,
+                trial.modality.ToString(), extra: trial.vibrationStage.ToString());
 
-            m_CaptureResponses = trial.RequiresResponse;
+            m_CaptureResponses = true;   // Capture on V too, to log false alarms.
             m_VibrationFiredTime = double.NaN;
             m_FirstResponseTime = double.NaN;
             m_Responded = false;
 
-            switch (trial.modality)
+            // Box for per-stage crossing timestamps (closure-safe; structs can't be
+            // mutated cleanly through an Action<DistanceStage> lambda).
+            double[] crossings = { double.NaN, double.NaN, double.NaN, double.NaN, double.NaN };
+
+            if (trial.modality == PpsModality.TactileOnly)
             {
-                case PpsModality.VisualOnly:
-                    yield return RunVisualOnly(trial, r => result = r);
-                    break;
-                case PpsModality.TactileOnly:
-                    yield return RunTactileOnly(trial, r => result = r);
-                    break;
-                case PpsModality.Both:
-                    yield return RunBoth(trial, r => result = r);
-                    break;
+                // No visual — fire at the time-matched moment a matched VT trial
+                // would have crossed the target stage, then hold the remainder so
+                // the trial window matches VT duration.
+                float waitToFire = m_TaskAsset.TimeToReachStage(trial.speed, trial.vibrationStage);
+                if (waitToFire > 0f) yield return new WaitForSeconds(waitToFire);
+
+                m_Output?.Fire(m_TaskAsset.VibrationIntensity, m_TaskAsset.VibrationDurationMs);
+                m_MarkerEmitter?.Emit("pps_vib_fired", trial.trialId, extra: trial.vibrationStage.ToString());
+
+                float total = m_TaskAsset.DurationFor(trial.speed);
+                float remaining = Mathf.Max(0f, total - waitToFire);
+                if (remaining > 0f) yield return new WaitForSeconds(remaining);
+            }
+            else
+            {
+                result.loomOnsetTime = Time.timeAsDouble;
+                m_MarkerEmitter?.Emit("pps_loom_onset", trial.trialId);
+
+                bool vibFired = false;
+                bool fireOnStageMatch = trial.modality == PpsModality.Both;
+
+                yield return m_Loom.RunLoom(trial, m_TaskAsset, stage =>
+                {
+                    double now = Time.timeAsDouble;
+                    int idx = (int)stage;
+                    if (idx >= 0 && idx < crossings.Length && double.IsNaN(crossings[idx]))
+                        crossings[idx] = now;
+
+                    m_MarkerEmitter?.Emit("pps_stage_enter", trial.trialId, extra: stage.ToString());
+
+                    if (fireOnStageMatch && !vibFired && stage == trial.vibrationStage)
+                    {
+                        vibFired = true;
+                        m_Output?.Fire(m_TaskAsset.VibrationIntensity, m_TaskAsset.VibrationDurationMs);
+                        m_MarkerEmitter?.Emit("pps_vib_fired", trial.trialId, extra: stage.ToString());
+                    }
+                });
             }
 
-            // Grace window so late responses still count.
+            result.crossingD4Time = crossings[(int)DistanceStage.D4];
+            result.crossingD3Time = crossings[(int)DistanceStage.D3];
+            result.crossingD2Time = crossings[(int)DistanceStage.D2];
+            result.crossingD1Time = crossings[(int)DistanceStage.D1];
+
             if (trial.RequiresResponse && !m_Responded)
             {
                 float grace = m_TaskAsset.ResponseGracePeriodSeconds;
@@ -216,7 +262,6 @@ namespace HitOrMiss.Pps
                 }
             }
 
-            result.loomOnsetTime = double.IsNaN(result.loomOnsetTime) ? Time.timeAsDouble : result.loomOnsetTime;
             result.vibrationFiredTime = m_VibrationFiredTime;
             result.responseTime = m_FirstResponseTime;
             result.responded = m_Responded;
@@ -230,51 +275,6 @@ namespace HitOrMiss.Pps
             m_CaptureResponses = false;
             WriteCsvRow(result);
             TrialCompleted?.Invoke(result);
-        }
-
-        IEnumerator RunVisualOnly(PpsTrialDefinition trial, Action<PpsTrialResult> update)
-        {
-            var r = PpsTrialResult.Empty(trial);
-            r.vibrationDeviceName = m_Output?.DeviceName ?? "None";
-            r.loomOnsetTime = Time.timeAsDouble;
-            m_MarkerEmitter?.Emit("pps_loom_onset", trial.trialId);
-            yield return m_Loom.RunLoom(trial, m_TaskAsset, stage =>
-                m_MarkerEmitter?.Emit("pps_stage_enter", trial.trialId, extra: stage.ToString()));
-            update(r);
-        }
-
-        IEnumerator RunTactileOnly(PpsTrialDefinition trial, Action<PpsTrialResult> update)
-        {
-            var r = PpsTrialResult.Empty(trial);
-            r.vibrationDeviceName = m_Output?.DeviceName ?? "None";
-            r.loomOnsetTime = Time.timeAsDouble;
-
-            m_Output?.Fire(m_TaskAsset.VibrationIntensity, m_TaskAsset.VibrationDurationMs);
-            m_MarkerEmitter?.Emit("pps_vib_fired", trial.trialId, extra: trial.vibrationStage.ToString());
-
-            yield return new WaitForSeconds(m_TaskAsset.TactileOnlyDurationSeconds);
-            update(r);
-        }
-
-        IEnumerator RunBoth(PpsTrialDefinition trial, Action<PpsTrialResult> update)
-        {
-            var r = PpsTrialResult.Empty(trial);
-            r.vibrationDeviceName = m_Output?.DeviceName ?? "None";
-            r.loomOnsetTime = Time.timeAsDouble;
-            m_MarkerEmitter?.Emit("pps_loom_onset", trial.trialId);
-
-            bool vibFired = false;
-            yield return m_Loom.RunLoom(trial, m_TaskAsset, stage =>
-            {
-                m_MarkerEmitter?.Emit("pps_stage_enter", trial.trialId, extra: stage.ToString());
-                if (!vibFired && stage == trial.vibrationStage)
-                {
-                    vibFired = true;
-                    m_Output?.Fire(m_TaskAsset.VibrationIntensity, m_TaskAsset.VibrationDurationMs);
-                    m_MarkerEmitter?.Emit("pps_vib_fired", trial.trialId, extra: stage.ToString());
-                }
-            });
-            update(r);
         }
 
         // ---- Callbacks ----
@@ -299,9 +299,9 @@ namespace HitOrMiss.Pps
         }
 
         // ---- CSV logging ----
-        // Kept here (rather than reusing TaskLogger) because TaskLogger's schema is
-        // hardcoded to TrialJudgement. PPS has a different row shape, and we want
-        // each task to own its own CSV schema.
+        // Owned here (not delegated to HitOrMiss TaskLogger) because TaskLogger's
+        // schema is hardcoded to TrialJudgement. PPS has its own row shape that
+        // matches the VR Development Brief.
 
         void OpenCsvFor(string subjectId)
         {

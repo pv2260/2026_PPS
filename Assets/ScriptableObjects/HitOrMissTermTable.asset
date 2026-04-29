@@ -65,3 +65,40 @@ MonoBehaviour:
   - key: say_miss
     english: MISS
     french: "RAT\xC9"
+  - key: pps.instructions
+    english: "In this experiment, you will see two lights approaching you.\n\nOccasionally,
+      you will feel a brief vibration on your chest.\n\nYour goal is to:\n  •
+      Focus on the approaching lights.\n  • Respond as quickly as possible when
+      you feel the vibration.\n  • Press the response button the moment you
+      detect the touch.\n\nKeep your hand ready on the button and respond as fast
+      and accurately as you can."
+    french: "Dans cette exp\xE9rience, vous verrez deux lumi\xE8res s'approcher de
+      vous.\n\nDe temps en temps, vous sentirez une br\xE8ve vibration sur votre
+      poitrine.\n\nVotre objectif est de:\n  • Vous concentrer sur les lumi\xE8res
+      qui approchent.\n  • R\xE9pondre aussi rapidement que possible lorsque
+      vous sentez la vibration.\n  • Appuyer sur le bouton de r\xE9ponse d\xE8s
+      que vous d\xE9tectez le contact.\n\nGardez la main pr\xEAte sur le bouton et
+      r\xE9pondez aussi vite et pr\xE9cis\xE9ment que possible."
+  - key: pps.practice_intro
+    english: "We will start with a few practice trials so you can get used to the
+      lights and the vibration.\n\nThese trials will not be recorded.\n\nWhen you
+      are ready, press Continue."
+    french: "Nous allons commencer par quelques essais d'entra\xEEnement pour que
+      vous vous habituiez aux lumi\xE8res et \xE0 la vibration.\n\nCes essais ne
+      seront pas enregistr\xE9s.\n\nLorsque vous \xEAtes pr\xEAt, appuyez sur Continuer."
+  - key: pps.block_intro
+    english: "The next block is about to begin.\n\nStay still, focus on the lights,
+      and respond as quickly as you can when you feel a vibration.\n\nPress Continue
+      when you are ready."
+    french: "Le prochain bloc va commencer.\n\nRestez immobile, concentrez-vous sur
+      les lumi\xE8res, et r\xE9pondez aussi rapidement que possible lorsque vous
+      sentez une vibration.\n\nAppuyez sur Continuer lorsque vous \xEAtes pr\xEAt."
+  - key: pps.rest
+    english: "Take a short break.\n\nThe next block will begin shortly."
+    french: "Faites une courte pause.\n\nLe prochain bloc commencera bient\xF4t."
+  - key: pps.outro
+    english: "End of the experiment — Thank you for participating!"
+    french: "Fin de l'exp\xE9rience — Merci d'avoir particip\xE9 !"
+  - key: pps.vibration_message
+    english: VIBRATION
+    french: VIBRATION

@@ -44,14 +44,20 @@ namespace HitOrMiss.Pps
                 vibrationStage = DistanceStage.None,
             };
 
-        public static PpsTrialDefinition CreateTactileOnly(int blockIndex, DistanceStage stage, bool isPractice = false)
+        /// <summary>
+        /// Tactile-only trial. <paramref name="speed"/> determines the matched timing window
+        /// (i.e. the moment the vibration fires is computed from the same curve a VT trial
+        /// of this speed would use to cross <paramref name="stage"/>). <paramref name="width"/>
+        /// carries no visual meaning here but is logged so T and VT trials share a schema.
+        /// </summary>
+        public static PpsTrialDefinition CreateTactileOnly(int blockIndex, PpsSpeed speed, PpsWidth width, DistanceStage stage, bool isPractice = false)
             => new()
             {
                 blockIndex = blockIndex,
                 isPractice = isPractice,
                 modality = PpsModality.TactileOnly,
-                speed = PpsSpeed.Slow, // unused but defined
-                width = PpsWidth.Narrow,
+                speed = speed,
+                width = width,
                 vibrationStage = stage,
             };
 

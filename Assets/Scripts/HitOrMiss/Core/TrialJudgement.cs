@@ -13,8 +13,8 @@ namespace HitOrMiss
         public double stimulusOnsetTime;
         public double responseTime;
         public double reactionTimeMs;
-        public float lateralOffsetMeters;  // actual final lateral offset
-        public float approachAngleDeg;     // initial approach angle
+        public float lateralOffsetMeters;  // final lateral offset of the arc end
+        public float speedMps;             // travel speed assigned by the speed-grouping pattern
         public string failureReason;
     }
 }

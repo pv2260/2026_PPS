@@ -4,145 +4,153 @@ using UnityEngine;
 namespace HitOrMiss
 {
     /// <summary>
-    /// Generates 80 trial definitions per block with parametric variation.
-    /// 20 per category: Hit, NearHit, NearMiss, Miss.
-    /// Each trial has unique approach angle and curve direction with small random jitter.
-    /// Trials are shuffled with a no-consecutive-same-category constraint.
+    /// Generates the per-block trial list. 4 categories × <see cref="TrajectoryTaskAsset.TrialsPerCategory"/>.
+    /// Each ball spawns at the same point in front of the player and travels toward the player.
+    /// Lateral curve magnitude scales with category — Hits are straight, Misses curve hard outward.
     /// </summary>
     public static class TrialGenerator
     {
-        // Category offset ranges (meters from body center)
-        static readonly Vector2 HitRange = new(0f, 0f);            // On body (0 offset)
-        static readonly Vector2 NearHitRange = new(0f, 0.10f);     // 0-10 cm
-        static readonly Vector2 NearMissRange = new(0.10f, 0.25f); // 10-25 cm
-        static readonly Vector2 MissRange = new(0.30f, 0.45f);     // 30-45 cm
+        // Final lateral offset ranges per category (meters from player center where the ball ends)
+        static readonly Vector2 HitRange      = new(0f,    0f);    // dead-center, on body
+        static readonly Vector2 NearHitRange  = new(0f,    0.10f); // 0–10 cm
+        static readonly Vector2 NearMissRange = new(0.10f, 0.25f); // 10–25 cm
+        static readonly Vector2 MissRange     = new(0.30f, 0.45f); // 30–45 cm
 
-        const int TrialsPerCategory = 20;
-        const float DefaultSpawnDistance = 7f;
-        const float DefaultVanishDistance = 1f;
-        const float DefaultSpeed = 2.5f;
-        const float DefaultBallDiameter = 0.175f;
-        const float DefaultCurvatureMagnitude = 0.40f; // 30-50 cm displacement from straight line
-
-        public static TrialDefinition[] GenerateBlock(int blockIndex, float spawnDistance = DefaultSpawnDistance,
-            float vanishDistance = DefaultVanishDistance, float speed = DefaultSpeed, float ballDiameter = DefaultBallDiameter)
+        public static TrialDefinition[] GenerateBlock(int blockIndex, TrajectoryTaskAsset asset)
         {
-            var trials = new List<TrialDefinition>();
+            int perCat = asset.TrialsPerCategory;
+            float spawnDistance = asset.SpawnDistance;
+            float ballDiameter = asset.BallDiameter;
 
-            trials.AddRange(GenerateCategory(blockIndex, TrialCategory.Hit, HitRange, SemanticCommand.Hit, spawnDistance, vanishDistance, speed, ballDiameter));
-            trials.AddRange(GenerateCategory(blockIndex, TrialCategory.NearHit, NearHitRange, SemanticCommand.Hit, spawnDistance, vanishDistance, speed, ballDiameter));
-            trials.AddRange(GenerateCategory(blockIndex, TrialCategory.NearMiss, NearMissRange, SemanticCommand.Miss, spawnDistance, vanishDistance, speed, ballDiameter));
-            trials.AddRange(GenerateCategory(blockIndex, TrialCategory.Miss, MissRange, SemanticCommand.Miss, spawnDistance, vanishDistance, speed, ballDiameter));
+            var trials = new List<TrialDefinition>(perCat * 4);
+            trials.AddRange(GenerateCategory(TrialCategory.Hit,      HitRange,      SemanticCommand.Hit,  perCat, spawnDistance, ballDiameter, asset));
+            trials.AddRange(GenerateCategory(TrialCategory.NearHit,  NearHitRange,  SemanticCommand.Hit,  perCat, spawnDistance, ballDiameter, asset));
+            trials.AddRange(GenerateCategory(TrialCategory.NearMiss, NearMissRange, SemanticCommand.Miss, perCat, spawnDistance, ballDiameter, asset));
+            trials.AddRange(GenerateCategory(TrialCategory.Miss,     MissRange,     SemanticCommand.Miss, perCat, spawnDistance, ballDiameter, asset));
 
             ShuffleNoConsecutive(trials);
-            AssignTimings(trials);
+            AssignIds(trials, blockIndex);
+            AssignSpeedsByGroupPattern(trials, asset.SpeedGroupPatterns, asset.FastSpeed, asset.SlowSpeed);
 
             return trials.ToArray();
         }
 
-        static List<TrialDefinition> GenerateCategory(int blockIndex, TrialCategory category,
-            Vector2 offsetRange, SemanticCommand expected, float spawnDist, float vanishDist, float speed, float diameter)
+        static List<TrialDefinition> GenerateCategory(TrialCategory category,
+            Vector2 offsetRange, SemanticCommand expected, int count,
+            float spawnDistance, float ballDiameter, TrajectoryTaskAsset asset)
         {
-            var result = new List<TrialDefinition>(TrialsPerCategory);
+            var result = new List<TrialDefinition>(count);
+            float baseCurve = asset.CurveMagnitudeFor(category);
 
-            for (int i = 0; i < TrialsPerCategory; i++)
+            for (int i = 0; i < count; i++)
             {
-                // Vary approach angle: spread across -30 to +30 degrees
-                float approachAngle = Mathf.Lerp(-30f, 30f, (float)i / (TrialsPerCategory - 1));
-                approachAngle += Random.Range(-3f, 3f); // small jitter
+                float magnitude = Random.Range(offsetRange.x, Mathf.Max(offsetRange.x + 0.001f, offsetRange.y));
+                float side = Random.value > 0.5f ? 1f : -1f;
+                float lateral = magnitude * side;
 
-                // Alternate curve direction and add slight variation
-                float curveDir = (i % 2 == 0) ? 1f : -1f;
-
-                // Final lateral offset: random within category range, with random side
-                float offsetMagnitude = Random.Range(offsetRange.x, Mathf.Max(offsetRange.x + 0.001f, offsetRange.y));
-                float side = (Random.value > 0.5f) ? 1f : -1f;
-                float finalOffset = offsetMagnitude * side;
-
-                // Curvature magnitude with small variation (15-25 cm as per spec)
-                float curvature = DefaultCurvatureMagnitude + Random.Range(-0.10f, 0.10f);
+                // Slight per-trial variation around the per-category curve magnitude.
+                float curveJitter = baseCurve > 0f ? Random.Range(-0.05f, 0.05f) : 0f;
+                float curve = Mathf.Max(0f, baseCurve + curveJitter);
 
                 result.Add(new TrialDefinition
                 {
-                    trialId = $"B{blockIndex + 1}_T{result.Count + 1 + (int)category * TrialsPerCategory:D2}",
                     category = category,
-                    approachAngleDeg = approachAngle,
-                    curveDirection = curveDir,
-                    curvatureMagnitude = curvature,
-                    finalLateralOffset = finalOffset,
-                    spawnDistance = spawnDist,
-                    vanishDistance = vanishDist,
-                    speed = speed,
-                    ballDiameter = diameter,
-                    expectedResponse = expected
+                    spawnDistance = spawnDistance,
+                    finalLateralOffset = lateral,
+                    curveMagnitude = curve,
+                    speed = 0f, // assigned later by group pattern
+                    ballDiameter = ballDiameter,
+                    expectedResponse = expected,
                 });
             }
-
             return result;
         }
 
         /// <summary>
-        /// Shuffle trials so no two consecutive trials share the same category.
-        /// Uses a greedy swap approach.
+        /// Shuffle so no two consecutive trials share a category. Greedy fix-up after Fisher–Yates.
         /// </summary>
         static void ShuffleNoConsecutive(List<TrialDefinition> trials)
         {
-            // First: Fisher-Yates shuffle
             for (int i = trials.Count - 1; i > 0; i--)
             {
                 int j = Random.Range(0, i + 1);
                 (trials[i], trials[j]) = (trials[j], trials[i]);
             }
 
-            // Then: fix consecutive same-category pairs
-            int maxPasses = 100;
+            const int maxPasses = 100;
             for (int pass = 0; pass < maxPasses; pass++)
             {
-                bool foundConflict = false;
+                bool conflict = false;
                 for (int i = 1; i < trials.Count; i++)
                 {
-                    if (trials[i].category == trials[i - 1].category)
-                    {
-                        foundConflict = true;
-                        // Find a swap candidate later in the list
-                        bool swapped = false;
-                        for (int k = i + 1; k < trials.Count; k++)
-                        {
-                            bool safeHere = trials[k].category != trials[i - 1].category;
-                            bool safeThere = (k + 1 >= trials.Count || trials[i].category != trials[k + 1].category)
-                                          && (k - 1 < 0 || trials[i].category != trials[k - 1].category);
+                    if (trials[i].category != trials[i - 1].category) continue;
+                    conflict = true;
 
-                            if (safeHere && safeThere)
-                            {
-                                (trials[i], trials[k]) = (trials[k], trials[i]);
-                                swapped = true;
-                                break;
-                            }
-                        }
-                        if (!swapped)
+                    bool swapped = false;
+                    for (int k = i + 1; k < trials.Count; k++)
+                    {
+                        bool safeHere = trials[k].category != trials[i - 1].category;
+                        bool safeThere = (k + 1 >= trials.Count || trials[i].category != trials[k + 1].category)
+                                         && (trials[i].category != trials[k - 1].category);
+                        if (safeHere && safeThere)
                         {
-                            // Fallback: just swap with a random non-adjacent position
-                            int r = Random.Range(Mathf.Min(i + 2, trials.Count - 1), trials.Count);
-                            (trials[i], trials[r]) = (trials[r], trials[i]);
+                            (trials[i], trials[k]) = (trials[k], trials[i]);
+                            swapped = true;
+                            break;
                         }
                     }
+                    if (!swapped)
+                    {
+                        int r = Random.Range(Mathf.Min(i + 2, trials.Count - 1), trials.Count);
+                        (trials[i], trials[r]) = (trials[r], trials[i]);
+                    }
                 }
-                if (!foundConflict) break;
+                if (!conflict) break;
+            }
+        }
+
+        static void AssignIds(List<TrialDefinition> trials, int blockIndex)
+        {
+            for (int i = 0; i < trials.Count; i++)
+            {
+                var t = trials[i];
+                t.trialId = $"B{blockIndex + 1}_T{i + 1:D2}";
+                trials[i] = t;
             }
         }
 
         /// <summary>
-        /// Assign block-relative start times with ~4s inter-trial interval + small jitter.
+        /// Walk trials in order; consume <see cref="SpeedGroupPattern"/> entries one group at a time.
+        /// If the pattern list is shorter than the number of groups in the block, it cycles.
         /// </summary>
-        static void AssignTimings(List<TrialDefinition> trials)
+        static void AssignSpeedsByGroupPattern(List<TrialDefinition> trials,
+            SpeedGroupPattern[] patterns, float fastSpeed, float slowSpeed)
         {
-            float time = 0f;
-            for (int i = 0; i < trials.Count; i++)
+            if (patterns == null || patterns.Length == 0)
             {
-                var t = trials[i];
-                t.trialId = $"{t.trialId.Split('_')[0]}_T{i + 1:D2}";
-                time += (i == 0) ? 0f : 4f + Random.Range(-0.3f, 0.3f); // ~4s ITI with jitter
-                trials[i] = t;
+                for (int i = 0; i < trials.Count; i++)
+                {
+                    var t = trials[i];
+                    t.speed = fastSpeed;
+                    trials[i] = t;
+                }
+                return;
+            }
+
+            int trialIdx = 0;
+            int groupIdx = 0;
+            while (trialIdx < trials.Count)
+            {
+                var pattern = patterns[groupIdx % patterns.Length];
+                int size = pattern.GroupSize;
+                for (int wg = 0; wg < size && trialIdx < trials.Count; wg++)
+                {
+                    var t = trials[trialIdx];
+                    t.speed = pattern.IsFastAtIndex(wg) ? fastSpeed : slowSpeed;
+                    trials[trialIdx] = t;
+                    trialIdx++;
+                }
+                groupIdx++;
             }
         }
     }

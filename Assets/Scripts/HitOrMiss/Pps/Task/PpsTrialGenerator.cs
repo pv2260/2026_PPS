@@ -1,15 +1,13 @@
 using System;
 using System.Collections.Generic;
-using UnityEngine;
 
 namespace HitOrMiss.Pps
 {
     /// <summary>
     /// Builds the per-block trial list from a <see cref="PpsTaskAsset"/>.
-    /// Full factorial expansion: (Speed × Width × VisualOnly)
-    ///                        + (Speed × Width × {D4..D1} × Both)
-    ///                        + ({D4..D1} × TactileOnly)          [optional]
-    /// then multiplied by the asset's RepeatsPerCell, then ordered.
+    /// Composition is percentage-based (VT / V / T) and draws speed, width, and
+    /// vibration position uniformly within each condition. Total count matches
+    /// <see cref="PpsTaskAsset.TrialsPerBlock"/>.
     /// </summary>
     public static class PpsTrialGenerator
     {
@@ -21,32 +19,38 @@ namespace HitOrMiss.Pps
         {
             if (asset == null) throw new ArgumentNullException(nameof(asset));
 
-            var trials = new List<PpsTrialDefinition>();
+            var rng = asset.RngSeed.HasValue
+                ? new System.Random(asset.RngSeed.Value + blockIndex)
+                : new System.Random();
 
-            for (int rep = 0; rep < asset.RepeatsPerCell; rep++)
-            {
-                foreach (var s in Speeds)
-                    foreach (var w in Widths)
-                        trials.Add(PpsTrialDefinition.CreateVisualOnly(blockIndex, s, w));
+            int total = asset.TrialsPerBlock;
+            int nVT = (int)Math.Round(total * asset.PercentVT);
+            int nV  = (int)Math.Round(total * asset.PercentV);
+            int nT  = Math.Max(0, total - nVT - nV);
 
-                foreach (var s in Speeds)
-                    foreach (var w in Widths)
-                        foreach (var stage in VibStages)
-                            trials.Add(PpsTrialDefinition.CreateBoth(blockIndex, s, w, stage));
+            var trials = new List<PpsTrialDefinition>(total);
 
-                if (asset.IncludeTactileOnlyCells)
-                    foreach (var stage in VibStages)
-                        trials.Add(PpsTrialDefinition.CreateTactileOnly(blockIndex, stage));
-            }
+            for (int i = 0; i < nVT; i++)
+                trials.Add(PpsTrialDefinition.CreateBoth(
+                    blockIndex, Pick(Speeds, rng), Pick(Widths, rng), Pick(VibStages, rng)));
 
-            Order(trials, asset.OrderingStrategy, asset.RngSeed);
+            for (int i = 0; i < nV; i++)
+                trials.Add(PpsTrialDefinition.CreateVisualOnly(
+                    blockIndex, Pick(Speeds, rng), Pick(Widths, rng)));
+
+            for (int i = 0; i < nT; i++)
+                trials.Add(PpsTrialDefinition.CreateTactileOnly(
+                    blockIndex, Pick(Speeds, rng), Pick(Widths, rng), Pick(VibStages, rng)));
+
+            if (asset.OrderingStrategy == TrialOrder.Shuffled)
+                Shuffle(trials, rng);
+
             AssignIds(trials, blockIndex);
             return trials.ToArray();
         }
 
         /// <summary>
-        /// Practice block: one of each trial type (visual, tactile, both), minimal.
-        /// Used by <see cref="PpsTaskManager"/> before the main blocks.
+        /// Practice block: one of each trial type (V, T, VT).
         /// </summary>
         public static PpsTrialDefinition[] GeneratePractice(PpsTaskAsset asset)
         {
@@ -55,7 +59,7 @@ namespace HitOrMiss.Pps
             var trials = new List<PpsTrialDefinition>
             {
                 PpsTrialDefinition.CreateVisualOnly(-1, PpsSpeed.Slow, PpsWidth.Wide, isPractice: true),
-                PpsTrialDefinition.CreateTactileOnly(-1, DistanceStage.D2, isPractice: true),
+                PpsTrialDefinition.CreateTactileOnly(-1, PpsSpeed.Slow, PpsWidth.Wide, DistanceStage.D2, isPractice: true),
                 PpsTrialDefinition.CreateBoth(-1, PpsSpeed.Slow, PpsWidth.Wide, DistanceStage.D2, isPractice: true),
             };
 
@@ -63,25 +67,10 @@ namespace HitOrMiss.Pps
             return trials.ToArray();
         }
 
-        static void Order(List<PpsTrialDefinition> trials, TrialOrder strategy, int? seed)
-        {
-            switch (strategy)
-            {
-                case TrialOrder.Sequential:
-                    return;
-                case TrialOrder.Shuffled:
-                    Shuffle(trials, seed);
-                    return;
-                default:
-                    Shuffle(trials, seed);
-                    return;
-            }
-        }
+        static T Pick<T>(T[] arr, System.Random rng) => arr[rng.Next(0, arr.Length)];
 
-        static void Shuffle(List<PpsTrialDefinition> trials, int? seed)
+        static void Shuffle(List<PpsTrialDefinition> trials, System.Random rng)
         {
-            // Use a local System.Random so the shuffle is independent of UnityEngine.Random state.
-            var rng = seed.HasValue ? new System.Random(seed.Value) : new System.Random();
             for (int i = trials.Count - 1; i > 0; i--)
             {
                 int j = rng.Next(0, i + 1);

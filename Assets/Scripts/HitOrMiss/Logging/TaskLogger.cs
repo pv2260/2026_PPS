@@ -41,7 +41,7 @@ namespace HitOrMiss
             m_JsonPath = Path.Combine(m_LogDir, baseName + ".json");
 
             m_CsvWriter = new StreamWriter(m_CsvPath, false, Encoding.UTF8);
-            m_CsvWriter.WriteLine("TrialId,Block,Category,Expected,Received,Result,IsCorrect,StimulusOnset,ResponseTime,ReactionTimeMs,LateralOffsetM,ApproachAngleDeg,FailureReason");
+            m_CsvWriter.WriteLine("TrialId,Block,Category,Expected,Received,Result,IsCorrect,StimulusOnset,ResponseTime,ReactionTimeMs,LateralOffsetM,SpeedMps,FailureReason");
             m_CsvWriter.Flush();
 
             m_Judgements.Clear();
@@ -68,7 +68,7 @@ namespace HitOrMiss
                 $"{j.responseTime:F4}," +
                 $"{j.reactionTimeMs:F1}," +
                 $"{j.lateralOffsetMeters:F4}," +
-                $"{j.approachAngleDeg:F1}," +
+                $"{j.speedMps:F2}," +
                 $"\"{j.failureReason}\""
             );
             m_CsvWriter.Flush();

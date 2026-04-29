@@ -81,20 +81,17 @@ namespace HitOrMiss
                 return;
             }
 
-            // Configure input source
-            IResponseInputSource inputSource = m_InputMode switch
+            // Always wire every input source that is assigned in the inspector,
+            // so keyboard + controller + hand pinch are all live simultaneously.
+            // m_InputMode is retained for future use (e.g. logging the participant's
+            // primary modality) but no longer gates which sources are active.
+            var composite = new CompositeInputSource(m_ControllerInput, m_KeyboardInput, m_HandPinchInput);
+            if (composite.Sources.Count == 0)
             {
-                InputMode.Keyboard when m_KeyboardInput != null => m_KeyboardInput,
-                InputMode.HandPinch when m_HandPinchInput != null => m_HandPinchInput,
-                InputMode.Controller when m_ControllerInput != null => m_ControllerInput,
-                _ => m_ControllerInput
-            };
-            if (inputSource == null)
-            {
-                Debug.LogError("[HitOrMissAppController] No input source available for mode: " + m_InputMode);
+                Debug.LogError("[HitOrMissAppController] No input sources assigned in inspector.");
                 return;
             }
-            m_TaskManager.SetInputSource(inputSource);
+            m_TaskManager.SetInputSource(composite);
 
             // Configure logger
             if (m_TaskLogger != null)
