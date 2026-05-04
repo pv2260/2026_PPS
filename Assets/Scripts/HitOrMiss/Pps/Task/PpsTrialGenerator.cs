@@ -3,12 +3,6 @@ using System.Collections.Generic;
 
 namespace HitOrMiss.Pps
 {
-    /// <summary>
-    /// Builds the per-block trial list from a <see cref="PpsTaskAsset"/>.
-    /// Composition is percentage-based (VT / V / T) and draws speed, width, and
-    /// vibration position uniformly within each condition. Total count matches
-    /// <see cref="PpsTaskAsset.TrialsPerBlock"/>.
-    /// </summary>
     public static class PpsTrialGenerator
     {
         static readonly PpsSpeed[] Speeds = { PpsSpeed.Fast, PpsSpeed.Slow };
@@ -25,8 +19,8 @@ namespace HitOrMiss.Pps
 
             int total = asset.TrialsPerBlock;
             int nVT = (int)Math.Round(total * asset.PercentVT);
-            int nV  = (int)Math.Round(total * asset.PercentV);
-            int nT  = Math.Max(0, total - nVT - nV);
+            int nV = (int)Math.Round(total * asset.PercentV);
+            int nT = Math.Max(0, total - nVT - nV);
 
             var trials = new List<PpsTrialDefinition>(total);
 
@@ -49,18 +43,39 @@ namespace HitOrMiss.Pps
             return trials.ToArray();
         }
 
-        /// <summary>
-        /// Practice block: one of each trial type (V, T, VT).
-        /// </summary>
         public static PpsTrialDefinition[] GeneratePractice(PpsTaskAsset asset)
+        {
+            return GenerateChestVibrationPractice(asset);
+        }
+
+        public static PpsTrialDefinition[] GenerateChestVibrationPractice(PpsTaskAsset asset)
         {
             if (asset == null) throw new ArgumentNullException(nameof(asset));
 
             var trials = new List<PpsTrialDefinition>
             {
-                PpsTrialDefinition.CreateVisualOnly(-1, PpsSpeed.Slow, PpsWidth.Wide, isPractice: true),
-                PpsTrialDefinition.CreateTactileOnly(-1, PpsSpeed.Slow, PpsWidth.Wide, DistanceStage.D2, isPractice: true),
-                PpsTrialDefinition.CreateBoth(-1, PpsSpeed.Slow, PpsWidth.Wide, DistanceStage.D2, isPractice: true),
+                PpsTrialDefinition.CreateTactileOnly(
+                    -1, PpsSpeed.Slow, PpsWidth.Wide, DistanceStage.D2, isPractice: true),
+
+                PpsTrialDefinition.CreateTactileOnly(
+                    -1, PpsSpeed.Slow, PpsWidth.Wide, DistanceStage.D2, isPractice: true),
+            };
+
+            AssignIds(trials, blockIndex: 0, practice: true);
+            return trials.ToArray();
+        }
+
+        public static PpsTrialDefinition[] GenerateLightsAndVibrationPractice(PpsTaskAsset asset)
+        {
+            if (asset == null) throw new ArgumentNullException(nameof(asset));
+
+            var trials = new List<PpsTrialDefinition>
+            {
+                PpsTrialDefinition.CreateBoth(
+                    -1, PpsSpeed.Slow, PpsWidth.Wide, DistanceStage.D2, isPractice: true),
+
+                PpsTrialDefinition.CreateBoth(
+                    -1, PpsSpeed.Slow, PpsWidth.Wide, DistanceStage.D2, isPractice: true),
             };
 
             AssignIds(trials, blockIndex: 0, practice: true);
@@ -81,6 +96,7 @@ namespace HitOrMiss.Pps
         static void AssignIds(List<PpsTrialDefinition> trials, int blockIndex, bool practice = false)
         {
             string prefix = practice ? "PRACTICE" : $"B{blockIndex + 1}";
+
             for (int i = 0; i < trials.Count; i++)
             {
                 var t = trials[i];
