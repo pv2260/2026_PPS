@@ -28,10 +28,12 @@ namespace HitOrMiss.Pps
         }
 
         public IEnumerator RunLoom(
+    
             PpsTrialDefinition trial,
             PpsTaskAsset asset,
             Action<DistanceStage> onStageEnter = null)
         {
+            Debug.LogError("[LoomingPairController] RUN LOOM CALLED");
             if (asset == null)
             {
                 Debug.LogError("[LoomingPairController] Missing PpsTaskAsset.");

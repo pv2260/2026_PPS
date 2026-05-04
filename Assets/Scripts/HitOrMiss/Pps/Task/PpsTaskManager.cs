@@ -144,7 +144,6 @@ namespace HitOrMiss.Pps
             // practice //
             SetPhase(PpsPhase.PracticeIntro);
             yield return m_Ui.ShowPracticeIntroAndWait(
-                "Practice\n\n" +
                 "First, you will practice responding to the chest vibration.\n\n" +
                 "Press H as soon as you feel the vibration."
             );
@@ -157,7 +156,6 @@ namespace HitOrMiss.Pps
 
             SetPhase(PpsPhase.PracticeIntro);
             yield return m_Ui.ShowPracticeIntroAndWait(
-                "Practice\n\n" +
                 "Next, lights may also appear.\n\n" +
                 "Keep focusing on the vibration. Press H only when you feel the vibration."
             );
@@ -273,6 +271,7 @@ namespace HitOrMiss.Pps
 
                 bool vibFired = false;
                 bool fireOnStageMatch = trial.modality == PpsModality.Both;
+                Debug.LogError($"[PpsTaskManager] ABOUT TO RUN LOOM: {trial.trialId}, modality={trial.modality}");
 
                 yield return m_Loom.RunLoom(trial, m_TaskAsset, stage =>
                 {
@@ -352,26 +351,26 @@ namespace HitOrMiss.Pps
         }
 
 // this is the response subjects are given once H is pressed used during practice 
-        void OnResponseReceived(ResponseEvent ev)
-        {
-            if (!m_CaptureResponses || m_Responded)
-                return;
 
-            // For PPS keyboard testing, only H counts as "felt it".
-            if (ev.rawSource != "keyboard_H")
-            {
-                Debug.Log($"[PpsTaskManager] Ignored response from {ev.rawSource}");
-                return;
-            }
+void OnResponseReceived(ResponseEvent ev)
+{
+    if (!m_CaptureResponses || m_Responded)
+        return;
 
-            m_Responded = true;
-            m_FirstResponseTime = ev.timestamp;
+    if (ev.rawSource != "keyboard_H")
+    {
+        Debug.Log($"[PpsTaskManager] Ignored non-H response: {ev.rawSource}");
+        return;
+    }
 
-            Debug.Log("[PpsTaskManager] Felt it.");
-            m_Ui?.ShowTrialStatus("Felt it.");
+    m_Responded = true;
+    m_FirstResponseTime = ev.timestamp;
 
-            m_MarkerEmitter?.Emit("pps_response", extra: ev.rawSource);
-        }
+    Debug.Log("[PpsTaskManager] Felt it.");
+    m_Ui?.ShowTrialStatus("Felt it.");
+
+    m_MarkerEmitter?.Emit("pps_response", extra: ev.rawSource);
+}
 
         void SetPhase(PpsPhase phase)
         {
