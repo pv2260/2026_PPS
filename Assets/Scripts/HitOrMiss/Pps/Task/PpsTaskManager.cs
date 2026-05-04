@@ -141,7 +141,6 @@ namespace HitOrMiss.Pps
             SetPhase(PpsPhase.Instructions);
             yield return m_Ui.ShowInstructionsAndWait();
 
-            // practice //
             SetPhase(PpsPhase.PracticeIntro);
             yield return m_Ui.ShowPracticeIntroAndWait(
                 "First, you will practice responding to the chest vibration.\n\n" +
@@ -165,11 +164,6 @@ namespace HitOrMiss.Pps
             yield return new WaitForSeconds(1.5f);
             yield return RunTrialList(PpsTrialGenerator.GenerateLightsAndVibrationPractice(m_TaskAsset));
             m_Ui.HideTrialStatus();
-
-
-
-
-
 
             for (int b = 0; b < m_TaskAsset.BlockCount; b++)
             {
@@ -223,6 +217,28 @@ namespace HitOrMiss.Pps
             return (float)(min + u * (max - min));
         }
 
+        IEnumerator WaitForPracticeResponse()
+        {
+            float maxWaitSeconds = 10f;
+            float elapsed = 0f;
+
+            while (!m_Responded && elapsed < maxWaitSeconds)
+            {
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+
+            if (m_Responded)
+                m_Ui?.ShowTrialStatus("Felt it.");
+            else
+                m_Ui?.ShowTrialStatus("No response detected.\n\nLet's continue.");
+
+            yield return new WaitForSeconds(0.75f);
+
+            m_Ui?.ShowTrialStatus("Get ready...");
+            yield return new WaitForSeconds(0.75f);
+        }
+
         IEnumerator RunOneTrial(PpsTrialDefinition trial)
         {
             Debug.Log($"[PpsTaskManager] RunOneTrial started: {trial.trialId}, modality={trial.modality}");
@@ -258,11 +274,18 @@ namespace HitOrMiss.Pps
 
                 FireVibrationOrPlaceholder(trial);
 
-                float total = m_TaskAsset.DurationFor(trial.speed);
-                float remaining = Mathf.Max(0f, total - waitToFire);
+                if (trial.isPractice && trial.RequiresResponse)
+                {
+                    yield return WaitForPracticeResponse();
+                }
+                else
+                {
+                    float total = m_TaskAsset.DurationFor(trial.speed);
+                    float remaining = Mathf.Max(0f, total - waitToFire);
 
-                if (remaining > 0f)
-                    yield return new WaitForSeconds(remaining);
+                    if (remaining > 0f)
+                        yield return new WaitForSeconds(remaining);
+                }
             }
             else
             {
@@ -271,6 +294,7 @@ namespace HitOrMiss.Pps
 
                 bool vibFired = false;
                 bool fireOnStageMatch = trial.modality == PpsModality.Both;
+
                 Debug.LogError($"[PpsTaskManager] ABOUT TO RUN LOOM: {trial.trialId}, modality={trial.modality}");
 
                 yield return m_Loom.RunLoom(trial, m_TaskAsset, stage =>
@@ -289,6 +313,11 @@ namespace HitOrMiss.Pps
                         FireVibrationOrPlaceholder(trial);
                     }
                 });
+
+                if (trial.isPractice && trial.RequiresResponse)
+                {
+                    yield return WaitForPracticeResponse();
+                }
             }
 
             result.crossingD4Time = crossings[(int)DistanceStage.D4];
@@ -296,7 +325,7 @@ namespace HitOrMiss.Pps
             result.crossingD2Time = crossings[(int)DistanceStage.D2];
             result.crossingD1Time = crossings[(int)DistanceStage.D1];
 
-            if (trial.RequiresResponse && !m_Responded)
+            if (!trial.isPractice && trial.RequiresResponse && !m_Responded)
             {
                 float grace = m_TaskAsset.ResponseGracePeriodSeconds;
                 float elapsed = 0f;
@@ -336,7 +365,6 @@ namespace HitOrMiss.Pps
                 m_Output.Fire(m_TaskAsset.VibrationIntensity, m_TaskAsset.VibrationDurationMs);
 
             m_Ui?.ShowTrialStatus("Vibration now.\n\nPress H.");
-            m_Ui?.ShowTrialStatus("Felt it.");
 
             m_MarkerEmitter?.Emit(
                 "pps_vib_fired",
@@ -350,27 +378,23 @@ namespace HitOrMiss.Pps
             m_VibrationFiredTime = Time.timeAsDouble;
         }
 
-// this is the response subjects are given once H is pressed used during practice 
+        void OnResponseReceived(ResponseEvent ev)
+        {
+            if (!m_CaptureResponses || m_Responded)
+                return;
 
-void OnResponseReceived(ResponseEvent ev)
-{
-    if (!m_CaptureResponses || m_Responded)
-        return;
+            if (ev.rawSource != "keyboard_H")
+            {
+                Debug.Log($"[PpsTaskManager] Ignored response from {ev.rawSource}");
+                return;
+            }
 
-    if (ev.rawSource != "keyboard_H")
-    {
-        Debug.Log($"[PpsTaskManager] Ignored non-H response: {ev.rawSource}");
-        return;
-    }
+            m_Responded = true;
+            m_FirstResponseTime = ev.timestamp;
 
-    m_Responded = true;
-    m_FirstResponseTime = ev.timestamp;
-
-    Debug.Log("[PpsTaskManager] Felt it.");
-    m_Ui?.ShowTrialStatus("Felt it.");
-
-    m_MarkerEmitter?.Emit("pps_response", extra: ev.rawSource);
-}
+            Debug.Log("[PpsTaskManager] Felt it.");
+            m_MarkerEmitter?.Emit("pps_response", extra: ev.rawSource);
+        }
 
         void SetPhase(PpsPhase phase)
         {
