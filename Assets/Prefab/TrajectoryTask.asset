@@ -15,10 +15,42 @@ MonoBehaviour:
   m_TaskName: Hit Or Miss Task
   m_BlockCount: 3
   m_TrialsPerCategory: 20
-  m_IntroDuration: 20
-  m_RestDuration: 30
-  m_OutroDuration: 10
+  m_IntroDuration: 3
+  m_RestDuration: 3
+  m_OutroDuration: 3
   m_SpawnDistance: 7
-  m_VanishDistance: 1
-  m_Speed: 2.5
   m_BallDiameter: 0.175
+  m_ReferenceShoulderWidthCm: 42
+  m_HitCurveMagnitude: 0
+  m_NearHitCurveMagnitude: 0.1
+  m_NearMissCurveMagnitude: 0.35
+  m_MissCurveMagnitude: 0.65
+  m_FastSpeed: 3.5
+  m_SlowSpeed: 1.5
+  m_ItiMinSeconds: 1.5
+  m_ItiMaxSeconds: 2.5
+  m_BreakDurationSeconds: 60
+  m_PracticeTrialCount: 2
+  m_PracticeFeedbackSeconds: 1
+  m_Popup1IntroKey: popup1_intro
+  m_Popup2LeftKey: popup2_left
+  m_Popup3RightKey: popup3_right
+  m_Popup4PracticeKey: popup4_practice
+  m_Popup5ReadyKey: popup5_ready
+  m_Popup6BlockIntroKey: popup6_block_intro
+  m_Popup7BreakKey: popup7_break
+  m_Popup8NextBlockKey: popup8_next_block
+  m_Popup9OutroKey: popup9_outro
+  m_SpeedGroupPatterns:
+  - fastCount: 7
+    slowCount: 3
+    fastFirst: 1
+  - fastCount: 3
+    slowCount: 7
+    fastFirst: 1
+  - fastCount: 3
+    slowCount: 7
+    fastFirst: 0
+  - fastCount: 6
+    slowCount: 4
+    fastFirst: 1

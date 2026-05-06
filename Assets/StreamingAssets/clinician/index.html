@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>HitMiss — Clinician Console</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header>
+    <div class="brand">HitMiss <span class="muted">clinician console</span></div>
+    <div class="status-block">
+      <span id="connStatus" class="conn-pill conn-disconnected">disconnected</span>
+      <span id="phasePill" class="phase-pill">idle</span>
+      <span id="participantPill" class="muted"></span>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-tab="newSession">New Session</button>
+    <button class="tab" data-tab="live">Live</button>
+    <button class="tab" data-tab="sessions">Sessions</button>
+  </nav>
+
+  <main>
+
+    <!-- ============== New Session ============== -->
+    <section id="newSession" class="tab-panel active">
+      <h2>Start New Session</h2>
+      <p class="muted">Fill in the participant + condition, then press Start. The headset will run the experience as soon as Start is acknowledged.</p>
+
+      <form id="sessionForm" class="form">
+        <div class="form-grid">
+          <label>Participant ID
+            <input name="participantId" placeholder="P001" required />
+          </label>
+          <label>Clinician initials
+            <input name="clinicianInitials" placeholder="SAS" />
+          </label>
+          <label>Session number
+            <input name="sessionNumber" type="number" min="1" value="1" />
+          </label>
+          <label>Date
+            <input name="sessionDate" type="date" />
+          </label>
+
+          <label>Age (years)
+            <input name="ageYears" type="number" min="0" max="120" value="0" />
+          </label>
+          <label>Dominant hand
+            <select name="dominantHand">
+              <option value="0">Unspecified</option>
+              <option value="1">Left</option>
+              <option value="2">Right</option>
+              <option value="3">Ambidextrous</option>
+            </select>
+          </label>
+          <label>Height (cm)
+            <input name="heightCm" type="number" min="0" max="260" step="0.5" value="170" />
+          </label>
+          <label>Shoulder width (cm)
+            <input name="shoulderWidthCm" type="number" min="20" max="80" step="0.5" value="42" />
+          </label>
+
+          <label>Session type
+            <select name="sessionType">
+              <option value="0">Medication High</option>
+              <option value="1">Medication Low</option>
+              <option value="2" selected>Healthy Session 1</option>
+              <option value="3">Healthy Session 2</option>
+            </select>
+          </label>
+          <label>DBS status
+            <select name="dbsStatus">
+              <option value="0" selected>N/A</option>
+              <option value="1">On</option>
+              <option value="2">Off</option>
+            </select>
+          </label>
+        </div>
+
+        <label class="full">Notes
+          <textarea name="notes" rows="2" placeholder="anything worth recording…"></textarea>
+        </label>
+
+        <div class="actions">
+          <button type="submit" class="primary">Start session</button>
+          <span id="startError" class="error"></span>
+        </div>
+      </form>
+    </section>
+
+    <!-- ============== Live ============== -->
+    <section id="live" class="tab-panel">
+      <h2>Live monitoring</h2>
+
+      <div class="live-grid">
+        <div class="card">
+          <div class="card-title">Phase</div>
+          <div id="liveSphase" class="big">Idle</div>
+          <div id="liveBlock" class="muted">block —</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Trials</div>
+          <div id="liveTrials" class="big">0 / 0</div>
+          <div id="liveAccuracy" class="muted">accuracy —</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Last trial</div>
+          <div id="liveLast" class="small">—</div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button id="pauseBtn">Pause</button>
+        <button id="resumeBtn" disabled>Resume</button>
+        <button id="stopBtn" class="danger">End session</button>
+      </div>
+
+      <h3>Recent events</h3>
+      <ul id="eventLog" class="event-log"></ul>
+    </section>
+
+    <!-- ============== Sessions ============== -->
+    <section id="sessions" class="tab-panel">
+      <h2>Past sessions</h2>
+      <div class="actions">
+        <button id="refreshSessions">Refresh</button>
+      </div>
+      <table id="sessionsTable">
+        <thead>
+          <tr>
+            <th>Participant</th>
+            <th>Date</th>
+            <th>Session ID</th>
+            <th>Trials</th>
+            <th>Files</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+  </main>
+
+  <footer class="muted">
+    Server: <span id="serverUrl">…</span> · Protocol <span id="protoVer">…</span>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

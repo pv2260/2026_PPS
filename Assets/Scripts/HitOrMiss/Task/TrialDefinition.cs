@@ -21,6 +21,15 @@ namespace HitOrMiss
         [Tooltip("Hit, NearHit, NearMiss, or Miss")]
         public TrialCategory category;
 
+        [Tooltip("0-based block index. Convert to 1-based block_number for CSV.")]
+        public int blockIndex;
+
+        [Tooltip("0-based trial index within the block. Convert to 1-based trial_number for CSV.")]
+        public int trialIndexInBlock;
+
+        [Tooltip("True for practice-phase trials. TaskLogger filters these out so they don't appear in trials.csv.")]
+        public bool isPractice;
+
         [Header("Trajectory (player-anchored)")]
         [Tooltip("Distance from the player where the ball spawns, along the player's forward axis (meters)")]
         public float spawnDistance;
@@ -34,14 +43,49 @@ namespace HitOrMiss
         [Tooltip("Travel speed (m/s). Set per-trial by the speed-grouping pattern.")]
         public float speed;
 
+        [Tooltip("Speed of the previous trial in this block (m/s). 0 for the first trial of a block.")]
+        public float prevSpeed;
+
         [Tooltip("Ball diameter in meters")]
         public float ballDiameter;
 
         [Tooltip("The correct response for this trial")]
         public SemanticCommand expectedResponse;
 
+        [Header("Run / speed-grouping bookkeeping")]
+        [Tooltip("0-based run index. A run is a maximal contiguous chunk of trials sharing the same speed.")]
+        public int runId;
+
+        [Tooltip("1-based position within the run (1..runLength).")]
+        public int trialInRun;
+
+        [Tooltip("Total length of the run this trial belongs to.")]
+        public int runLength;
+
+        [Tooltip("Number of trials since the most recent speed switch. 0 on the trial *of* the switch.")]
+        public int trialsSinceLastSwitch;
+
+        [Tooltip("True iff this trial is the first one after a speed change.")]
+        public bool isSwitchTrial;
+
+        [Header("Trajectory descriptor (for log)")]
+        [Tooltip("Stable identifier for the trajectory shape (category + side + bin). Used for analysis grouping.")]
+        public string trajectoryId;
+
+        [Tooltip("Approach angle in degrees (0 = straight at the participant; positive = right side).")]
+        public float trajectoryAngleDeg;
+
+        [Tooltip("Spawn position in world space, captured by TrajectoryTaskManager when the trial spawns.")]
+        public Vector3 spawnWorldPosition;
+
+        [Tooltip("End position in world space, captured by TrajectoryTaskManager when the trial spawns.")]
+        public Vector3 endWorldPosition;
+
         /// <summary>Travel duration in seconds (straight-line approximation).</summary>
         public float Duration => spawnDistance / Mathf.Max(speed, 0.01f);
+
+        /// <summary>True iff the trial's expected response is "hit" (will-hit ground truth).</summary>
+        public bool WillHit => expectedResponse == SemanticCommand.Hit;
 
         public static TrialDefinition CreateDefault()
         {

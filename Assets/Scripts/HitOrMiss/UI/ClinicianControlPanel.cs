@@ -23,6 +23,14 @@ namespace HitOrMiss
         [Header("Always-Visible Controls")]
         [SerializeField] Button m_StopButton;
 
+        [Header("Pause-mode Controls (visible only while paused)")]
+        [Tooltip("Shown only while the session is paused. Calls AppController.ResumeSession.")]
+        [SerializeField] Button m_ResumeButton;
+        [Tooltip("Shown only while the session is paused. Calls AppController.StopSession (terminates the session).")]
+        [SerializeField] Button m_EndSessionButton;
+        [Tooltip("Optional banner text that appears while paused.")]
+        [SerializeField] GameObject m_PausedBanner;
+
         [Header("Status Display")]
         [SerializeField] TMP_Text m_PhaseText;
         [SerializeField] TMP_Text m_BlockProgressText;
@@ -43,6 +51,13 @@ namespace HitOrMiss
             if (m_StartButton != null) m_StartButton.onClick.AddListener(OnStartPressed);
             if (m_StopButton != null) m_StopButton.onClick.AddListener(OnStopPressed);
             if (m_LanguageToggleButton != null) m_LanguageToggleButton.onClick.AddListener(OnLanguageToggle);
+            if (m_ResumeButton != null) m_ResumeButton.onClick.AddListener(OnResumePressed);
+            if (m_EndSessionButton != null) m_EndSessionButton.onClick.AddListener(OnEndSessionPressed);
+
+            // Pause-mode controls start hidden.
+            SetActive(m_ResumeButton, false);
+            SetActive(m_EndSessionButton, false);
+            if (m_PausedBanner != null) m_PausedBanner.SetActive(false);
         }
 
         void OnEnable()
@@ -74,6 +89,20 @@ namespace HitOrMiss
         }
 
         void OnStopPressed()
+        {
+            // The in-scene STOP button is non-destructive: it pauses the
+            // session and surfaces the clinician's Resume / End controls.
+            // Use the End Session button (visible during pause) to actually
+            // terminate the run.
+            m_AppController?.PauseSession();
+        }
+
+        void OnResumePressed()
+        {
+            m_AppController?.ResumeSession();
+        }
+
+        void OnEndSessionPressed()
         {
             m_AppController?.StopSession();
         }
@@ -112,6 +141,31 @@ namespace HitOrMiss
             SetActive(m_LanguageToggleButton, true);
             if (m_ParticipantIdField != null) m_ParticipantIdField.gameObject.SetActive(true);
             SetActive(m_StopButton, true);
+            // Clean up pause UI if the session was ended directly from a paused state.
+            SetActive(m_ResumeButton, false);
+            SetActive(m_EndSessionButton, false);
+            if (m_PausedBanner != null) m_PausedBanner.SetActive(false);
+        }
+
+        /// <summary>
+        /// Called by HitOrMissAppController.PauseSession. Shows Resume + End
+        /// Session controls so the clinician can intervene.
+        /// </summary>
+        public void EnterPausedMode()
+        {
+            SetActive(m_ResumeButton, true);
+            SetActive(m_EndSessionButton, true);
+            if (m_PausedBanner != null) m_PausedBanner.SetActive(true);
+        }
+
+        /// <summary>
+        /// Called by HitOrMissAppController.ResumeSession. Hides the pause UI.
+        /// </summary>
+        public void ExitPausedMode()
+        {
+            SetActive(m_ResumeButton, false);
+            SetActive(m_EndSessionButton, false);
+            if (m_PausedBanner != null) m_PausedBanner.SetActive(false);
         }
 
         void OnTrialJudged(TrialJudgement j)
@@ -202,6 +256,8 @@ namespace HitOrMiss
             if (m_StartButton != null) m_StartButton.onClick.RemoveListener(OnStartPressed);
             if (m_StopButton != null) m_StopButton.onClick.RemoveListener(OnStopPressed);
             if (m_LanguageToggleButton != null) m_LanguageToggleButton.onClick.RemoveListener(OnLanguageToggle);
+            if (m_ResumeButton != null) m_ResumeButton.onClick.RemoveListener(OnResumePressed);
+            if (m_EndSessionButton != null) m_EndSessionButton.onClick.RemoveListener(OnEndSessionPressed);
         }
     }
 }

@@ -50,8 +50,22 @@ namespace HitOrMiss
         float m_BlockStartTime;
         float m_NextSpawnEarliest;
         bool m_Running;
+        bool m_Paused;
+        float m_LastSpawnEndTime;
         IResponseInputSource m_InputSource;
         EegMarkerEmitter m_MarkerEmitter;
+
+        // Dedup window: collapses duplicate ResponseReceived events that fire
+        // within k_DedupWindowSeconds of each other for the same command.
+        // Quest Link can emit a controller-trigger event AND a hand-pinch
+        // event (or two overlapping bindings on the same Action) for one
+        // physical press — without dedup the second call generates a spurious
+        // EEG marker and a "no active trial to match" warning.
+        // 100 ms is well below any plausible deliberate double-tap and well
+        // above inter-frame jitter for a single physical action.
+        const float k_DedupWindowSeconds = 0.1f;
+        float m_LastResponseTime = float.NegativeInfinity;
+        SemanticCommand m_LastResponseCommand = SemanticCommand.None;
 
         public TrajectoryTaskAsset TaskAsset
         {
@@ -61,9 +75,11 @@ namespace HitOrMiss
 
         public IReadOnlyList<TrialJudgement> Results => m_AllResults;
         public bool IsRunning => m_Running;
+        public bool IsPaused => m_Paused;
         public int CurrentBlock => m_CurrentBlock;
         public int TrialsCompletedInBlock { get; private set; }
         public int TotalTrialsInBlock => m_BlockTrials != null ? m_BlockTrials.Length : 0;
+        public int NextTrialIndex => m_NextTrialIndex;
 
         public void SetInputSource(IResponseInputSource source)
         {
@@ -88,13 +104,31 @@ namespace HitOrMiss
                 Debug.LogError("[TrajectoryTaskManager] No TaskAsset assigned.");
                 return;
             }
+            StartTrialList(blockIndex, m_TaskAsset.GenerateBlock(blockIndex));
+        }
+
+        /// <summary>
+        /// Runs a pre-generated trial list (e.g. practice trials from
+        /// <see cref="TrialGenerator.GeneratePracticeTrials"/>). Same lifecycle
+        /// as <see cref="StartBlock"/> — events fire, the crosshair is
+        /// enabled, and <see cref="IsRunning"/> goes true until every trial
+        /// completes.
+        /// </summary>
+        public void StartTrialList(int blockIndex, TrialDefinition[] trials)
+        {
+            if (trials == null || trials.Length == 0)
+            {
+                Debug.LogWarning("[TrajectoryTaskManager] StartTrialList called with empty trial list.");
+                return;
+            }
 
             m_CurrentBlock = blockIndex;
-            m_BlockTrials = m_TaskAsset.GenerateBlock(blockIndex);
+            m_BlockTrials = trials;
             m_NextTrialIndex = 0;
             TrialsCompletedInBlock = 0;
             m_BlockStartTime = Time.time;
-            m_NextSpawnEarliest = Time.time; // first trial spawns next frame
+            m_NextSpawnEarliest = Time.time;
+            m_LastSpawnEndTime = 0f;
             m_ActiveTrials.Clear();
 
             m_Running = true;
@@ -105,12 +139,13 @@ namespace HitOrMiss
             m_MarkerEmitter?.Emit("block_start", "", blockIndex.ToString());
             BlockStarted?.Invoke(blockIndex);
 
-            Debug.Log($"[TrajectoryTaskManager] Block {blockIndex + 1} started with {m_BlockTrials.Length} trials.");
+            Debug.Log($"[TrajectoryTaskManager] Block {blockIndex + 1} started with {trials.Length} trials.");
         }
 
         public void StopBlock()
         {
             m_Running = false;
+            m_Paused = false;
             m_InputSource?.Disable();
             SetCrosshairActive(false);
 
@@ -126,9 +161,43 @@ namespace HitOrMiss
             BlockEnded?.Invoke(m_CurrentBlock);
         }
 
+        /// <summary>
+        /// Pauses the active block: stops spawning, freezes input, and discards
+        /// in-flight balls without scoring them (the trial that was interrupted
+        /// is treated as never having occurred — clinician will redo it on resume
+        /// if needed). Block trial list, completed results, and next-trial cursor
+        /// are preserved so see cref="ResumeBlock"/> can continue from where it left off.
+        /// </summary>
+        public void PauseBlock()
+        {
+            if (!m_Running || m_Paused) return;
+            m_Paused = true;
+            m_InputSource?.Disable();
+
+            // Discard in-flight balls without scoring. They are not "no response" —
+            // the trial was interrupted. They simply don't go into the log.
+            DespawnAll();
+
+            m_MarkerEmitter?.Emit("block_paused", "", m_CurrentBlock.ToString());
+        }
+
+        /// <summary>
+        /// Resumes a paused block: re-enables input and starts spawning again
+        /// from the next pending trial. Schedules the first post-resume spawn
+        /// after one ITI so the participant has a beat to settle.
+        /// </summary>
+        public void ResumeBlock()
+        {
+            if (!m_Running || !m_Paused) return;
+            m_Paused = false;
+            m_InputSource?.Enable();
+            m_NextSpawnEarliest = Time.time + NextItiSeconds();
+            m_MarkerEmitter?.Emit("block_resumed", "", m_CurrentBlock.ToString());
+        }
+
         void Update()
         {
-            if (!m_Running) return;
+            if (!m_Running || m_Paused) return;
 
             // Spawn next trial when its earliest spawn time has elapsed.
             // The earliest is set after each spawn to (just-spawned trial's
@@ -284,6 +353,28 @@ namespace HitOrMiss
         {
             var rt = new RuntimeTrial(trial) { SpawnTime = Time.time };
 
+            // Capture the actual world spawn / end positions so they end up
+            // in the trial CSV row (start_x..end_z columns).
+            if (m_SpawnOrigin != null)
+            {
+                Vector3 forward = m_SpawnOrigin.forward.sqrMagnitude > 0.0001f
+                    ? m_SpawnOrigin.forward.normalized
+                    : Vector3.forward;
+                Vector3 right = Vector3.Cross(Vector3.up, forward).normalized;
+                if (right.sqrMagnitude < 0.0001f) right = Vector3.right;
+
+                trial.spawnWorldPosition = m_SpawnOrigin.position + forward * trial.spawnDistance;
+                trial.endWorldPosition   = m_SpawnOrigin.position + right   * trial.finalLateralOffset;
+                rt.Definition = trial;
+            }
+
+            // ITI = how long since the previous trial's spawn ended. Approximated
+            // here as (now - lastSpawnEnd); for the first trial of a block it's 0.
+            float itiMs = m_LastSpawnEndTime > 0f
+                ? Mathf.Max(0f, (Time.time - m_LastSpawnEndTime) * 1000f)
+                : 0f;
+            rt.InterTrialIntervalMs = itiMs;
+
             if (m_LoomingObjectPrefab != null && m_SpawnOrigin != null)
             {
                 var go = Instantiate(m_LoomingObjectPrefab, m_SpawnOrigin.position, Quaternion.identity);
@@ -294,9 +385,11 @@ namespace HitOrMiss
                 controller.Initialize(trial, m_SpawnOrigin.position, m_SpawnOrigin.forward);
                 controller.Activate(Time.time);
                 rt.ObjectController = controller;
+                rt.BallMotionStartTime = Time.timeAsDouble;
             }
 
             m_ActiveTrials.Add(rt);
+            m_LastSpawnEndTime = Time.time + trial.Duration + m_ResponseGracePeriod;
 
             m_MarkerEmitter?.Emit("trial_spawn", trial.trialId,
                 trial.category.ToString(), trial.expectedResponse.ToString());
@@ -305,7 +398,16 @@ namespace HitOrMiss
 
         void OnResponseReceived(ResponseEvent response)
         {
-            if (!m_Running) return;
+            if (!m_Running || m_Paused) return;
+
+            // Drop duplicate events for the same command inside the dedup
+            // window (see k_DedupWindowSeconds). Done BEFORE marker emission
+            // so the EEG stream isn't doubled either.
+            if (response.command == m_LastResponseCommand
+                && Time.time - m_LastResponseTime < k_DedupWindowSeconds)
+                return;
+            m_LastResponseTime = Time.time;
+            m_LastResponseCommand = response.command;
 
             m_MarkerEmitter?.Emit(
                 response.command == SemanticCommand.Hit ? "response_hit" : "response_miss",
@@ -360,9 +462,22 @@ namespace HitOrMiss
             trial.Resolved = true;
             TrialsCompletedInBlock++;
 
-            double reactionMs = result == TrialResult.NoResponse
-                ? -1
+            bool noResponse = result == TrialResult.NoResponse;
+            double responseTime = noResponse ? double.NaN : Time.timeAsDouble;
+            double reactionMs = noResponse
+                ? double.NaN
                 : (Time.timeAsDouble - trial.SpawnTime) * 1000.0;
+
+            float speed = trial.Definition.speed;
+            float prev  = trial.Definition.prevSpeed;
+            float speedChange = speed - prev;
+            SpeedChangeDirection dir;
+            if (Mathf.Approximately(prev, 0f) || Mathf.Approximately(speedChange, 0f))
+                dir = SpeedChangeDirection.None;
+            else if (speedChange > 0f)
+                dir = SpeedChangeDirection.Increase;
+            else
+                dir = SpeedChangeDirection.Decrease;
 
             var judgement = new TrialJudgement
             {
@@ -373,12 +488,33 @@ namespace HitOrMiss
                 received = received,
                 result = result,
                 isCorrect = result == TrialResult.Correct,
-                stimulusOnsetTime = trial.SpawnTime,
-                responseTime = Time.timeAsDouble,
-                reactionTimeMs = reactionMs,
+
+                trialNumberInBlock = trial.Definition.trialIndexInBlock + 1,
+                runId = trial.Definition.runId,
+                trialInRun = trial.Definition.trialInRun,
+                runLength = trial.Definition.runLength,
+                trialsSinceLastSwitch = trial.Definition.trialsSinceLastSwitch,
+                isSwitchTrial = trial.Definition.isSwitchTrial,
+                speedMps = speed,
+                prevSpeedMps = prev,
+                speedChange = speedChange,
+                absSpeedChange = Mathf.Abs(speedChange),
+                changeDirection = dir,
+
+                trajectoryId = trial.Definition.trajectoryId,
+                trajectoryAngleDeg = trial.Definition.trajectoryAngleDeg,
+                startWorldPosition = trial.Definition.spawnWorldPosition,
+                endWorldPosition = trial.Definition.endWorldPosition,
                 lateralOffsetMeters = trial.Definition.finalLateralOffset,
-                speedMps = trial.Definition.speed,
-                failureReason = failureReason
+
+                trialStartTime = trial.SpawnTime,
+                ballMotionStartTime = trial.BallMotionStartTime,
+                stimulusOnsetTime = trial.SpawnTime,
+                responseTime = responseTime,
+                reactionTimeMs = reactionMs,
+                interTrialIntervalMs = trial.InterTrialIntervalMs,
+
+                failureReason = failureReason,
             };
 
             m_AllResults.Add(judgement);
@@ -414,6 +550,8 @@ namespace HitOrMiss
         {
             public TrialDefinition Definition;
             public float SpawnTime;
+            public double BallMotionStartTime = double.NaN;
+            public float InterTrialIntervalMs;
             public bool Resolved;
             public TrajectoryObjectController ObjectController;
 

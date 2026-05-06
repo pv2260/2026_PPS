@@ -25,6 +25,12 @@ namespace HitOrMiss
 
         [SerializeField] float m_BallDiameter = 0.175f;
 
+        [Header("Per-participant scaling")]
+        [Tooltip("Reference shoulder width in cm. Lateral offsets and curve magnitudes scale by " +
+                 "(participant.shoulderWidthCm / this) so a wider participant gets proportionally wider " +
+                 "near-hit / near-miss / miss bands. Default 42 cm (the PDF spec example value).")]
+        [SerializeField] float m_ReferenceShoulderWidthCm = 42f;
+
         [Header("Lateral curve magnitude per category (peak outward bow at midpoint, meters)")]
         [Tooltip("Hit: 0 = straight line. The ball arrives at the player with no lateral deflection.")]
         [SerializeField] float m_HitCurveMagnitude = 0f;
@@ -42,6 +48,28 @@ namespace HitOrMiss
         [Header("Inter-trial interval (jittered, scheduled after each trial's response window closes)")]
         [SerializeField] float m_ItiMinSeconds = 1.5f;
         [SerializeField] float m_ItiMaxSeconds = 2.5f;
+
+        [Header("Break between blocks")]
+        [Tooltip("Countdown shown to the participant between blocks (seconds). The spec calls this 'Y minute breaks'.")]
+        [SerializeField] float m_BreakDurationSeconds = 60f;
+
+        [Header("Practice")]
+        [Tooltip("Number of practice trials run after the LEFT/RIGHT mapping popups. Default 2.")]
+        [SerializeField] int m_PracticeTrialCount = 2;
+
+        [Tooltip("Seconds the HIT/MISS feedback flash stays on after each practice response.")]
+        [SerializeField] float m_PracticeFeedbackSeconds = 1.0f;
+
+        [Header("Popup localization keys (popups 1, 5, 6, 7, 8, 9)")]
+        [SerializeField] string m_Popup1IntroKey  = "popup1_intro";
+        [SerializeField] string m_Popup2LeftKey   = "popup2_left";
+        [SerializeField] string m_Popup3RightKey  = "popup3_right";
+        [SerializeField] string m_Popup4PracticeKey = "popup4_practice";
+        [SerializeField] string m_Popup5ReadyKey  = "popup5_ready";
+        [SerializeField] string m_Popup6BlockIntroKey = "popup6_block_intro";
+        [SerializeField] string m_Popup7BreakKey  = "popup7_break";
+        [SerializeField] string m_Popup8NextBlockKey = "popup8_next_block";
+        [SerializeField] string m_Popup9OutroKey  = "popup9_outro";
 
         [Header("Speed grouping (consumed sequentially within each block; cycles if shorter than block)")]
         [Tooltip("Each entry defines one group: how many fast vs slow, and which comes first. Default: 7F3S, 3F7S, 7S3F, 6F4S, then cycle.")]
@@ -75,6 +103,22 @@ namespace HitOrMiss
         public float ItiMaxSeconds => m_ItiMaxSeconds;
         public SpeedGroupPattern[] SpeedGroupPatterns => m_SpeedGroupPatterns;
 
+        public float BreakDurationSeconds => m_BreakDurationSeconds;
+        public int PracticeTrialCount => m_PracticeTrialCount;
+        public float PracticeFeedbackSeconds => m_PracticeFeedbackSeconds;
+
+        public string Popup1IntroKey       => m_Popup1IntroKey;
+        public string Popup2LeftKey        => m_Popup2LeftKey;
+        public string Popup3RightKey       => m_Popup3RightKey;
+        public string Popup4PracticeKey    => m_Popup4PracticeKey;
+        public string Popup5ReadyKey       => m_Popup5ReadyKey;
+        public string Popup6BlockIntroKey  => m_Popup6BlockIntroKey;
+        public string Popup7BreakKey       => m_Popup7BreakKey;
+        public string Popup8NextBlockKey   => m_Popup8NextBlockKey;
+        public string Popup9OutroKey       => m_Popup9OutroKey;
+
+        public float ReferenceShoulderWidthCm => m_ReferenceShoulderWidthCm;
+
         public int TrialsPerBlock => m_TrialsPerCategory * 4; // 4 categories
 
         public float CurveMagnitudeFor(TrialCategory category) => category switch
@@ -88,7 +132,29 @@ namespace HitOrMiss
 
         public TrialDefinition[] GenerateBlock(int blockIndex)
         {
-            return TrialGenerator.GenerateBlock(blockIndex, this);
+            return TrialGenerator.GenerateBlock(blockIndex, this, 0f);
+        }
+
+        /// <summary>
+        /// Builds a per-block trial list scaled to the participant's shoulder
+        /// width. Pass 0 (or anything ≤ 0) to skip scaling and use the
+        /// reference geometry. Called from
+        /// <see cref="HitOrMissAppController"/> with the value from
+        /// <see cref="SessionMetadata.shoulderWidthCm"/>.
+        /// </summary>
+        public TrialDefinition[] GenerateBlock(int blockIndex, float participantShoulderWidthCm)
+        {
+            return TrialGenerator.GenerateBlock(blockIndex, this, participantShoulderWidthCm);
+        }
+
+        public TrialDefinition[] GeneratePracticeTrials()
+        {
+            return TrialGenerator.GeneratePracticeTrials(this, 0f);
+        }
+
+        public TrialDefinition[] GeneratePracticeTrials(float participantShoulderWidthCm)
+        {
+            return TrialGenerator.GeneratePracticeTrials(this, participantShoulderWidthCm);
         }
 
         void OnValidate()

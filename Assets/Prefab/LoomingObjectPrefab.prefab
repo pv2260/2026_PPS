@@ -103,5 +103,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 766686b77d6ebff4fb0769ffbff4c556, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_ShadowPrefab: {fileID: 5591871194937706270}
+  m_ShadowPrefab: {fileID: 5591871194937706270, guid: b8a61e02f9737aa4395e040ad96d774b, type: 3}
   m_GroundY: 0
