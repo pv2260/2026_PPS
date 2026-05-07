@@ -6,98 +6,191 @@ namespace HitOrMiss.Pps
 {
     public class SessionFlowPanels : MonoBehaviour
     {
-        [Header("Subject ID")]
-        [SerializeField] GameObject m_SubjectIdPanel;
-        [SerializeField] TMP_InputField m_SubjectIdInput;
-
-        [Header("Text panels with Continue buttons")]
-        [SerializeField] GameObject m_InstructionsPanel;
-        [SerializeField] GameObject m_PracticeIntroPanel;
-        [SerializeField] GameObject m_BlockIntroPanel;
-
-        [Header("Practice Runtime")]
-        [SerializeField] GameObject m_PracticeRuntimePanel;
-        [SerializeField] TMP_Text m_TrialStatusText;
+        [Header("Task 1 Flow Panels")]
+        [SerializeField] private GameObject m_WelcomePanel;
+        [SerializeField] private GameObject m_InstructionsPanel;
+        [SerializeField] private GameObject m_PositioningPanel;
+        [SerializeField] private GameObject m_PracticeIntroVTOnlyPanel;
+        [SerializeField] private GameObject m_PracticeIntroVTVisualPanel;
+        [SerializeField] private GameObject m_NoFeedbackPanel;
+        [SerializeField] private GameObject m_ReadyToStartPanel;
+        [SerializeField] private GameObject m_BlockIntroPanel;
+        [SerializeField] private GameObject m_RestPanel;
+        [SerializeField] private GameObject m_PausePanel;
+        [SerializeField] private GameObject m_OutroPanel;
 
         [Header("Feedback")]
-        [SerializeField] TMP_Text m_FeedbackText;
-        [SerializeField] float m_FeedbackDurationSeconds = 0.5f;
+        [SerializeField] private TMP_Text m_FeedbackText;
+        [SerializeField] private float m_FeedbackDurationSeconds = 0.75f;
 
-        Coroutine m_FeedbackRoutine;
+        [Header("Optional Dynamic Text")]
+        [SerializeField] private TMP_Text m_WelcomeText;
+        [SerializeField] private TMP_Text m_InstructionsText;
+        [SerializeField] private TMP_Text m_PositioningText;
+        [SerializeField] private TMP_Text m_PracticeIntroVTOnlyText;
+        [SerializeField] private TMP_Text m_PracticeIntroVTVisualText;
+        [SerializeField] private TMP_Text m_NoFeedbackText;
+        [SerializeField] private TMP_Text m_ReadyToStartText;
+        [SerializeField] private TMP_Text m_BlockIntroText;
+        [SerializeField] private TMP_Text m_RestText;
+        [SerializeField] private TMP_Text m_PauseText;
+        [SerializeField] private TMP_Text m_OutroText;
 
-        [Header("Auto-advance panels")]
-        [SerializeField] GameObject m_RestPanel;
-        [SerializeField] GameObject m_OutroPanel;
+        private bool m_WaitingForContinue;
+        private Coroutine m_FeedbackRoutine;
 
-        [Header("Optional localized text slots")]
-        [SerializeField] TMP_Text m_InstructionsText;
-        [SerializeField] TMP_Text m_PracticeIntroText;
-        [SerializeField] TMP_Text m_BlockIntroText;
-        [SerializeField] TMP_Text m_OutroText;
-
-        bool m_WaitingForContinue;
-        string m_SubjectId = "";
-
-        public string SubjectId => m_SubjectId;
-
-        void Awake()
+        private void Awake()
         {
-            m_WaitingForContinue = false;
             HideAll();
-            
         }
 
         public void HideAll()
         {
-            SetActive(m_SubjectIdPanel, false);
+            SetActive(m_WelcomePanel, false);
             SetActive(m_InstructionsPanel, false);
-            SetActive(m_PracticeIntroPanel, false);
-            SetActive(m_PracticeRuntimePanel, false);
+            SetActive(m_PositioningPanel, false);
+            SetActive(m_PracticeIntroVTOnlyPanel, false);
+            SetActive(m_PracticeIntroVTVisualPanel, false);
+            SetActive(m_NoFeedbackPanel, false);
+            SetActive(m_ReadyToStartPanel, false);
             SetActive(m_BlockIntroPanel, false);
             SetActive(m_RestPanel, false);
+            SetActive(m_PausePanel, false);
             SetActive(m_OutroPanel, false);
         }
 
-        public IEnumerator ShowSubjectIdAndWait()
+        public IEnumerator ShowWelcomeAndWait(string text = null)
         {
-            Debug.Log("[SessionFlowPanels] Showing Subject ID only.");
-
-            HideAll();
-
-            SetActive(m_SubjectIdPanel, true);
-            SetActive(m_PracticeIntroPanel, false);
-            SetActive(m_PracticeRuntimePanel, false);
-
-            m_WaitingForContinue = true;
-
-            while (m_WaitingForContinue)
-                yield return null;
-
-            SetActive(m_SubjectIdPanel, false);
-            HideAll();
-        }
-        public void OnSubjectIdContinue()
-        {
-            Debug.Log("[SessionFlowPanels] Subject ID continue pressed.");
-
-            if (m_SubjectIdInput != null)
-                m_SubjectId = m_SubjectIdInput.text;
-
-            m_WaitingForContinue = false;
-            HideAll();
+            yield return ShowAndWait(
+                m_WelcomePanel,
+                m_WelcomeText,
+                text ?? "Welcome to Task 1"
+            );
         }
 
-        public IEnumerator ShowAndWait(GameObject panel, TMP_Text textSlot = null, string text = null)
+        public IEnumerator ShowInstructionsAndWait(string text = null)
+        {
+            yield return ShowAndWait(
+                m_InstructionsPanel,
+                m_InstructionsText,
+                text ??
+                "Lights may appear.\n\n" +
+                "Vibration may occur.\n\n" +
+                "Respond ONLY when you feel vibration.\n\n" +
+                "Press as quickly as possible."
+            );
+        }
+
+        public IEnumerator ShowPositioningAndWait(string text = null)
+        {
+            yield return ShowAndWait(
+                m_PositioningPanel,
+                m_PositioningText,
+                text ??
+                "Please stand in front of the cross.\n\n" +
+                "Face forward and hold the controller comfortably."
+            );
+        }
+
+        public IEnumerator ShowPracticeIntroVTOnlyAndWait(string text = null)
+        {
+            yield return ShowAndWait(
+                m_PracticeIntroVTOnlyPanel,
+                m_PracticeIntroVTOnlyText,
+                text ??
+                "You will first experience vibration only.\n\n" +
+                "Press the controller whenever you feel a vibration."
+            );
+        }
+
+        public IEnumerator ShowPracticeIntroVTVisualAndWait(string text = null)
+        {
+            yield return ShowAndWait(
+                m_PracticeIntroVTVisualPanel,
+                m_PracticeIntroVTVisualText,
+                text ??
+                "You will also see lights moving toward you.\n\n" +
+                "Continue responding ONLY when you feel a vibration."
+            );
+        }
+
+        public IEnumerator ShowNoFeedbackAndWait(string text = null)
+        {
+            yield return ShowAndWait(
+                m_NoFeedbackPanel,
+                m_NoFeedbackText,
+                text ??
+                "Practice is now complete.\n\n" +
+                "The real task will now begin.\n\n" +
+                "You will no longer receive feedback."
+            );
+        }
+
+        public IEnumerator ShowReadyToStartAndWait(string text = null)
+        {
+            yield return ShowAndWait(
+                m_ReadyToStartPanel,
+                m_ReadyToStartText,
+                text ??
+                "Are you ready to begin?\n\n" +
+                "Press Start when you are ready."
+            );
+        }
+
+        public IEnumerator ShowBlockIntroAndWait(string text = null)
+        {
+            yield return ShowAndWait(
+                m_BlockIntroPanel,
+                m_BlockIntroText,
+                text ?? "Block starting.\n\nPress Begin when ready."
+            );
+        }
+
+        public IEnumerator ShowPauseAndWait(string text = null)
+        {
+            yield return ShowAndWait(
+                m_PausePanel,
+                m_PauseText,
+                text ??
+                "Task paused.\n\n" +
+                "The current trial has been interrupted."
+            );
+        }
+
+        public IEnumerator ShowRestAndAutoAdvance(float seconds)
+        {
+            HideAll();
+
+            if (m_RestText != null)
+                m_RestText.text = $"Break\n\nPlease rest.\n\nContinuing in {seconds:0} seconds.";
+
+            SetActive(m_RestPanel, true);
+            yield return new WaitForSeconds(seconds);
+            HideAll();
+        }
+
+        public IEnumerator ShowOutro(string text = null, float holdSeconds = 5f)
+        {
+            HideAll();
+
+            if (m_OutroText != null)
+                m_OutroText.text = text ?? "Task 1 complete.\n\nThank you.";
+
+            SetActive(m_OutroPanel, true);
+            yield return new WaitForSeconds(holdSeconds);
+        }
+
+        public IEnumerator ShowAndWait(GameObject panel, TMP_Text textSlot, string text)
         {
             HideAll();
 
             if (panel == null)
             {
-                Debug.LogWarning("[SessionFlowPanels] Tried to show a null panel.");
+                Debug.LogWarning("[SessionFlowPanels] Missing panel reference.");
                 yield break;
             }
 
-            if (textSlot != null && text != null)
+            if (textSlot != null)
                 textSlot.text = text;
 
             panel.SetActive(true);
@@ -106,95 +199,26 @@ namespace HitOrMiss.Pps
             while (m_WaitingForContinue)
                 yield return null;
 
-            panel.SetActive(false);
             HideAll();
         }
 
-        public IEnumerator ShowInstructionsAndWait(string text = null)
+        public void OnContinue()
         {
-            yield return ShowAndWait(m_InstructionsPanel, m_InstructionsText, text);
-        }
-
-        public IEnumerator ShowPracticeIntroAndWait(string text = null)
-        {
-            Debug.Log("[SessionFlowPanels] Showing PracticeIntroPanel.");
-
-            HideAll();
-
-            if (m_PracticeIntroPanel == null)
-            {
-                Debug.LogError("[SessionFlowPanels] PracticeIntroPanel is not assigned.");
-                yield break;
-            }
-
-            if (m_PracticeIntroText != null && text != null)
-                m_PracticeIntroText.text = text;
-
-            m_PracticeIntroPanel.SetActive(true);
-
-            m_WaitingForContinue = true;
-
-            while (m_WaitingForContinue)
-                yield return null;
-
-            m_PracticeIntroPanel.SetActive(false);
-        }
-
-        public IEnumerator ShowPracticeRuntimeAndWait(string message)
-        {
-            HideAll();
-
-            SetActive(m_PracticeRuntimePanel, true);
-
-            if (m_TrialStatusText != null)
-                m_TrialStatusText.text = message;
-
-            m_WaitingForContinue = true;
-
-            while (m_WaitingForContinue)
-                yield return null;
-        }
-
-
-
-        public void ShowTrialStatus(string message)
-        {
-            Debug.Log("[SessionFlowPanels] ShowTrialStatus: " + message);
-
-            HideAll();
-
-            SetActive(m_PracticeRuntimePanel, true);
-
-            if (m_TrialStatusText == null)
-            {
-                Debug.LogError("[SessionFlowPanels] TrialStatusText is not assigned.");
-                return;
-            }
-
-            m_TrialStatusText.text = "";
-            m_TrialStatusText.text = message;
-        }
-
-        public void HideTrialStatus()
-        {
-            SetActive(m_PracticeRuntimePanel, false);
+            m_WaitingForContinue = false;
         }
 
         public void ShowFeedback(string message)
         {
             if (m_FeedbackText == null)
-            {
-                Debug.Log($"[SessionFlowPanels] Feedback: {message}");
                 return;
-            }
 
             if (m_FeedbackRoutine != null)
                 StopCoroutine(m_FeedbackRoutine);
 
-            m_FeedbackRoutine = StartCoroutine(ShowFeedbackRoutine(message));
+            m_FeedbackRoutine = StartCoroutine(FeedbackRoutine(message));
         }
 
-        IEnumerator ShowFeedbackRoutine(string message)
+        private IEnumerator FeedbackRoutine(string message)
         {
             m_FeedbackText.text = message;
             m_FeedbackText.gameObject.SetActive(true);
@@ -204,43 +228,11 @@ namespace HitOrMiss.Pps
             m_FeedbackText.gameObject.SetActive(false);
             m_FeedbackRoutine = null;
         }
-        public IEnumerator ShowBlockIntroAndWait(string text = null)
-        {
-            yield return ShowAndWait(m_BlockIntroPanel, m_BlockIntroText, text);
-        }
 
-        public void OnContinue()
-        {
-            Debug.Log("[SessionFlowPanels] Continue pressed.");
-            m_WaitingForContinue = false;
-        }
-
-        public IEnumerator ShowRestAndAutoAdvance(float seconds)
-        {
-            HideAll();
-
-            SetActive(m_RestPanel, true);
-            yield return new WaitForSeconds(seconds);
-            SetActive(m_RestPanel, false);
-
-            HideAll();
-        }
-
-        public IEnumerator ShowOutro(string text = null, float holdSeconds = 5f)
-        {
-            HideAll();
-
-            if (m_OutroText != null && text != null)
-                m_OutroText.text = text;
-
-            SetActive(m_OutroPanel, true);
-            yield return new WaitForSeconds(holdSeconds);
-        }
-
-        static void SetActive(GameObject go, bool on)
+        private static void SetActive(GameObject go, bool active)
         {
             if (go != null)
-                go.SetActive(on);
+                go.SetActive(active);
         }
     }
 }

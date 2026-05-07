@@ -10,6 +10,12 @@ namespace HitOrMiss.Pps
         [SerializeField] Transform m_RightLed;
         [SerializeField] DistanceLayout m_Layout;
 
+        [Header("Camera-relative origin")]
+        [SerializeField] private Transform stimulusOrigin;
+        [SerializeField] private float stimulusHeight = -1.0f;
+        [SerializeField] private float startDistance = 2.0f;
+        [SerializeField] private float endDistance = 0.6f;
+
         [Header("Debug")]
         [SerializeField] bool m_LogLoom = true;
 
@@ -28,12 +34,12 @@ namespace HitOrMiss.Pps
         }
 
         public IEnumerator RunLoom(
-    
             PpsTrialDefinition trial,
             PpsTaskAsset asset,
             Action<DistanceStage> onStageEnter = null)
         {
             Debug.LogError("[LoomingPairController] RUN LOOM CALLED");
+
             if (asset == null)
             {
                 Debug.LogError("[LoomingPairController] Missing PpsTaskAsset.");
@@ -50,15 +56,31 @@ namespace HitOrMiss.Pps
             float separation = asset.SeparationFor(trial.width);
             var curve = asset.MotionCurve;
 
-            Vector3 start = m_Layout.StartCenter;
-            Vector3 end = m_Layout.EndCenter;
-            Vector3 right = transform.right;
+            Vector3 start;
+            Vector3 end;
+            Vector3 right;
+
+            if (stimulusOrigin != null)
+            {
+                start = stimulusOrigin.TransformPoint(new Vector3(0f, stimulusHeight, startDistance));
+                end = stimulusOrigin.TransformPoint(new Vector3(0f, stimulusHeight, endDistance));
+                right = stimulusOrigin.right;
+            }
+            else
+            {
+                start = m_Layout.StartCenter;
+                end = m_Layout.EndCenter;
+                right = transform.right;
+
+                Debug.LogWarning("[LoomingPairController] No stimulusOrigin assigned. Falling back to DistanceLayout world positions.");
+            }
 
             if (m_LogLoom)
             {
                 Debug.Log(
                     $"[LoomingPairController] RunLoom {trial.trialId} | " +
-                    $"duration={duration}, separation={separation}, start={start}, end={end}"
+                    $"duration={duration}, separation={separation}, start={start}, end={end}, " +
+                    $"origin={(stimulusOrigin != null ? stimulusOrigin.name : "NULL")}"
                 );
             }
 
@@ -68,7 +90,6 @@ namespace HitOrMiss.Pps
             IsRunning = true;
             CurrentStage = DistanceStage.D4;
 
-            // Place immediately at D4 before first frame.
             Vector3 startScale = asset.ScaleAtD4;
 
             m_LeftLed.position = start - right * (separation * 0.5f);

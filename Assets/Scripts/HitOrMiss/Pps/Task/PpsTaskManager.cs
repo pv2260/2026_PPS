@@ -40,6 +40,12 @@ namespace HitOrMiss.Pps
         StreamWriter m_CsvWriter;
         string m_CsvPath;
 
+        public PpsTaskAsset TaskAsset
+        {
+            get => m_TaskAsset;
+            set => m_TaskAsset = value;
+        }
+
         public PpsPhase CurrentPhase { get; private set; } = PpsPhase.Idle;
         public int CurrentBlock { get; private set; } = -1;
 
@@ -47,12 +53,6 @@ namespace HitOrMiss.Pps
         public event Action<PpsTrialDefinition> TrialStarted;
         public event Action<PpsTrialResult> TrialCompleted;
         public event Action SessionFinished;
-
-        public PpsTaskAsset TaskAsset
-        {
-            get => m_TaskAsset;
-            set => m_TaskAsset = value;
-        }
 
         void Awake()
         {
@@ -75,6 +75,12 @@ namespace HitOrMiss.Pps
                 Debug.LogWarning("[PpsTaskManager] No input source assigned. Responses will not be detected.");
         }
 
+        void Start()
+        {
+            if (m_AutoStartOnAwake)
+                StartSession();
+        }
+
         void OnDestroy()
         {
             if (m_Output != null)
@@ -83,14 +89,7 @@ namespace HitOrMiss.Pps
             if (m_InputSource != null)
                 m_InputSource.ResponseReceived -= OnResponseReceived;
 
-            m_CsvWriter?.Dispose();
-            m_CsvWriter = null;
-        }
-
-        void Start()
-        {
-            if (m_AutoStartOnAwake)
-                StartSession();
+            CloseCsv();
         }
 
         public void SetInputSource(IResponseInputSource source)
@@ -106,37 +105,15 @@ namespace HitOrMiss.Pps
 
         public void StartSession()
         {
-            Debug.Log("[PpsTaskManager] StartSession reached.");
-
-            if (m_TaskAsset == null)
-            {
-                Debug.LogError("[PpsTaskManager] No PpsTaskAsset assigned.");
-                return;
-            }
-
-            if (m_Loom == null || m_Layout == null || m_Ui == null)
-            {
-                Debug.LogError("[PpsTaskManager] Missing scene references: Loom, Layout, or UI.");
-                return;
-            }
-
-            m_Loom.Layout = m_Layout;
-
-            m_ItiRng = m_TaskAsset.RngSeed.HasValue
-                ? new System.Random(m_TaskAsset.RngSeed.Value + 9973)
-                : new System.Random();
-
-            StartCoroutine(RunSession());
+            Debug.LogWarning("[PpsTaskManager] StartSession ignored. PPSAppController owns experiment flow now.");
         }
 
-        IEnumerator RunSession()
+        IEnumerator RunLegacySession()
         {
             SetPhase(PpsPhase.SubjectId);
             yield return m_Ui.ShowSubjectIdAndWait();
 
-            OpenCsvFor(m_Ui.SubjectId);
-            m_MarkerEmitter?.Emit("pps_session_start", extra: m_Ui.SubjectId);
-            m_InputSource?.Enable();
+            BeginLogging(m_Ui.SubjectId);
 
             SetPhase(PpsPhase.Instructions);
             yield return m_Ui.ShowInstructionsAndWait();
@@ -148,9 +125,9 @@ namespace HitOrMiss.Pps
             );
 
             SetPhase(PpsPhase.Practice);
-            m_Ui.ShowTrialStatus("Wait for the vibration...");
-            yield return new WaitForSeconds(1.5f);
-            yield return RunTrialList(PpsTrialGenerator.GenerateChestVibrationPractice(m_TaskAsset));
+            m_Ui.ShowTrialStatus("Get ready...");
+            yield return new WaitForSeconds(1.0f);
+            yield return RunTrials(PpsTrialGenerator.GenerateChestVibrationPractice(m_TaskAsset));
             m_Ui.HideTrialStatus();
 
             SetPhase(PpsPhase.PracticeIntro);
@@ -160,9 +137,9 @@ namespace HitOrMiss.Pps
             );
 
             SetPhase(PpsPhase.Practice);
-            m_Ui.ShowTrialStatus("Focus on the vibration...");
-            yield return new WaitForSeconds(1.5f);
-            yield return RunTrialList(PpsTrialGenerator.GenerateLightsAndVibrationPractice(m_TaskAsset));
+            m_Ui.ShowTrialStatus("Get ready...");
+            yield return new WaitForSeconds(1.0f);
+            yield return RunTrials(PpsTrialGenerator.GenerateLightsAndVibrationPractice(m_TaskAsset));
             m_Ui.HideTrialStatus();
 
             for (int b = 0; b < m_TaskAsset.BlockCount; b++)
@@ -173,7 +150,7 @@ namespace HitOrMiss.Pps
                 yield return m_Ui.ShowBlockIntroAndWait();
 
                 SetPhase(PpsPhase.Block);
-                yield return RunTrialList(m_TaskAsset.GenerateBlock(b));
+                yield return RunTrials(m_TaskAsset.GenerateBlock(b));
 
                 if (b < m_TaskAsset.BlockCount - 1)
                 {
@@ -185,19 +162,43 @@ namespace HitOrMiss.Pps
             SetPhase(PpsPhase.Outro);
             yield return m_Ui.ShowOutro();
 
-            m_MarkerEmitter?.Emit("pps_session_end");
-            m_InputSource?.Disable();
-            CloseCsv();
+            EndLogging();
 
             SetPhase(PpsPhase.Idle);
             SessionFinished?.Invoke();
         }
 
-        IEnumerator RunTrialList(PpsTrialDefinition[] trials)
+        public void BeginLogging(string subjectId)
         {
+            if (!ValidateReferences())
+                return;
+
+            m_Loom.Layout = m_Layout;
+
+            m_ItiRng = m_TaskAsset.RngSeed.HasValue
+                ? new System.Random(m_TaskAsset.RngSeed.Value + 9973)
+                : new System.Random();
+
+            OpenCsvFor(subjectId);
+            m_MarkerEmitter?.Emit("pps_session_start", extra: subjectId);
+            m_InputSource?.Enable();
+        }
+
+        public void EndLogging()
+        {
+            m_MarkerEmitter?.Emit("pps_session_end");
+            m_InputSource?.Disable();
+            CloseCsv();
+        }
+
+        public IEnumerator RunTrials(PpsTrialDefinition[] trials)
+        {
+            if (trials == null)
+                yield break;
+
             foreach (var trial in trials)
             {
-                yield return RunOneTrial(trial);
+                yield return RunTrial(trial);
 
                 float iti = NextItiSeconds();
                 if (iti > 0f)
@@ -205,46 +206,9 @@ namespace HitOrMiss.Pps
             }
         }
 
-        float NextItiSeconds()
+        public IEnumerator RunTrial(PpsTrialDefinition trial)
         {
-            float min = m_TaskAsset.ItiMinSeconds;
-            float max = m_TaskAsset.ItiMaxSeconds;
-
-            if (max <= min)
-                return min;
-
-            double u = (m_ItiRng ?? new System.Random()).NextDouble();
-            return (float)(min + u * (max - min));
-        }
-
-        IEnumerator WaitForPracticeResponse()
-        {
-            float maxWaitSeconds = 10f;
-            float elapsed = 0f;
-
-            while (!m_Responded && elapsed < maxWaitSeconds)
-            {
-                elapsed += Time.deltaTime;
-                yield return null;
-            }
-
-            if (m_Responded)
-                m_Ui?.ShowTrialStatus("Felt it.");
-            else
-                m_Ui?.ShowTrialStatus("No response detected.\n\nLet's continue.");
-
-            yield return new WaitForSeconds(0.75f);
-
-            m_Ui?.ShowTrialStatus("Get ready...");
-            yield return new WaitForSeconds(0.75f);
-        }
-
-        IEnumerator RunOneTrial(PpsTrialDefinition trial)
-        {
-            Debug.Log($"[PpsTaskManager] RunOneTrial started: {trial.trialId}, modality={trial.modality}");
-
-            if (trial.isPractice)
-                Debug.Log("[PpsTaskManager] Practice trial running.");
+            Debug.Log($"[PpsTaskManager] RunTrial started: {trial.trialId}, modality={trial.modality}");
 
             var result = PpsTrialResult.Empty(trial);
             result.vibrationDeviceName = m_Output != null ? m_Output.DeviceName : "None";
@@ -295,8 +259,6 @@ namespace HitOrMiss.Pps
                 bool vibFired = false;
                 bool fireOnStageMatch = trial.modality == PpsModality.Both;
 
-                Debug.LogError($"[PpsTaskManager] ABOUT TO RUN LOOM: {trial.trialId}, modality={trial.modality}");
-
                 yield return m_Loom.RunLoom(trial, m_TaskAsset, stage =>
                 {
                     double now = Time.timeAsDouble;
@@ -315,9 +277,7 @@ namespace HitOrMiss.Pps
                 });
 
                 if (trial.isPractice && trial.RequiresResponse)
-                {
                     yield return WaitForPracticeResponse();
-                }
             }
 
             result.crossingD4Time = crossings[(int)DistanceStage.D4];
@@ -357,6 +317,22 @@ namespace HitOrMiss.Pps
             TrialCompleted?.Invoke(result);
         }
 
+        IEnumerator WaitForPracticeResponse()
+        {
+            m_Ui?.ShowTrialStatus("Press H when you feel the vibration.");
+
+            while (!m_Responded)
+                yield return null;
+
+            m_Ui?.ShowTrialStatus("Felt it.");
+
+            yield return new WaitForSeconds(1.0f);
+
+            m_Ui?.ShowTrialStatus("Get ready...");
+
+            yield return new WaitForSeconds(0.75f);
+        }
+
         void FireVibrationOrPlaceholder(PpsTrialDefinition trial)
         {
             m_VibrationFiredTime = Time.timeAsDouble;
@@ -364,13 +340,25 @@ namespace HitOrMiss.Pps
             if (m_Output != null)
                 m_Output.Fire(m_TaskAsset.VibrationIntensity, m_TaskAsset.VibrationDurationMs);
 
-            m_Ui?.ShowTrialStatus("Vibration now.\n\nPress H.");
+            m_Ui?.ShowTrialStatus("Vibration now.");
 
             m_MarkerEmitter?.Emit(
                 "pps_vib_fired",
                 trial.trialId,
                 extra: trial.vibrationStage.ToString()
             );
+        }
+
+        float NextItiSeconds()
+        {
+            float min = m_TaskAsset.ItiMinSeconds;
+            float max = m_TaskAsset.ItiMaxSeconds;
+
+            if (max <= min)
+                return min;
+
+            double u = (m_ItiRng ?? new System.Random()).NextDouble();
+            return (float)(min + u * (max - min));
         }
 
         void OnPulseStarted()
@@ -400,6 +388,23 @@ namespace HitOrMiss.Pps
         {
             CurrentPhase = phase;
             PhaseChanged?.Invoke(phase);
+        }
+
+        bool ValidateReferences()
+        {
+            if (m_TaskAsset == null)
+            {
+                Debug.LogError("[PpsTaskManager] No PpsTaskAsset assigned.");
+                return false;
+            }
+
+            if (m_Loom == null || m_Layout == null || m_Ui == null)
+            {
+                Debug.LogError("[PpsTaskManager] Missing references: Loom, Layout, or UI.");
+                return false;
+            }
+
+            return true;
         }
 
         void OpenCsvFor(string subjectId)
