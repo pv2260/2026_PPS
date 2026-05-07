@@ -6,28 +6,72 @@ using UnityEngine.UI;
 namespace HitOrMiss
 {
     /// <summary>
-    /// One participant-facing popup panel (PDF popups 1, 5, 6, 7, 8, 9, plus
-    /// the practice popups 2-4). Wraps a body TMP_Text and an optional
-    /// Continue button so <see cref="HitOrMissAppController"/> can author the
-    /// flow as plain coroutines:
+    /// Behavior of one popup step in the session flow. Selected per-panel from
+    /// the Inspector, so the controller doesn't need to know what kind of
+    /// popup it's showing — it just calls <see cref="Run"/> and the panel
+    /// decides what "showing" means.
+    /// </summary>
+    public enum PopupBehavior
+    {
+        /// <summary>Show the panel; wait until the participant clicks the Continue button.</summary>
+        WaitForButton,
+
+        /// <summary>Show the panel for a fixed duration, no button needed (intro / outro screens).</summary>
+        AutoAdvance,
+
+        /// <summary>Show the panel with a countdown overlay; auto-advance when the timer expires (break screens).</summary>
+        BreakWithCountdown,
+    }
+
+    /// <summary>
+    /// One participant-facing popup panel. Carries its own localization key,
+    /// fallback text, button label, and behavior — so the session flow on
+    /// <see cref="HitOrMissAppController"/> can iterate an arbitrary array of
+    /// these without per-panel branching code.
     ///
-    ///     yield return popup1.ShowAndWaitForButton(text);
-    ///     yield return popup7.ShowForSeconds(text, breakSeconds);
-    ///
-    /// Each popup is one GameObject in the scene with this component on its
-    /// root. The Inspector slots wire the panel root, body text, optional
-    /// button + label, and (for the break popup) an optional countdown text.
+    /// Adding a new popup never requires a code change: drop a new
+    /// <c>TaskPopupPanel</c> into the scene, fill in its key/fallback/behavior,
+    /// drag it into the controller's flow array at the right position.
     /// </summary>
     public class TaskPopupPanel : MonoBehaviour
     {
+        [Header("References")]
         [SerializeField] GameObject m_Root;
         [SerializeField] TMP_Text m_Body;
         [SerializeField] Button m_ContinueButton;
         [SerializeField] TMP_Text m_ContinueLabel;
         [SerializeField] TMP_Text m_CountdownText;
 
+        [Header("Localization (looked up in the active LocalizedTermTable)")]
+        [Tooltip("Key for the body text. Empty = use FallbackText literally.")]
+        [SerializeField] string m_BodyKey = "";
+        [TextArea(2, 6)]
+        [Tooltip("Shown if the term table has no entry for BodyKey. May contain {block} placeholder for block number.")]
+        [SerializeField] string m_BodyFallback = "";
+
+        [Tooltip("Key for the Continue button label. Empty = use ButtonLabelFallback literally.")]
+        [SerializeField] string m_ButtonLabelKey = "";
+        [SerializeField] string m_ButtonLabelFallback = "Continue";
+
+        [Header("Behavior")]
+        [SerializeField] PopupBehavior m_Behavior = PopupBehavior.WaitForButton;
+
+        [Tooltip("AutoAdvance / BreakWithCountdown: how long to wait before advancing. Source of the wait depends on m_DurationSource.")]
+        [SerializeField] float m_DurationSeconds = 5f;
+
+        [Tooltip("If set, overrides m_DurationSeconds at runtime. Common values: 'BreakDurationSeconds', 'OutroDuration'. The controller resolves these against the active TaskAsset.")]
+        [SerializeField] DurationSource m_DurationSource = DurationSource.LiteralSeconds;
+
         bool m_Pressed;
         bool m_Initialized;
+
+        public string BodyKey => m_BodyKey;
+        public string BodyFallback => m_BodyFallback;
+        public string ButtonLabelKey => m_ButtonLabelKey;
+        public string ButtonLabelFallback => m_ButtonLabelFallback;
+        public PopupBehavior Behavior => m_Behavior;
+        public float DurationSeconds => m_DurationSeconds;
+        public DurationSource DurationSource => m_DurationSource;
 
         void EnsureInit()
         {
@@ -38,22 +82,15 @@ namespace HitOrMiss
                 m_ContinueButton.onClick.AddListener(OnContinue);
         }
 
-        void Awake()
-        {
-            // Awake only runs if this GameObject is active in the scene at
-            // load time. Either way, Show()/Hide() lazy-init via EnsureInit
-            // so the panel works whether authored active or inactive. We
-            // intentionally do NOT call Hide() here — HitOrMissAppController
-            // calls HideAllPopups() in its own Awake to put the scene in a
-            // known state, and that path already handles either authoring.
-            EnsureInit();
-        }
+        void Awake() => EnsureInit();
 
         void OnDestroy()
         {
             if (m_ContinueButton != null)
                 m_ContinueButton.onClick.RemoveListener(OnContinue);
         }
+
+        // ---- Display ----
 
         public void Show()
         {
@@ -64,9 +101,6 @@ namespace HitOrMiss
 
         public void Hide()
         {
-            // No EnsureInit needed — we just need to set inactive. Fall back
-            // to the script's own GameObject if Awake never had a chance to
-            // populate m_Root.
             var target = m_Root != null ? m_Root : gameObject;
             target.SetActive(false);
         }
@@ -81,42 +115,48 @@ namespace HitOrMiss
             if (m_ContinueLabel != null && label != null) m_ContinueLabel.text = label;
         }
 
+        // ---- Unified runner ----
+
         /// <summary>
-        /// Coroutine: shows the panel, waits until the participant clicks the
-        /// Continue button (or until <paramref name="autoAdvanceSeconds"/> &gt;
-        /// 0 elapses), then hides and returns.
+        /// Runs this panel according to its configured behavior. Localization
+        /// and runtime values are passed in through <paramref name="ctx"/> so
+        /// the panel doesn't need to know about app-level systems.
         /// </summary>
-        public IEnumerator ShowAndWaitForButton(string text, string buttonLabel = null, float autoAdvanceSeconds = 0f)
+        public IEnumerator Run(PopupContext ctx)
         {
-            SetText(text);
-            if (buttonLabel != null) SetButtonLabel(buttonLabel);
+            EnsureInit();
+            string body = ctx.ResolveText(this);
+            string label = ctx.ResolveButtonLabel(this);
+            float duration = ctx.ResolveDuration(this);
+
+            SetText(body);
+            SetButtonLabel(label);
+
+            switch (m_Behavior)
+            {
+                case PopupBehavior.WaitForButton:
+                    yield return ShowAndWaitForButton();
+                    break;
+                case PopupBehavior.AutoAdvance:
+                    yield return ShowForSeconds(duration, showCountdown: false);
+                    break;
+                case PopupBehavior.BreakWithCountdown:
+                    yield return ShowForSeconds(duration, showCountdown: true);
+                    break;
+            }
+        }
+
+        IEnumerator ShowAndWaitForButton()
+        {
             Show();
             m_Pressed = false;
-
-            float elapsed = 0f;
-            while (!m_Pressed)
-            {
-                if (autoAdvanceSeconds > 0f)
-                {
-                    elapsed += Time.deltaTime;
-                    if (elapsed >= autoAdvanceSeconds) break;
-                }
-                yield return null;
-            }
-
+            while (!m_Pressed) yield return null;
             Hide();
         }
 
-        /// <summary>
-        /// Coroutine: shows the panel for a fixed duration (auto-advance, no
-        /// button). Used for break/outro screens. If the panel has a
-        /// countdown TMP_Text wired, it gets updated each frame.
-        /// </summary>
-        public IEnumerator ShowForSeconds(string text, float seconds, bool showCountdown = false)
+        IEnumerator ShowForSeconds(float seconds, bool showCountdown)
         {
-            SetText(text);
             Show();
-
             float remaining = Mathf.Max(0f, seconds);
             while (remaining > 0f)
             {
@@ -129,6 +169,33 @@ namespace HitOrMiss
             Hide();
         }
 
+        // ---- Compatibility wrappers (kept so any external caller still works) ----
+
+        public IEnumerator ShowAndWaitForButton(string text, string buttonLabel = null, float autoAdvanceSeconds = 0f)
+        {
+            SetText(text);
+            if (buttonLabel != null) SetButtonLabel(buttonLabel);
+            Show();
+            m_Pressed = false;
+            float elapsed = 0f;
+            while (!m_Pressed)
+            {
+                if (autoAdvanceSeconds > 0f)
+                {
+                    elapsed += Time.deltaTime;
+                    if (elapsed >= autoAdvanceSeconds) break;
+                }
+                yield return null;
+            }
+            Hide();
+        }
+
+        public IEnumerator ShowForSeconds(string text, float seconds, bool showCountdown = false)
+        {
+            SetText(text);
+            yield return ShowForSeconds(seconds, showCountdown);
+        }
+
         static string FormatCountdown(float seconds)
         {
             int total = Mathf.CeilToInt(seconds);
@@ -138,8 +205,57 @@ namespace HitOrMiss
         }
 
         void OnContinue() => m_Pressed = true;
-
-        /// <summary>External method to advance — wire to controller-trigger handlers if needed.</summary>
         public void ForceAdvance() => m_Pressed = true;
+    }
+
+    /// <summary>
+    /// Where a popup gets its display duration from. Used when the panel's
+    /// behavior is AutoAdvance or BreakWithCountdown.
+    /// </summary>
+    public enum DurationSource
+    {
+        LiteralSeconds,         // use TaskPopupPanel.DurationSeconds directly
+        TaskAssetBreak,         // pull from TrajectoryTaskAsset.BreakDurationSeconds
+        TaskAssetOutro,         // pull from TrajectoryTaskAsset.OutroDuration
+    }
+
+    /// <summary>
+    /// Per-call context handed to <see cref="TaskPopupPanel.Run"/> so the
+    /// panel can resolve its localization key and duration source against
+    /// the controller's active state without depending on it directly.
+    /// </summary>
+    public struct PopupContext
+    {
+        public System.Func<string, string, string> Localize; // (key, fallback) -> resolved text
+        public System.Func<float> GetBreakDuration;
+        public System.Func<float> GetOutroDuration;
+        public int CurrentBlockNumber;                       // 1-based; injected into "{block}" placeholders
+
+        public string ResolveText(TaskPopupPanel p)
+        {
+            string raw = Localize != null
+                ? Localize(p.BodyKey, p.BodyFallback)
+                : (string.IsNullOrEmpty(p.BodyFallback) ? "" : p.BodyFallback);
+            if (CurrentBlockNumber > 0 && raw != null && raw.Contains("{block}"))
+                raw = raw.Replace("{block}", CurrentBlockNumber.ToString());
+            return raw;
+        }
+
+        public string ResolveButtonLabel(TaskPopupPanel p)
+        {
+            return Localize != null
+                ? Localize(p.ButtonLabelKey, p.ButtonLabelFallback)
+                : (string.IsNullOrEmpty(p.ButtonLabelFallback) ? "Continue" : p.ButtonLabelFallback);
+        }
+
+        public float ResolveDuration(TaskPopupPanel p)
+        {
+            return p.DurationSource switch
+            {
+                DurationSource.TaskAssetBreak => GetBreakDuration != null ? GetBreakDuration() : p.DurationSeconds,
+                DurationSource.TaskAssetOutro => GetOutroDuration != null ? GetOutroDuration() : p.DurationSeconds,
+                _ => p.DurationSeconds,
+            };
+        }
     }
 }

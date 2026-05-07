@@ -6,20 +6,28 @@ namespace HitOrMiss
     /// <summary>
     /// Top-level orchestrator for the Hit-or-Miss assessment.
     ///
-    /// Session flow per the AR-Task PDF (29.04.2026 spec):
-    ///   1. Popup 1 (intro + START PRACTICE)
-    ///   2. Practice phase:
-    ///        Popup 2 — force LEFT trigger, show "HIT" feedback
-    ///        Popup 3 — force RIGHT trigger, show "MISS" feedback
-    ///        Popup 4 — intro to practice trials
-    ///        N practice trials with HIT/MISS feedback (not logged)
-    ///   3. Popup 5 (no-feedback warning + START TASK)
-    ///   4. For each block:
-    ///        Popup 6 — block intro
-    ///        Block trials (no feedback)
-    ///        Popup 7 — break (countdown)        ← skipped after the last block
-    ///        Popup 8 — ready for next block      ← skipped after the last block
-    ///   5. Popup 9 (thank you)
+    /// Session structure (each phase is an editable array of TaskPopupPanel):
+    ///
+    ///   PrePracticePopups[]    — Welcome, TriggerCheck, Instructions, Positioning, etc.
+    ///   ↓
+    ///   ForceLeftPopup         — practice popup that requires a LEFT trigger press
+    ///   ForceRightPopup        — practice popup that requires a RIGHT trigger press
+    ///   PracticeTrialsPopups[] — any number of intro popups, then practice trials run
+    ///   ↓
+    ///   PostPracticePopups[]   — NoFeedback, ReadyToStart, etc.
+    ///   ↓  for each block:
+    ///       BlockIntroPopup
+    ///       block trials (no feedback)
+    ///       (if not last block:)
+    ///         BreakPopup       — auto-advances after BreakDurationSeconds
+    ///         BlockReadyPopup  — optional "ready for next?" continue-style
+    ///   ↓
+    ///   OutroPopup
+    ///
+    /// Adding or reordering popups is done in the Inspector — drop new
+    /// TaskPopupPanel GameObjects into the relevant array. No code change.
+    /// Each panel carries its own localization key + fallback text + behavior
+    /// (WaitForButton / AutoAdvance / BreakWithCountdown).
     /// </summary>
     public class HitOrMissAppController : MonoBehaviour
     {
@@ -41,23 +49,42 @@ namespace HitOrMiss
         [SerializeField] LocalizedTermTable m_TermTable;
         [SerializeField] LocalizedUITextBinder[] m_UITextBinders;
 
-        [Header("Popup panels (9 total, see RunSession for which is used where)")]
-        [SerializeField] TaskPopupPanel m_Popup1Intro;
-        [SerializeField] TaskPopupPanel m_Popup2Left;
-        [SerializeField] TaskPopupPanel m_Popup3Right;
-        [SerializeField] TaskPopupPanel m_Popup4Practice;
-        [SerializeField] TaskPopupPanel m_Popup5Ready;
-        [SerializeField] TaskPopupPanel m_Popup6BlockIntro;
-        [SerializeField] TaskPopupPanel m_Popup7Break;
-        [SerializeField] TaskPopupPanel m_Popup8NextBlock;
-        [SerializeField] TaskPopupPanel m_Popup9Outro;
+        [Header("Pre-practice popups (run in order before the practice phase)")]
+        [Tooltip("Add panels in the order you want them shown. Welcome, Trigger Check, Instructions, Positioning, etc. Each panel carries its own localization key + behavior.")]
+        [SerializeField] TaskPopupPanel[] m_PrePracticePopups;
+
+        [Header("Practice phase (forced-response popups)")]
+        [Tooltip("Practice popup that requires the participant to press LEFT (HIT). Body key set on the panel itself.")]
+        [SerializeField] TaskPopupPanel m_ForceLeftPopup;
+        [Tooltip("Practice popup that requires the participant to press RIGHT (MISS).")]
+        [SerializeField] TaskPopupPanel m_ForceRightPopup;
+        [Tooltip("Popups shown before the practice trials. Last one auto-advances; trials then run with HIT/MISS feedback.")]
+        [SerializeField] TaskPopupPanel[] m_PracticeTrialPopups;
+
+        [Header("Post-practice popups (run after practice trials, before block 1)")]
+        [SerializeField] TaskPopupPanel[] m_PostPracticePopups;
+
+        [Header("Per-block popups")]
+        [Tooltip("Shown before each block. {block} is replaced with the 1-based block number.")]
+        [SerializeField] TaskPopupPanel m_BlockIntroPopup;
+        [Tooltip("Shown between blocks. Should have BreakWithCountdown behavior, DurationSource = TaskAssetBreak.")]
+        [SerializeField] TaskPopupPanel m_BreakPopup;
+        [Tooltip("Optional: shown after the break, before the next block starts.")]
+        [SerializeField] TaskPopupPanel m_BlockReadyPopup;
+
+        [Header("End")]
+        [SerializeField] TaskPopupPanel m_OutroPopup;
 
         [Header("Visuals")]
         [Tooltip("Optional fixation cross shown between trials. If left empty the manager's crosshair is used as-is.")]
         [SerializeField] FixationCrossController m_FixationCross;
+        [Tooltip("Optional AR positioning marker. If wired, the controller toggles it on while m_PositioningPopupIndex of m_PrePracticePopups[] is showing.")]
+        [SerializeField] StandingCross m_StandingCross;
+        [Tooltip("Index into m_PrePracticePopups[] of the positioning popup. -1 = no positioning step. The standing cross is visible only while that popup is up.")]
+        [SerializeField] int m_PositioningPopupIndex = -1;
 
         [Header("Participant Feedback")]
-        [Tooltip("HIT/MISS visual flash. Wired only during the practice phase per the PDF (no feedback during the main task).")]
+        [Tooltip("HIT/MISS visual flash. Wired only during the practice phase per the spec (no feedback during the main task).")]
         [SerializeField] ResponseIndicator m_ResponseIndicator;
 
         [Header("Clinician")]
@@ -68,17 +95,21 @@ namespace HitOrMiss
         Coroutine m_SessionCoroutine;
         IResponseInputSource m_InputSource;
 
-        // Session metadata captured by the clinician form (Phase C). Until that
-        // form exists, callers can call SetSessionMetadata directly; otherwise
-        // a default record is built from ParticipantId and the task asset.
         SessionMetadata m_SessionMetadata;
         bool m_SessionMetadataExplicitlySet;
+
+        // Session-local asset clone. Created from the inspector-assigned
+        // m_TaskAsset at session start; clinician-form overrides
+        // (task2_parameters) are applied here so the on-disk asset isn't
+        // mutated. Cleared on session end.
+        TrajectoryTaskAsset m_SessionAsset;
 
         public TaskPhase CurrentPhase => m_CurrentPhase;
         public TrajectoryTaskManager TaskManager => m_TaskManager;
         public string ParticipantId { get; set; } = "P000";
         public int CurrentBlockIndex { get; private set; }
         public bool IsPaused => m_TaskManager != null && m_TaskManager.IsPaused;
+        public SupportedLanguage CurrentLanguage => m_Language;
 
         public event System.Action SessionPaused;
         public event System.Action SessionResumed;
@@ -122,7 +153,6 @@ namespace HitOrMiss
 
         public void StartSession()
         {
-            Debug.Log($"[HitOrMissAppController] StartSession called. CurrentPhase={m_CurrentPhase}");
             if (m_CurrentPhase != TaskPhase.Idle)
             {
                 Debug.LogWarning("[HitOrMissAppController] Session already running.");
@@ -138,28 +168,43 @@ namespace HitOrMiss
             m_InputSource = composite;
             m_TaskManager.SetInputSource(m_InputSource);
 
-            // Configure logger
+            // Build session metadata first; offset/blocks/etc. come from the
+            // clinician form into m_SessionMetadata.task2_parameters.
+            if (!m_SessionMetadataExplicitlySet)
+                m_SessionMetadata = SessionMetadata.CreateDefault(ParticipantId);
+            else
+                m_SessionMetadata.participantId = ParticipantId;
+
+            // Snapshot the *original* task-asset values into setup.json,
+            // THEN clone the asset and apply the overrides. The setup.json
+            // reflects what was requested; the runtime uses the override.
+            m_SessionMetadata.PopulateFromTaskAsset(m_TaskAsset);
+            if (string.IsNullOrEmpty(m_SessionMetadata.sessionId))
+                m_SessionMetadata.sessionId = System.DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            if (string.IsNullOrEmpty(m_SessionMetadata.sessionDate))
+                m_SessionMetadata.sessionDate = System.DateTime.Now.ToString("yyyy-MM-dd");
+
+            // Session-local clone — overrides applied here do NOT touch the
+            // on-disk asset. Cleared in EndSession.
+            if (m_TaskAsset != null)
+            {
+                m_SessionAsset = m_TaskAsset.CreateSessionClone();
+                m_SessionAsset.ApplyTask2SessionOverrides(m_SessionMetadata);
+                m_TaskManager.TaskAsset = m_SessionAsset;
+                Debug.Log($"[HitOrMissAppController] Session asset clone applied. " +
+                          $"BlockCount={m_SessionAsset.BlockCount}, " +
+                          $"TrialsPerBlock={m_SessionAsset.TrialsPerBlock}, " +
+                          $"BreakDurationSeconds={m_SessionAsset.BreakDurationSeconds}");
+            }
+
             if (m_TaskLogger != null)
             {
                 m_TaskLogger.ParticipantId = ParticipantId;
-
-                if (!m_SessionMetadataExplicitlySet)
-                    m_SessionMetadata = SessionMetadata.CreateDefault(ParticipantId);
-                else
-                    m_SessionMetadata.participantId = ParticipantId;
-
-                m_SessionMetadata.PopulateFromTaskAsset(m_TaskAsset);
-                if (string.IsNullOrEmpty(m_SessionMetadata.sessionId))
-                    m_SessionMetadata.sessionId = System.DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                if (string.IsNullOrEmpty(m_SessionMetadata.sessionDate))
-                    m_SessionMetadata.sessionDate = System.DateTime.Now.ToString("yyyy-MM-dd");
-
                 m_TaskLogger.SetMetadata(m_SessionMetadata);
                 m_TaskLogger.BeginSession(m_TaskAsset != null ? m_TaskAsset.TaskName : "HitOrMiss");
                 m_TaskManager.TrialJudged += m_TaskLogger.LogTrial;
             }
 
-            // Configure EEG
             if (m_EegMarkerEmitter != null)
             {
                 string sessionId = System.DateTime.Now.ToString("yyyyMMdd_HHmmss");
@@ -180,75 +225,59 @@ namespace HitOrMiss
                 StopCoroutine(m_SessionCoroutine);
                 m_SessionCoroutine = null;
             }
-
             if (m_TaskManager != null && m_TaskManager.IsRunning)
                 m_TaskManager.StopBlock();
-
             EndSession();
         }
 
         public void PauseSession()
         {
-            if (m_CurrentPhase == TaskPhase.Idle)
-            {
-                Debug.LogWarning("[HitOrMissAppController] PauseSession called but no session is running.");
-                return;
-            }
+            if (m_CurrentPhase == TaskPhase.Idle) return;
             if (m_TaskManager == null || !m_TaskManager.IsRunning || m_TaskManager.IsPaused) return;
 
             m_TaskManager.PauseBlock();
             m_EegMarkerEmitter?.Emit("session_paused", "", CurrentBlockIndex.ToString());
-
             if (m_TaskLogger != null)
                 m_TaskLogger.Flush(CurrentBlockIndex, m_TaskManager.NextTrialIndex);
-
-            if (m_ClinicianPanel != null)
-                m_ClinicianPanel.EnterPausedMode();
-
+            if (m_ClinicianPanel != null) m_ClinicianPanel.EnterPausedMode();
             SessionPaused?.Invoke();
-            Debug.Log("[HitOrMissAppController] Session paused.");
         }
 
         public void ResumeSession()
         {
             if (m_TaskManager == null || !m_TaskManager.IsPaused) return;
-
             m_TaskManager.ResumeBlock();
             m_EegMarkerEmitter?.Emit("session_resumed", "", CurrentBlockIndex.ToString());
-
-            if (m_ClinicianPanel != null)
-                m_ClinicianPanel.ExitPausedMode();
-
+            if (m_ClinicianPanel != null) m_ClinicianPanel.ExitPausedMode();
             SessionResumed?.Invoke();
-            Debug.Log("[HitOrMissAppController] Session resumed.");
         }
 
         // ====================================================================
-        // Session coroutine: implements PDF popup flow
+        // Session coroutine — array-driven, no burned-in panel references.
         // ====================================================================
+
+        // Convenience: returns the live session asset (the clone with
+        // overrides applied), falling back to the editor-assigned source if
+        // we're somehow running without a clone.
+        TrajectoryTaskAsset Asset => m_SessionAsset != null ? m_SessionAsset : m_TaskAsset;
 
         IEnumerator RunSession()
         {
-            Debug.Log("[HOM] RunSession entered");
-            int blockCount = m_TaskAsset != null ? m_TaskAsset.BlockCount : 3;
+            int blockCount = Asset != null ? Asset.BlockCount : 3;
 
-            // ---- Popup 1 ----
+            // ---- Pre-practice ----
             SetPhase(TaskPhase.Intro);
-            Debug.Log("[HOM] About to show Popup1");
             m_EegMarkerEmitter?.Emit("phase_intro");
-            yield return ShowPopupAndWait(m_Popup1Intro, m_TaskAsset.Popup1IntroKey,
-                "Hit or Miss Task — press CONTINUE to start the practice.");
-            Debug.Log("[HOM] Popup1 dismissed");
+            yield return RunPrePracticeSequence();
 
             // ---- Practice ----
             SetPhase(TaskPhase.Practice);
             m_EegMarkerEmitter?.Emit("phase_practice");
             yield return RunPracticePhase();
 
-            // ---- Popup 5 ----
+            // ---- Post-practice ----
             SetPhase(TaskPhase.Ready);
-            yield return ShowPopupAndWait(m_Popup5Ready, m_TaskAsset.Popup5ReadyKey,
-                "You are all set. No feedback during the task. Press START TASK.");
+            yield return RunPopupSequence(m_PostPracticePopups);
 
             // ---- Block loop ----
             for (int b = 0; b < blockCount; b++)
@@ -256,40 +285,33 @@ namespace HitOrMiss
                 CurrentBlockIndex = b;
 
                 SetPhase(TaskPhase.BlockIntro);
-                yield return ShowPopupAndWait(m_Popup6BlockIntro, m_TaskAsset.Popup6BlockIntroKey,
-                    $"Let's start with Block {b + 1}.", b + 1);
+                yield return RunOnePopup(m_BlockIntroPopup);
 
                 SetPhase(TaskPhase.Block);
                 m_EegMarkerEmitter?.Emit("phase_block", "", b.ToString());
                 if (m_FixationCross != null) m_FixationCross.Show();
-                // Generate the block here so the participant's shoulder width
-                // (Phase E) shapes the lateral-offset bands and curve
-                // magnitudes. The manager runs whatever trial list we hand it.
-                var blockTrials = m_TaskAsset.GenerateBlock(b, m_SessionMetadata.shoulderWidthCm);
+
+                var blockTrials = Asset.GenerateBlock(b, m_SessionMetadata.shoulderWidthCm);
                 m_TaskManager.StartTrialList(b, blockTrials);
                 while (m_TaskManager.IsRunning) yield return null;
+
                 if (m_FixationCross != null) m_FixationCross.Hide();
 
                 if (b < blockCount - 1)
                 {
                     SetPhase(TaskPhase.Rest);
                     m_EegMarkerEmitter?.Emit("phase_rest");
-                    float breakSeconds = m_TaskAsset != null ? m_TaskAsset.BreakDurationSeconds : 60f;
-                    yield return ShowPopupForSeconds(m_Popup7Break, m_TaskAsset.Popup7BreakKey,
-                        $"All done with Block {b + 1}. Take a little break.", breakSeconds, showCountdown: true);
+                    yield return RunOnePopup(m_BreakPopup);
 
                     SetPhase(TaskPhase.BlockReady);
-                    yield return ShowPopupAndWait(m_Popup8NextBlock, m_TaskAsset.Popup8NextBlockKey,
-                        $"Ready to start with Block {b + 2}? Let's go!", b + 2);
+                    yield return RunOnePopup(m_BlockReadyPopup);
                 }
             }
 
-            // ---- Popup 9 ----
+            // ---- Outro ----
             SetPhase(TaskPhase.Outro);
             m_EegMarkerEmitter?.Emit("phase_outro");
-            float outroDuration = m_TaskAsset != null ? m_TaskAsset.OutroDuration : 10f;
-            yield return ShowPopupForSeconds(m_Popup9Outro, m_TaskAsset.Popup9OutroKey,
-                "You are all done. Thank you for your participation.", outroDuration);
+            yield return RunOnePopup(m_OutroPopup);
 
             EndSession();
         }
@@ -298,7 +320,6 @@ namespace HitOrMiss
 
         IEnumerator RunPracticePhase()
         {
-            // Wire response indicator for practice only — main task has no feedback.
             bool feedbackWired = false;
             if (m_ResponseIndicator != null && m_TaskManager != null)
             {
@@ -306,21 +327,12 @@ namespace HitOrMiss
                 feedbackWired = true;
             }
 
-            // Practice popup 2: force LEFT (Hit), feedback "HIT"
-            yield return ForcedResponsePopup(m_Popup2Left, m_TaskAsset.Popup2LeftKey,
-                "Press LEFT now (this should mean HIT).",
-                SemanticCommand.Hit);
+            yield return ForcedResponsePopup(m_ForceLeftPopup, SemanticCommand.Hit);
+            yield return ForcedResponsePopup(m_ForceRightPopup, SemanticCommand.Miss);
 
-            // Practice popup 3: force RIGHT (Miss), feedback "MISS"
-            yield return ForcedResponsePopup(m_Popup3Right, m_TaskAsset.Popup3RightKey,
-                "Press RIGHT now (this should mean MISS).",
-                SemanticCommand.Miss);
+            yield return RunPopupSequence(m_PracticeTrialPopups);
 
-            // Practice popup 4: intro then run practice trials
-            yield return ShowPopupAndWait(m_Popup4Practice, m_TaskAsset.Popup4PracticeKey,
-                "Now let's put it into practice.");
-
-            var practiceTrials = m_TaskAsset.GeneratePracticeTrials(m_SessionMetadata.shoulderWidthCm);
+            var practiceTrials = Asset.GeneratePracticeTrials(m_SessionMetadata.shoulderWidthCm);
             if (m_FixationCross != null) m_FixationCross.Show();
             m_TaskManager.StartTrialList(-1, practiceTrials);
             while (m_TaskManager.IsRunning) yield return null;
@@ -330,14 +342,16 @@ namespace HitOrMiss
                 m_TaskManager.ResponseIndicator -= m_ResponseIndicator.Show;
         }
 
-        IEnumerator ForcedResponsePopup(TaskPopupPanel panel, string textKey, string fallback, SemanticCommand expected)
+        IEnumerator ForcedResponsePopup(TaskPopupPanel panel, SemanticCommand expected)
         {
-            string text = GetLocalizedString(textKey, fallback);
             if (panel == null)
             {
-                Debug.LogWarning($"[HitOrMissAppController] Forced-response popup is null (key={textKey}). Skipping.");
+                Debug.LogWarning($"[HitOrMissAppController] Forced-response popup ({expected}) not assigned. Skipping.");
                 yield break;
             }
+            var ctx = BuildPopupContext();
+            string text = ctx.ResolveText(panel);
+
             panel.SetText(text);
             panel.Show();
 
@@ -349,7 +363,7 @@ namespace HitOrMiss
 
             if (m_InputSource == null)
             {
-                Debug.LogError("[HitOrMissAppController] No input source assigned for practice popup.");
+                Debug.LogError("[HitOrMissAppController] No input source for practice popup.");
                 panel.Hide();
                 yield break;
             }
@@ -357,42 +371,61 @@ namespace HitOrMiss
             m_InputSource.Enable();
 
             while (!got) yield return null;
-
             m_InputSource.ResponseReceived -= Handler;
 
-            // Show feedback flash
             if (m_ResponseIndicator != null)
                 m_ResponseIndicator.Show(expected, true);
-            yield return new WaitForSeconds(m_TaskAsset != null ? m_TaskAsset.PracticeFeedbackSeconds : 1f);
+            yield return new WaitForSeconds(Asset != null ? Asset.PracticeFeedbackSeconds : 1f);
 
             panel.Hide();
         }
 
-        // ---- Popup helpers ----
+        // ---- Popup sequencing helpers ----
 
-        IEnumerator ShowPopupAndWait(TaskPopupPanel panel, string textKey, string fallback, int blockNumber = 0)
+        IEnumerator RunPopupSequence(TaskPopupPanel[] sequence)
         {
-            if (panel == null)
+            if (sequence == null) yield break;
+            foreach (var panel in sequence)
             {
-                Debug.LogWarning($"[HitOrMissAppController] Popup panel for key={textKey} not assigned. Skipping.");
-                yield break;
+                if (panel == null) continue;
+                yield return RunOnePopup(panel);
             }
-            string text = GetLocalizedString(textKey, fallback);
-            if (text != null && blockNumber > 0)
-                text = text.Replace("{block}", blockNumber.ToString());
-            yield return panel.ShowAndWaitForButton(text);
         }
 
-        IEnumerator ShowPopupForSeconds(TaskPopupPanel panel, string textKey, string fallback, float seconds, bool showCountdown = false)
+        /// <summary>
+        /// Pre-practice sequence with a slot-aware positioning step: the
+        /// StandingCross is enabled only while the popup at
+        /// m_PositioningPopupIndex is showing.
+        /// </summary>
+        IEnumerator RunPrePracticeSequence()
         {
-            if (panel == null)
+            if (m_PrePracticePopups == null) yield break;
+            for (int i = 0; i < m_PrePracticePopups.Length; i++)
             {
-                Debug.LogWarning($"[HitOrMissAppController] Popup panel for key={textKey} not assigned. Falling back to plain wait.");
-                yield return new WaitForSeconds(seconds);
-                yield break;
+                var panel = m_PrePracticePopups[i];
+                if (panel == null) continue;
+                bool needsCross = (i == m_PositioningPopupIndex && m_StandingCross != null);
+                if (needsCross) m_StandingCross.Show();
+                yield return RunOnePopup(panel);
+                if (needsCross) m_StandingCross.Hide();
             }
-            string text = GetLocalizedString(textKey, fallback);
-            yield return panel.ShowForSeconds(text, seconds, showCountdown);
+        }
+
+        IEnumerator RunOnePopup(TaskPopupPanel panel)
+        {
+            if (panel == null) yield break;
+            yield return panel.Run(BuildPopupContext());
+        }
+
+        PopupContext BuildPopupContext()
+        {
+            return new PopupContext
+            {
+                Localize = (key, fallback) => GetLocalizedString(key, fallback),
+                GetBreakDuration = () => Asset != null ? Asset.BreakDurationSeconds : 60f,
+                GetOutroDuration = () => Asset != null ? Asset.OutroDuration : 10f,
+                CurrentBlockNumber = CurrentBlockIndex + 1,
+            };
         }
 
         // ---- Lifecycle ----
@@ -404,43 +437,56 @@ namespace HitOrMiss
                 m_TaskManager.TrialJudged -= m_TaskLogger.LogTrial;
                 m_TaskLogger.EndSession();
             }
-
-            // Defensive: unwire response indicator if practice didn't clean up.
             if (m_ResponseIndicator != null && m_TaskManager != null)
                 m_TaskManager.ResponseIndicator -= m_ResponseIndicator.Show;
 
             HideAllPopups();
             if (m_FixationCross != null) m_FixationCross.Hide();
-
-            if (m_ClinicianPanel != null)
-                m_ClinicianPanel.ExitTaskMode();
+            if (m_ClinicianPanel != null) m_ClinicianPanel.ExitTaskMode();
 
             m_EegMarkerEmitter?.EndSession();
+
+            // Drop the session-local asset clone. Restoring m_TaskManager's
+            // pointer to the editor-assigned source asset means a future
+            // session will rebuild its own clone with whatever overrides
+            // the new metadata supplies.
+            if (m_SessionAsset != null)
+            {
+                if (m_TaskManager != null) m_TaskManager.TaskAsset = m_TaskAsset;
+                Destroy(m_SessionAsset);
+                m_SessionAsset = null;
+            }
+
             SetPhase(TaskPhase.Idle);
             m_SessionCoroutine = null;
-
             SessionEnded?.Invoke();
-            Debug.Log("[HitOrMissAppController] Session complete. Data saved.");
         }
 
         void HideAllPopups()
         {
-            if (m_Popup1Intro != null)      m_Popup1Intro.Hide();
-            if (m_Popup2Left != null)       m_Popup2Left.Hide();
-            if (m_Popup3Right != null)      m_Popup3Right.Hide();
-            if (m_Popup4Practice != null)   m_Popup4Practice.Hide();
-            if (m_Popup5Ready != null)      m_Popup5Ready.Hide();
-            if (m_Popup6BlockIntro != null) m_Popup6BlockIntro.Hide();
-            if (m_Popup7Break != null)      m_Popup7Break.Hide();
-            if (m_Popup8NextBlock != null)  m_Popup8NextBlock.Hide();
-            if (m_Popup9Outro != null)      m_Popup9Outro.Hide();
+            HideArray(m_PrePracticePopups);
+            HideArray(m_PracticeTrialPopups);
+            HideArray(m_PostPracticePopups);
+            if (m_ForceLeftPopup != null) m_ForceLeftPopup.Hide();
+            if (m_ForceRightPopup != null) m_ForceRightPopup.Hide();
+            if (m_BlockIntroPopup != null) m_BlockIntroPopup.Hide();
+            if (m_BreakPopup != null) m_BreakPopup.Hide();
+            if (m_BlockReadyPopup != null) m_BlockReadyPopup.Hide();
+            if (m_OutroPopup != null) m_OutroPopup.Hide();
+        }
+
+        static void HideArray(TaskPopupPanel[] arr)
+        {
+            if (arr == null) return;
+            foreach (var p in arr) if (p != null) p.Hide();
         }
 
         string GetLocalizedString(string key, string fallback)
         {
             if (string.IsNullOrEmpty(key) || m_TermTable == null) return fallback;
             string v = m_TermTable.Get(key, m_Language);
-            return string.IsNullOrEmpty(v) ? fallback : v;
+            // LocalizedTermTable.Get returns "[key]" for missing entries; treat that as missing.
+            return string.IsNullOrEmpty(v) || (v.StartsWith("[") && v.EndsWith("]")) ? fallback : v;
         }
     }
 }

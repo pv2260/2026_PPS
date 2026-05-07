@@ -177,7 +177,7 @@ namespace HitOrMiss
 
             switch (j.category)
             {
-                case TrialCategory.Hit:
+                case TrialCategory.ClearHit:
                     m_HitTotal++;
                     if (j.isCorrect) m_HitCorrect++;
                     break;
@@ -189,7 +189,7 @@ namespace HitOrMiss
                     m_NearMissTotal++;
                     if (j.isCorrect) m_NearMissCorrect++;
                     break;
-                case TrialCategory.Miss:
+                case TrialCategory.ClearMiss:
                     m_MissTotal++;
                     if (j.isCorrect) m_MissCorrect++;
                     break;

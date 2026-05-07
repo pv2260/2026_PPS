@@ -123,10 +123,10 @@ namespace HitOrMiss
 
         public float CurveMagnitudeFor(TrialCategory category) => category switch
         {
-            TrialCategory.Hit      => m_HitCurveMagnitude,
-            TrialCategory.NearHit  => m_NearHitCurveMagnitude,
-            TrialCategory.NearMiss => m_NearMissCurveMagnitude,
-            TrialCategory.Miss     => m_MissCurveMagnitude,
+            TrialCategory.ClearHit  => m_HitCurveMagnitude,
+            TrialCategory.NearHit   => m_NearHitCurveMagnitude,
+            TrialCategory.NearMiss  => m_NearMissCurveMagnitude,
+            TrialCategory.ClearMiss => m_MissCurveMagnitude,
             _ => 0f,
         };
 
@@ -155,6 +155,54 @@ namespace HitOrMiss
         public TrialDefinition[] GeneratePracticeTrials(float participantShoulderWidthCm)
         {
             return TrialGenerator.GeneratePracticeTrials(this, participantShoulderWidthCm);
+        }
+
+        /// <summary>
+        /// Returns a runtime-only clone of this asset. Modifications to the
+        /// clone (via <see cref="ApplyTask2SessionOverrides"/> etc.) do not
+        /// touch the on-disk source asset. Used by
+        /// <see cref="HitOrMissAppController"/> at session start to apply
+        /// clinician-form overrides without persisting them.
+        /// </summary>
+        public TrajectoryTaskAsset CreateSessionClone()
+        {
+            // Object.Instantiate copies every [SerializeField] member.
+            var clone = Instantiate(this);
+            clone.name = name + " (Session Clone)";
+            return clone;
+        }
+
+        /// <summary>
+        /// Mutates this asset (intended to be called only on a clone — see
+        /// <see cref="CreateSessionClone"/>) so the values from the clinician
+        /// form's task2_parameters drive the actual run.
+        ///
+        /// Form fields applied:
+        ///   number_of_blocks       → BlockCount
+        ///   trials_per_block       → TrialsPerCategory  (= total / 4)
+        ///   break_duration_seconds → BreakDurationSeconds + RestDuration
+        ///
+        /// Offsets (hit/near_miss/miss) and ball_speeds are not yet mapped —
+        /// the static category-offset bands and FastSpeed/SlowSpeed live on
+        /// the asset directly. Future work: expose those as overridable too.
+        /// </summary>
+        public void ApplyTask2SessionOverrides(SessionMetadata md)
+        {
+            if (md.task2NumberOfBlocks > 0)
+                m_BlockCount = md.task2NumberOfBlocks;
+
+            if (md.task2TrialsPerBlock > 0)
+            {
+                // Asset stores trials per category; total per block = perCat * 4.
+                int perCat = Mathf.Max(1, md.task2TrialsPerBlock / 4);
+                m_TrialsPerCategory = perCat;
+            }
+
+            if (md.task2BreakDurationSeconds > 0f)
+            {
+                m_BreakDurationSeconds = md.task2BreakDurationSeconds;
+                m_RestDuration = md.task2BreakDurationSeconds; // legacy alias
+            }
         }
 
         void OnValidate()

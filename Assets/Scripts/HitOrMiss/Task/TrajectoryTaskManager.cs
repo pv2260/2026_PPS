@@ -142,6 +142,37 @@ namespace HitOrMiss
             Debug.Log($"[TrajectoryTaskManager] Block {blockIndex + 1} started with {trials.Length} trials.");
         }
 
+        /// <summary>
+        /// Restarts the current block from trial 1, discarding all in-flight
+        /// balls and any responses logged for this block. Trials from previous
+        /// blocks remain in <see cref="Results"/> and the CSV. Wired to the
+        /// participant Pause panel's "Restart Current Block" button.
+        /// </summary>
+        public void RestartCurrentBlock()
+        {
+            if (m_BlockTrials == null || m_BlockTrials.Length == 0) return;
+            DespawnAll();
+            // Drop already-judged results from this block so they don't
+            // double-count if the participant re-runs the block.
+            for (int i = m_AllResults.Count - 1; i >= 0; i--)
+                if (m_AllResults[i].blockIndex == m_CurrentBlock)
+                    m_AllResults.RemoveAt(i);
+
+            m_NextTrialIndex = 0;
+            TrialsCompletedInBlock = 0;
+            m_BlockStartTime = Time.time;
+            m_NextSpawnEarliest = Time.time;
+            m_LastSpawnEndTime = 0f;
+            m_ActiveTrials.Clear();
+            m_Paused = false;
+            m_Running = true;
+            m_InputSource?.Enable();
+            SetCrosshairActive(true);
+
+            m_MarkerEmitter?.Emit("block_restart", "", m_CurrentBlock.ToString());
+            Debug.Log($"[TrajectoryTaskManager] Block {m_CurrentBlock + 1} restarted ({m_BlockTrials.Length} trials).");
+        }
+
         public void StopBlock()
         {
             m_Running = false;
@@ -391,8 +422,25 @@ namespace HitOrMiss
             m_ActiveTrials.Add(rt);
             m_LastSpawnEndTime = Time.time + trial.Duration + m_ResponseGracePeriod;
 
+            // Compute and stash the BCD trigger code at spawn so resolve can
+            // copy it into the judgement, and so the marker stream has a
+            // single canonical numeric for this trial.
+            SpeedLevel currentLevel = ClassifySpeedLevel(trial.speed);
+            bool hasPrev = trial.prevSpeed > 0f;
+            SpeedLevel prevLevel = hasPrev ? ClassifySpeedLevel(trial.prevSpeed) : SpeedLevel.Slow;
+            TransitionStatus tStatus =
+                !hasPrev                  ? TransitionStatus.Start :
+                currentLevel == prevLevel ? TransitionStatus.Repetition :
+                                            TransitionStatus.Transition;
+            int triggerCode = TriggerEncoder.EncodeTask2(trial.category, currentLevel, tStatus);
+            rt.TrialTriggerCode = triggerCode;
+            rt.TriggerTimestamp = Time.timeAsDouble;
+
+            // Human-readable string marker for Console / log files; numeric
+            // BCD as the "extra" payload field for the parallel-port / LSL.
             m_MarkerEmitter?.Emit("trial_spawn", trial.trialId,
-                trial.category.ToString(), trial.expectedResponse.ToString());
+                trial.category.ToCode(), trial.expectedResponse.ToString(),
+                extra: triggerCode.ToString());
             TrialSpawned?.Invoke(trial.trialId, trial);
         }
 
@@ -456,6 +504,28 @@ namespace HitOrMiss
             ResponseIndicator?.Invoke(response.command, true);
         }
 
+        /// <summary>
+        /// Maps a raw m/s ball speed to a categorical <see cref="SpeedLevel"/>
+        /// (slow / medium / fast) using the asset's configured fast/slow
+        /// boundaries as anchors. Used for spec-aligned CSV output and BCD
+        /// trigger generation.
+        /// </summary>
+        SpeedLevel ClassifySpeedLevel(float speedMps)
+        {
+            if (m_TaskAsset == null) return SpeedLevel.Slow;
+            float fast = m_TaskAsset.FastSpeed;
+            float slow = m_TaskAsset.SlowSpeed;
+            if (fast <= slow) return SpeedLevel.Slow;
+            float midpoint = (fast + slow) * 0.5f;
+            // ±10% band around the midpoint counts as "medium" if the asset
+            // ever introduces a third speed; otherwise speeds collapse to
+            // slow/fast cleanly because trials are only generated at those two.
+            float halfBand = (fast - slow) * 0.05f;
+            if (speedMps > midpoint + halfBand) return SpeedLevel.Fast;
+            if (speedMps < midpoint - halfBand) return SpeedLevel.Slow;
+            return SpeedLevel.Medium;
+        }
+
         void ResolveTrial(RuntimeTrial trial, SemanticCommand received, TrialResult result, string failureReason)
         {
             if (trial.Resolved) return;
@@ -479,6 +549,15 @@ namespace HitOrMiss
             else
                 dir = SpeedChangeDirection.Decrease;
 
+            // Spec-aligned categorical speed + transition status.
+            SpeedLevel currentLevel = ClassifySpeedLevel(speed);
+            bool hasPrev = prev > 0f;
+            SpeedLevel prevLevel = hasPrev ? ClassifySpeedLevel(prev) : SpeedLevel.Slow;
+            TransitionStatus transitionStatus =
+                !hasPrev                       ? TransitionStatus.Start :
+                currentLevel == prevLevel      ? TransitionStatus.Repetition :
+                                                  TransitionStatus.Transition;
+
             var judgement = new TrialJudgement
             {
                 trialId = trial.Definition.trialId,
@@ -501,6 +580,11 @@ namespace HitOrMiss
                 absSpeedChange = Mathf.Abs(speedChange),
                 changeDirection = dir,
 
+                currentSpeedLevel = currentLevel,
+                previousSpeedLevel = prevLevel,
+                hasPreviousSpeed = hasPrev,
+                transitionStatus = transitionStatus,
+
                 trajectoryId = trial.Definition.trajectoryId,
                 trajectoryAngleDeg = trial.Definition.trajectoryAngleDeg,
                 startWorldPosition = trial.Definition.spawnWorldPosition,
@@ -515,6 +599,10 @@ namespace HitOrMiss
                 interTrialIntervalMs = trial.InterTrialIntervalMs,
 
                 failureReason = failureReason,
+                trialTriggerCode = trial.TrialTriggerCode,
+                triggerTimestamp = trial.TriggerTimestamp,
+                responseTriggerCode = TriggerEncoder.EncodeResponse(received),
+                trialInterrupted = (failureReason == "block_stopped"),
             };
 
             m_AllResults.Add(judgement);
@@ -554,6 +642,8 @@ namespace HitOrMiss
             public float InterTrialIntervalMs;
             public bool Resolved;
             public TrajectoryObjectController ObjectController;
+            public int TrialTriggerCode;            // BCD code computed at spawn
+            public double TriggerTimestamp;         // engine seconds when BCD was emitted
 
             public RuntimeTrial(TrialDefinition def)
             {

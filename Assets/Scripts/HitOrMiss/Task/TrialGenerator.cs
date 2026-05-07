@@ -48,7 +48,7 @@ namespace HitOrMiss
             for (int i = 0; i < count; i++)
             {
                 bool isHit = (i % 2 == 0);
-                var category = isHit ? TrialCategory.Hit : TrialCategory.Miss;
+                var category = isHit ? TrialCategory.ClearHit : TrialCategory.ClearMiss;
                 var range = isHit ? HitRange : MissRange;
                 trials.AddRange(GenerateCategory(category, range,
                     isHit ? SemanticCommand.Hit : SemanticCommand.Miss,
@@ -76,10 +76,10 @@ namespace HitOrMiss
             float scale = ComputeShoulderScale(asset, shoulderWidthCm);
 
             var trials = new List<TrialDefinition>(perCat * 4);
-            trials.AddRange(GenerateCategory(TrialCategory.Hit,      HitRange,      SemanticCommand.Hit,  perCat, spawnDistance, ballDiameter, asset, scale));
-            trials.AddRange(GenerateCategory(TrialCategory.NearHit,  NearHitRange,  SemanticCommand.Hit,  perCat, spawnDistance, ballDiameter, asset, scale));
-            trials.AddRange(GenerateCategory(TrialCategory.NearMiss, NearMissRange, SemanticCommand.Miss, perCat, spawnDistance, ballDiameter, asset, scale));
-            trials.AddRange(GenerateCategory(TrialCategory.Miss,     MissRange,     SemanticCommand.Miss, perCat, spawnDistance, ballDiameter, asset, scale));
+            trials.AddRange(GenerateCategory(TrialCategory.ClearHit,  HitRange,      SemanticCommand.Hit,  perCat, spawnDistance, ballDiameter, asset, scale));
+            trials.AddRange(GenerateCategory(TrialCategory.NearHit,   NearHitRange,  SemanticCommand.Hit,  perCat, spawnDistance, ballDiameter, asset, scale));
+            trials.AddRange(GenerateCategory(TrialCategory.NearMiss,  NearMissRange, SemanticCommand.Miss, perCat, spawnDistance, ballDiameter, asset, scale));
+            trials.AddRange(GenerateCategory(TrialCategory.ClearMiss, MissRange,     SemanticCommand.Miss, perCat, spawnDistance, ballDiameter, asset, scale));
 
             ShuffleNoConsecutive(trials);
             AssignIds(trials, blockIndex);
@@ -212,9 +212,11 @@ namespace HitOrMiss
             runStarts.Add(runStart);
             runLengths.Add(trials.Count - runStart);
 
-            // Second pass: write the metadata onto each trial.
-            int trialsSinceSwitch = 0;
-            float prevSpeed = 0f;
+            // Second pass: write per-trial metadata. prevSpeed is the
+            // immediately preceding trial's speed (per spec) — NOT the
+            // previous run's speed. The first trial of the block has
+            // prevSpeed = 0 so the resolver can detect "start".
+            float immediatePrevSpeed = 0f;
             for (int run = 0; run < runStarts.Count; run++)
             {
                 int start = runStarts[run];
@@ -226,13 +228,12 @@ namespace HitOrMiss
                     t.runId = run;
                     t.trialInRun = k + 1;
                     t.runLength = length;
-                    t.prevSpeed = prevSpeed;
+                    t.prevSpeed = immediatePrevSpeed;
                     t.isSwitchTrial = (k == 0 && run > 0);
-                    t.trialsSinceLastSwitch = (run == 0) ? k : k;
+                    t.trialsSinceLastSwitch = k;
                     trials[idx] = t;
-                    trialsSinceSwitch = k;
+                    immediatePrevSpeed = t.speed;
                 }
-                prevSpeed = trials[start].speed;
             }
         }
 

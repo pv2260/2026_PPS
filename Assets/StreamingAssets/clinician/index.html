@@ -30,57 +30,146 @@
       <p class="muted">Fill in the participant + condition, then press Start. The headset will run the experience as soon as Start is acknowledged.</p>
 
       <form id="sessionForm" class="form">
-        <div class="form-grid">
-          <label>Participant ID
-            <input name="participantId" placeholder="P001" required />
-          </label>
-          <label>Clinician initials
-            <input name="clinicianInitials" placeholder="SAS" />
-          </label>
-          <label>Session number
-            <input name="sessionNumber" type="number" min="1" value="1" />
-          </label>
-          <label>Date
-            <input name="sessionDate" type="date" />
-          </label>
+        <fieldset>
+          <legend>Subject</legend>
+          <div class="form-grid">
+            <label>Subject ID
+              <input name="participantId" placeholder="sub-001" required />
+            </label>
+            <label>Age (years)
+              <input name="ageYears" type="number" min="0" max="120" value="0" />
+            </label>
+            <label>Dominant hand
+              <select name="dominantHand">
+                <option value="0">Unspecified</option>
+                <option value="1">Left</option>
+                <option value="2">Right</option>
+                <option value="3">Ambidextrous</option>
+              </select>
+            </label>
+            <label>Height (cm)
+              <input name="heightCm" type="number" min="0" max="260" step="0.5" value="170" />
+            </label>
+            <label>Shoulder width (cm)
+              <input name="shoulderWidthCm" type="number" min="20" max="80" step="0.5" value="42" />
+            </label>
+            <label>Group
+              <select name="subjectGroup">
+                <option value="healthy" selected>healthy</option>
+                <option value="patient">patient</option>
+              </select>
+            </label>
+            <label class="checkbox">
+              <input type="checkbox" name="hasDbs" /> Has DBS implanted
+            </label>
+          </div>
+        </fieldset>
 
-          <label>Age (years)
-            <input name="ageYears" type="number" min="0" max="120" value="0" />
-          </label>
-          <label>Dominant hand
-            <select name="dominantHand">
-              <option value="0">Unspecified</option>
-              <option value="1">Left</option>
-              <option value="2">Right</option>
-              <option value="3">Ambidextrous</option>
-            </select>
-          </label>
-          <label>Height (cm)
-            <input name="heightCm" type="number" min="0" max="260" step="0.5" value="170" />
-          </label>
-          <label>Shoulder width (cm)
-            <input name="shoulderWidthCm" type="number" min="20" max="80" step="0.5" value="42" />
-          </label>
+        <fieldset>
+          <legend>Session</legend>
+          <div class="form-grid">
+            <label>Session number
+              <input name="sessionNumber" type="number" min="1" value="1" />
+            </label>
+            <label>Date
+              <input name="sessionDate" type="date" />
+            </label>
+            <label>Clinician initials
+              <input name="clinicianInitials" placeholder="SAS" />
+            </label>
+            <label>Session type
+              <select name="sessionType">
+                <option value="0">Medication High</option>
+                <option value="1">Medication Low</option>
+                <option value="2" selected>Healthy Session 1</option>
+                <option value="3">Healthy Session 2</option>
+              </select>
+            </label>
+            <label>DBS status
+              <select name="dbsStatus">
+                <option value="0" selected>N/A</option>
+                <option value="1">On</option>
+                <option value="2">Off</option>
+              </select>
+            </label>
+            <label>Language
+              <select name="language">
+                <option value="english" selected>English</option>
+                <option value="french">Français</option>
+              </select>
+            </label>
+          </div>
+        </fieldset>
 
-          <label>Session type
-            <select name="sessionType">
-              <option value="0">Medication High</option>
-              <option value="1">Medication Low</option>
-              <option value="2" selected>Healthy Session 1</option>
-              <option value="3">Healthy Session 2</option>
-            </select>
-          </label>
-          <label>DBS status
-            <select name="dbsStatus">
-              <option value="0" selected>N/A</option>
-              <option value="1">On</option>
-              <option value="2">Off</option>
-            </select>
-          </label>
-        </div>
+        <fieldset>
+          <legend>Equipment</legend>
+          <div class="form-grid checkbox-grid">
+            <label class="checkbox"><input type="checkbox" name="eegEnabled" checked /> EEG</label>
+            <label class="checkbox"><input type="checkbox" name="emgEnabled" /> EMG</label>
+            <label class="checkbox"><input type="checkbox" name="heartRateBandEnabled" /> Heart-rate band</label>
+            <label class="checkbox"><input type="checkbox" name="eyeTrackingEnabled" /> Eye tracking</label>
+          </div>
+        </fieldset>
 
-        <label class="full">Notes
-          <textarea name="notes" rows="2" placeholder="anything worth recording…"></textarea>
+        <fieldset>
+          <legend>Task 1 — PPS / vibrotactile</legend>
+          <div class="form-grid">
+            <label>Number of blocks
+              <input name="task1NumberOfBlocks" type="number" min="1" value="4" />
+            </label>
+            <label>Trials per block
+              <input name="task1TrialsPerBlock" type="number" min="1" value="40" />
+            </label>
+            <label>Break duration (s)
+              <input name="task1BreakDurationSeconds" type="number" min="0" value="30" />
+            </label>
+            <label>Narrow offset (cm)
+              <input name="task1NarrowOffsetCm" type="number" min="0" step="0.5" value="5" />
+            </label>
+            <label>Wide offset (cm)
+              <input name="task1WideOffsetCm" type="number" min="0" step="0.5" value="15" />
+            </label>
+            <label>Practice VT-only trials
+              <input name="task1PracticeVtOnlyTrials" type="number" min="0" value="2" />
+            </label>
+            <label>Practice VT+visual trials
+              <input name="task1PracticeVtVisualTrials" type="number" min="0" value="4" />
+            </label>
+            <label>Looming speeds
+              <input name="task1LoomingSpeeds" placeholder="slow,fast" value="slow,fast" />
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Task 2 — Hit-or-Miss</legend>
+          <div class="form-grid">
+            <label>Number of blocks
+              <input name="task2NumberOfBlocks" type="number" min="1" value="4" />
+            </label>
+            <label>Trials per block
+              <input name="task2TrialsPerBlock" type="number" min="1" value="40" />
+            </label>
+            <label>Break duration (s)
+              <input name="task2BreakDurationSeconds" type="number" min="0" value="30" />
+            </label>
+            <label>Hit offset (cm)
+              <input name="task2HitOffsetCm" type="number" step="0.5" value="0" />
+            </label>
+            <label>Near-miss offset (cm)
+              <input name="task2NearMissOffsetCm" type="number" step="0.5" value="5" />
+            </label>
+            <label>Miss offset (cm)
+              <input name="task2MissOffsetCm" type="number" step="0.5" value="15" />
+            </label>
+            <label>Ball speeds
+              <input name="task2BallSpeeds" placeholder="slow,fast" value="slow,fast" />
+            </label>
+          </div>
+        </fieldset>
+
+        <label class="full">Clinician notes
+          <textarea name="clinicianNotes" rows="2" placeholder="anything worth recording…"></textarea>
         </label>
 
         <div class="actions">

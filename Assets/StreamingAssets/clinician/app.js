@@ -41,24 +41,64 @@
     $('#startError').textContent = '';
 
     const fd = new FormData(e.target);
+    const ck = (name) => e.target.querySelector(`[name="${name}"]`)?.checked || false;
+    const csv = (name) => (fd.get(name) || '').split(',').map(s => s.trim()).filter(Boolean);
+    const num = (name, fallback = 0) => {
+      const v = parseFloat(fd.get(name));
+      return isNaN(v) ? fallback : v;
+    };
+    const int = (name, fallback = 0) => {
+      const v = parseInt(fd.get(name), 10);
+      return isNaN(v) ? fallback : v;
+    };
     const metadata = {
+      // Identity
       participantId:     fd.get('participantId'),
       clinicianInitials: fd.get('clinicianInitials') || '',
       sessionDate:       fd.get('sessionDate'),
-      sessionId:         '', // server fills in
-      sessionNumber:     parseInt(fd.get('sessionNumber'), 10) || 1,
-      ageYears:          parseInt(fd.get('ageYears'), 10) || 0,
-      dominantHand:      parseInt(fd.get('dominantHand'), 10) || 0,
-      heightCm:          parseFloat(fd.get('heightCm')) || 0,
-      shoulderWidthCm:   parseFloat(fd.get('shoulderWidthCm')) || 42,
-      sessionType:       parseInt(fd.get('sessionType'), 10) || 0,
-      dbsStatus:         parseInt(fd.get('dbsStatus'), 10) || 0,
-      // task config snapshot is filled in by the server from the live asset
-      blockCount: 0, trialsPerBlock: 0,
-      itiMinSeconds: 0, itiMaxSeconds: 0, breakDurationSec: 0,
-      fastSpeedMps: 0, slowSpeedMps: 0,
-      spawnDistanceM: 0, ballDiameterM: 0,
-      notes: fd.get('notes') || '',
+      sessionId:         '',
+      sessionNumber:     int('sessionNumber', 1),
+
+      // Subject
+      ageYears:          int('ageYears', 0),
+      dominantHand:      int('dominantHand', 0),
+      heightCm:          num('heightCm', 170),
+      shoulderWidthCm:   num('shoulderWidthCm', 42),
+      subjectGroup:      fd.get('subjectGroup') || 'healthy',
+      hasDbs:            ck('hasDbs'),
+
+      // Session condition
+      sessionType:       int('sessionType', 2),
+      dbsStatus:         int('dbsStatus', 0),
+      language:          fd.get('language') || 'english',
+
+      // Equipment
+      eegEnabled:           ck('eegEnabled'),
+      emgEnabled:           ck('emgEnabled'),
+      heartRateBandEnabled: ck('heartRateBandEnabled'),
+      eyeTrackingEnabled:   ck('eyeTrackingEnabled'),
+
+      // Task 1 parameters
+      task1NumberOfBlocks:        int('task1NumberOfBlocks', 4),
+      task1TrialsPerBlock:        int('task1TrialsPerBlock', 40),
+      task1BreakDurationSeconds:  num('task1BreakDurationSeconds', 30),
+      task1NarrowOffsetCm:        num('task1NarrowOffsetCm', 5),
+      task1WideOffsetCm:          num('task1WideOffsetCm', 15),
+      task1LoomingSpeeds:         csv('task1LoomingSpeeds'),
+      task1PracticeVtOnlyTrials:  int('task1PracticeVtOnlyTrials', 2),
+      task1PracticeVtVisualTrials:int('task1PracticeVtVisualTrials', 4),
+
+      // Task 2 parameters
+      task2NumberOfBlocks:        int('task2NumberOfBlocks', 4),
+      task2TrialsPerBlock:        int('task2TrialsPerBlock', 40),
+      task2BreakDurationSeconds:  num('task2BreakDurationSeconds', 30),
+      task2HitOffsetCm:           num('task2HitOffsetCm', 0),
+      task2NearMissOffsetCm:      num('task2NearMissOffsetCm', 5),
+      task2MissOffsetCm:          num('task2MissOffsetCm', 15),
+      task2BallSpeeds:            csv('task2BallSpeeds'),
+
+      // Free-form
+      clinicianNotes: fd.get('clinicianNotes') || '',
     };
 
     try {

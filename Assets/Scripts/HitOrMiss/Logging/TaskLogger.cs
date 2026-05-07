@@ -78,10 +78,16 @@ namespace HitOrMiss
             m_SessionDir = Path.Combine(root, $"{m_ParticipantId}_{m_SessionId}");
             Directory.CreateDirectory(m_SessionDir);
 
-            m_TrialsCsvPath    = Path.Combine(m_SessionDir, "trials.csv");
-            m_EyeCsvPath       = Path.Combine(m_SessionDir, "eyetracking.csv");
-            m_MetadataJsonPath = Path.Combine(m_SessionDir, "metadata.json");
-            m_FinalJsonPath    = Path.Combine(m_SessionDir, "session.json");
+            // File names follow the spec naming:
+            //   sub-{id}_session-{n}_task2_trials.csv
+            //   sub-{id}_session-{n}_setup.json   (nested, spec-compliant)
+            //   metadata.json                      (flat, server roundtrip)
+            string idSlug = m_ParticipantId.Replace(" ", "_");
+            int sn = m_Metadata.sessionNumber > 0 ? m_Metadata.sessionNumber : 1;
+            m_TrialsCsvPath    = Path.Combine(m_SessionDir, $"sub-{idSlug}_session-{sn}_task2_trials.csv");
+            m_EyeCsvPath       = Path.Combine(m_SessionDir, $"sub-{idSlug}_session-{sn}_task2_eyetracking.csv");
+            m_MetadataJsonPath = Path.Combine(m_SessionDir, $"sub-{idSlug}_session-{sn}_setup.json");
+            m_FinalJsonPath    = Path.Combine(m_SessionDir, $"sub-{idSlug}_session-{sn}_task2_session.json");
 
             EnsureMetadataDefaults(taskName);
             WriteMetadataJson();
@@ -189,68 +195,63 @@ namespace HitOrMiss
 
         void WriteMetadataJson()
         {
-            string json = JsonUtility.ToJson(m_Metadata, true);
-            File.WriteAllText(m_MetadataJsonPath, json, Encoding.UTF8);
+            // setup.json: spec-compliant nested format for the analysis pipeline.
+            File.WriteAllText(m_MetadataJsonPath, m_Metadata.ToSetupJson(), Encoding.UTF8);
+            // metadata.json: flat JsonUtility format for server-side reload
+            // (sessions browser uses this to read back the participant id /
+            // session date when listing past sessions).
+            string flatPath = Path.Combine(m_SessionDir, "metadata.json");
+            File.WriteAllText(flatPath, JsonUtility.ToJson(m_Metadata, true), Encoding.UTF8);
         }
 
-        // CSV column order matches the PDF's 28-column layout exactly.
+        // CSV column order matches the spec's Task 2 trials.csv layout
+        // (TASK 2 — HIT OR MISS TASK LOGIC.txt).
         static string BuildTrialsHeader() =>
-            "participant_id,session_date,session_type,dbs_status," +
-            "block_number,trial_number,run_id,trial_in_run,run_length," +
-            "trial_since_last_switch,is_switch," +
-            "ball_speed,prev_speed,speed_change,abs_speed_change,change_direction," +
-            "trajectory_id,trajectory_angle_deg," +
-            "start_x,start_y,start_z,end_x,end_y,end_z," +
-            "will_hit,button_pressed,participant_response,reaction_time_ms," +
-            "trial_start_time,ball_motion_start_time,response_time,inter_trial_interval_ms," +
-            "category,result,is_correct,failure_reason";
+            "subject_id,session_number,block_number,trial_number," +
+            "trial_type,correct_response," +
+            "previous_speed,current_speed," +
+            "speed_sequence,transition_status," +
+            "trajectory_offset_cm," +
+            "trial_trigger_code,response_trigger_code,trigger_timestamp," +
+            "participant_response,reaction_time_ms,accuracy," +
+            "trial_interrupted,timestamp";
 
         string BuildTrialRow(TrialJudgement j)
         {
             var inv = CultureInfo.InvariantCulture;
             string F(double v) => double.IsNaN(v) ? "" : v.ToString("F4", inv);
             string F2(double v) => double.IsNaN(v) ? "" : v.ToString("F2", inv);
-            string F6(float v) => v.ToString("F6", inv);
             string Esc(string s) => string.IsNullOrEmpty(s) ? "" : s.Replace(",", ";");
 
             int blockNumber = j.blockIndex + 1;
-            int willHit = j.expected == SemanticCommand.Hit ? 1 : 0;
-            int isSwitch = j.isSwitchTrial ? 1 : 0;
-            int isCorrect = j.isCorrect ? 1 : 0;
+            int accuracy = j.isCorrect ? 1 : 0;
+            int interrupted = j.trialInterrupted ? 1 : 0;
+            // Trajectory offset in cm (signed) — multiply lateral offset (m)
+            // by 100 and sign-flip so "negative = inside body" per spec example.
+            float trajectoryOffsetCm = -j.lateralOffsetMeters * 100f;
+            string prevSpeed = j.hasPreviousSpeed ? j.previousSpeedLevel.ToCode() : "none";
+            string timestamp = System.DateTime.Now.ToString("o");
 
             return string.Join(",",
                 Esc(m_Metadata.participantId),
-                Esc(m_Metadata.sessionDate),
-                Esc(m_Metadata.SessionTypeCode),
-                Esc(m_Metadata.DbsStatusCode),
+                m_Metadata.sessionNumber.ToString(inv),
                 blockNumber.ToString(inv),
                 j.trialNumberInBlock.ToString(inv),
-                j.runId.ToString(inv),
-                j.trialInRun.ToString(inv),
-                j.runLength.ToString(inv),
-                j.trialsSinceLastSwitch.ToString(inv),
-                isSwitch.ToString(inv),
-                F2(j.speedMps),
-                F2(j.prevSpeedMps),
-                F2(j.speedChange),
-                F2(j.absSpeedChange),
-                Esc(j.ChangeDirectionCode),
-                Esc(j.trajectoryId),
-                F2(j.trajectoryAngleDeg),
-                F6(j.startWorldPosition.x), F6(j.startWorldPosition.y), F6(j.startWorldPosition.z),
-                F6(j.endWorldPosition.x),   F6(j.endWorldPosition.y),   F6(j.endWorldPosition.z),
-                willHit.ToString(inv),
-                Esc(j.ButtonPressedCode),
-                Esc(j.ParticipantResponseCode),
+                Esc(j.category.ToCode()),
+                Esc(j.CorrectResponseCode),
+                Esc(prevSpeed),
+                Esc(j.currentSpeedLevel.ToCode()),
+                Esc(j.SpeedSequenceCode),
+                Esc(j.transitionStatus.ToCode()),
+                F2(trajectoryOffsetCm),
+                j.trialTriggerCode.ToString(inv),
+                j.responseTriggerCode.ToString(inv),
+                F(j.triggerTimestamp),
+                Esc(j.ParticipantResponseSpecCode),
                 F2(j.reactionTimeMs),
-                F(j.trialStartTime),
-                F(j.ballMotionStartTime),
-                F(j.responseTime),
-                F2(j.interTrialIntervalMs),
-                j.category.ToString(),
-                j.result.ToString(),
-                isCorrect.ToString(inv),
-                $"\"{Esc(j.failureReason)}\""
+                accuracy.ToString(inv),
+                interrupted.ToString(inv),
+                Esc(timestamp)
             );
         }
 

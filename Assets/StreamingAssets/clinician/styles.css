@@ -75,6 +75,30 @@ h2 { margin: 0 0 8px; }
 h3 { margin: 24px 0 8px; }
 
 .form { background: var(--panel); padding: 18px; border-radius: 10px; border: 1px solid var(--border); }
+.form fieldset {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px 14px;
+  margin: 0 0 16px;
+  background: rgba(255,255,255,0.02);
+}
+.form fieldset legend {
+  padding: 0 6px;
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.checkbox-grid { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); }
+label.checkbox {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+  font-size: 13px;
+}
+label.checkbox input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent); }
 .form-grid {
   display: grid; gap: 14px;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));

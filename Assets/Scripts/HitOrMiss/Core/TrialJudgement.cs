@@ -33,6 +33,15 @@ namespace HitOrMiss
         public float absSpeedChange;
         public SpeedChangeDirection changeDirection;
 
+        // ---- Spec-aligned categorical speed/transition fields ----
+        // (TASK 2 — HIT OR MISS TASK LOGIC.txt). The numeric speedMps above
+        // is the actual ball speed in m/s; the categorical fields below are
+        // what gets logged to trials.csv.
+        public SpeedLevel currentSpeedLevel;
+        public SpeedLevel previousSpeedLevel;
+        public bool hasPreviousSpeed;       // false = first trial of block (start)
+        public TransitionStatus transitionStatus;
+
         // ---- Trajectory snapshot ----
         public string trajectoryId;
         public float trajectoryAngleDeg;
@@ -49,6 +58,12 @@ namespace HitOrMiss
         public float interTrialIntervalMs;  // ITI that preceded this trial
 
         public string failureReason;
+
+        // ---- Spec triggers (numeric BCD per TriggerEncoder) ----
+        public int trialTriggerCode;
+        public int responseTriggerCode;
+        public double triggerTimestamp;     // engine seconds when trial trigger was emitted
+        public bool trialInterrupted;        // true if trial was paused/aborted
 
         /// <summary>
         /// Code used for the <c>button_pressed</c> CSV column: "left" / "right" / "".
@@ -76,6 +91,41 @@ namespace HitOrMiss
             SpeedChangeDirection.Increase => "increase",
             SpeedChangeDirection.Decrease => "decrease",
             _                             => "none",
+        };
+
+        /// <summary>
+        /// "slow-fast", "fast-slow", "slow-slow", "fast-fast", or
+        /// "start-slow"/"start-fast" for the first trial of a block.
+        /// Matches the spec's <c>speed_sequence</c> CSV column.
+        /// </summary>
+        public string SpeedSequenceCode
+        {
+            get
+            {
+                string current = currentSpeedLevel.ToCode();
+                if (!hasPreviousSpeed) return $"start-{current}";
+                string prev = previousSpeedLevel.ToCode();
+                return $"{prev}-{current}";
+            }
+        }
+
+        /// <summary>
+        /// "HIT" or "MISS" — the correct response for this trial. Matches the
+        /// spec's <c>correct_response</c> CSV column.
+        /// </summary>
+        public string CorrectResponseCode => expected switch
+        {
+            SemanticCommand.Hit  => "HIT",
+            SemanticCommand.Miss => "MISS",
+            _                    => "",
+        };
+
+        /// <summary>"HIT", "MISS", or "none" — what the participant pressed.</summary>
+        public string ParticipantResponseSpecCode => received switch
+        {
+            SemanticCommand.Hit  => "HIT",
+            SemanticCommand.Miss => "MISS",
+            _                    => "none",
         };
     }
 }
