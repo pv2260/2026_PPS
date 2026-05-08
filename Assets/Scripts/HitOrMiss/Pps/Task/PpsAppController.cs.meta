@@ -1,0 +1,14 @@
+fileFormatVersion: 2
+guid: 87798779b0645064288d7e8560711f5c
+MonoImporter:
+  externalObjects: {}
+  serializedVersion: 2
+  defaultReferences:
+  - m_Ui: {instanceID: 0}
+  - m_TaskManager: {instanceID: 0}
+  - m_TaskAsset: {fileID: 11400000, guid: b6a0232453b4a5f4182f868a7d2920f0, type: 2}
+  executionOrder: 0
+  icon: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

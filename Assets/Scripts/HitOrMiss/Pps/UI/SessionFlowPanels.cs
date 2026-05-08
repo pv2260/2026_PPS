@@ -4,36 +4,34 @@ using TMPro;
 
 namespace HitOrMiss.Pps
 {
-    /// <summary>
-    /// Owns the non-trial UI panels: Subject ID, Instructions, Practice intro,
-    /// Block intro, Rest, Outro. Exposes coroutine-friendly show/wait helpers
-    /// so <see cref="PpsTaskManager"/> can advance phases cleanly.
-    /// </summary>
     public class SessionFlowPanels : MonoBehaviour
     {
-        [Header("Subject ID")]
-        [SerializeField] GameObject m_SubjectIdPanel;
-        [SerializeField] TMP_InputField m_SubjectIdInput;
-
-        [Header("Text panels with Continue buttons")]
+        [Header("Task 1 Panels")]
+        [SerializeField] GameObject m_WelcomePanel;
+        [SerializeField] GameObject m_TriggerCheckPanel;
         [SerializeField] GameObject m_InstructionsPanel;
-        [SerializeField] GameObject m_PracticeIntroPanel;
-        [SerializeField] GameObject m_BlockIntroPanel;
+        [SerializeField] GameObject m_PositioningPanel;
+        [SerializeField] GameObject m_PracticeIntroVTOnlyPanel;
+        [SerializeField] GameObject m_PracticeIntroVTVisualPanel;
+        [SerializeField] GameObject m_PracticeFeedbackPanel;
+        [SerializeField] GameObject m_NoFeedbackPanel;
+        [SerializeField] GameObject m_ReadyToStartPanel;
+        [SerializeField] GameObject m_BlockCounterPanel;
+        [SerializeField] GameObject m_BreakPanel;
+        [SerializeField] GameObject m_PausePanel;
+        [SerializeField] GameObject m_EndPanel;
 
-        [Header("Auto-advance panels")]
-        [SerializeField] GameObject m_RestPanel;
-        [SerializeField] GameObject m_OutroPanel;
+        [Header("Optional Dynamic Text")]
+        [SerializeField] TMP_Text m_TriggerCheckText;
+        [SerializeField] TMP_Text m_BlockCounterText;
+        [SerializeField] TMP_Text m_BreakText;
+        [SerializeField] TMP_Text m_PracticeFeedbackText;
+        [SerializeField] TMP_Text m_EndText;
 
-        [Header("Optional localized text slots (one per panel)")]
-        [SerializeField] TMP_Text m_InstructionsText;
-        [SerializeField] TMP_Text m_PracticeIntroText;
-        [SerializeField] TMP_Text m_BlockIntroText;
-        [SerializeField] TMP_Text m_OutroText;
+        [Header("Feedback Timing")]
+        [SerializeField] float m_PracticeFeedbackSeconds = 1f;
 
         bool m_WaitingForContinue;
-        string m_SubjectId = "";
-
-        public string SubjectId => m_SubjectId;
 
         void Awake()
         {
@@ -42,77 +40,136 @@ namespace HitOrMiss.Pps
 
         public void HideAll()
         {
-            SetActive(m_SubjectIdPanel, false);
+            SetActive(m_WelcomePanel, false);
+            SetActive(m_TriggerCheckPanel, false);
             SetActive(m_InstructionsPanel, false);
-            SetActive(m_PracticeIntroPanel, false);
-            SetActive(m_BlockIntroPanel, false);
-            SetActive(m_RestPanel, false);
-            SetActive(m_OutroPanel, false);
+            SetActive(m_PositioningPanel, false);
+            SetActive(m_PracticeIntroVTOnlyPanel, false);
+            SetActive(m_PracticeIntroVTVisualPanel, false);
+            SetActive(m_PracticeFeedbackPanel, false);
+            SetActive(m_NoFeedbackPanel, false);
+            SetActive(m_ReadyToStartPanel, false);
+            SetActive(m_BlockCounterPanel, false);
+            SetActive(m_BreakPanel, false);
+            SetActive(m_PausePanel, false);
+            SetActive(m_EndPanel, false);
         }
 
-        // ---- Subject ID ----
+        public IEnumerator ShowWelcomeAndWait()
+            => ShowAndWait(m_WelcomePanel);
 
-        public IEnumerator ShowSubjectIdAndWait()
+        public IEnumerator ShowTriggerCheckAndWait(string text = null)
         {
-            SetActive(m_SubjectIdPanel, true);
-            m_WaitingForContinue = true;
-            while (m_WaitingForContinue) yield return null;
-            SetActive(m_SubjectIdPanel, false);
+            if (m_TriggerCheckText != null && text != null)
+                m_TriggerCheckText.text = text;
+
+            yield return ShowAndWait(m_TriggerCheckPanel);
         }
 
-        /// <summary>Wire this to the Continue button inside the Subject ID panel.</summary>
-        public void OnSubjectIdContinue()
+        public IEnumerator ShowInstructionsAndWait()
+            => ShowAndWait(m_InstructionsPanel);
+
+        public IEnumerator ShowPositioningAndWait()
+            => ShowAndWait(m_PositioningPanel);
+
+        public IEnumerator ShowPracticeIntroVTOnlyAndWait()
+            => ShowAndWait(m_PracticeIntroVTOnlyPanel);
+
+        public IEnumerator ShowPracticeIntroVTVisualAndWait()
+            => ShowAndWait(m_PracticeIntroVTVisualPanel);
+
+        public IEnumerator ShowNoFeedbackAndWait()
+            => ShowAndWait(m_NoFeedbackPanel);
+
+        public IEnumerator ShowReadyToStartAndWait()
+            => ShowAndWait(m_ReadyToStartPanel);
+
+        public IEnumerator ShowBlockCounterAndWait(int blockIndex, int totalBlocks)
         {
-            if (m_SubjectIdInput != null) m_SubjectId = m_SubjectIdInput.text;
-            m_WaitingForContinue = false;
+            if (m_BlockCounterText != null)
+                m_BlockCounterText.text =
+                    $"Block {blockIndex + 1} / {totalBlocks}\n\nPress Begin when you are ready.";
+
+            yield return ShowAndWait(m_BlockCounterPanel);
         }
 
-        // ---- Continue-style panels ----
-
-        public IEnumerator ShowAndWait(GameObject panel, TMP_Text textSlot = null, string text = null)
+        public IEnumerator ShowBreakAndWait(float seconds)
         {
-            if (panel == null) yield break;
-            if (textSlot != null && text != null) textSlot.text = text;
+            HideAll();
+            SetActive(m_BreakPanel, true);
+
+            float remaining = seconds;
+
+            while (remaining > 0f && m_WaitingForContinue == false)
+            {
+                if (m_BreakText != null)
+                    m_BreakText.text =
+                        $"Break\n\n{Mathf.CeilToInt(remaining)} seconds remaining.\n\nPress Continue when ready.";
+
+                remaining -= Time.deltaTime;
+                yield return null;
+            }
+
+            SetActive(m_BreakPanel, false);
+        }
+
+        public IEnumerator ShowPauseAndWait()
+            => ShowAndWait(m_PausePanel);
+
+        public IEnumerator ShowEndAndWait(string text = null)
+        {
+            if (m_EndText != null && text != null)
+                m_EndText.text = text;
+
+            yield return ShowAndWait(m_EndPanel);
+        }
+
+        public IEnumerator ShowPracticeFeedback(string message)
+        {
+            HideAll();
+
+            if (m_PracticeFeedbackText != null)
+                m_PracticeFeedbackText.text = message;
+
+            SetActive(m_PracticeFeedbackPanel, true);
+            yield return new WaitForSeconds(m_PracticeFeedbackSeconds);
+            SetActive(m_PracticeFeedbackPanel, false);
+        }
+
+        IEnumerator ShowAndWait(GameObject panel)
+        {
+            HideAll();
+
+            if (panel == null)
+            {
+                Debug.LogWarning("[SessionFlowPanels] Missing panel reference.");
+                yield break;
+            }
+
             panel.SetActive(true);
             m_WaitingForContinue = true;
-            while (m_WaitingForContinue) yield return null;
+
+            while (m_WaitingForContinue)
+                yield return null;
+
             panel.SetActive(false);
         }
 
-        public IEnumerator ShowInstructionsAndWait(string text = null)
-            => ShowAndWait(m_InstructionsPanel, m_InstructionsText, text);
-
-        public IEnumerator ShowPracticeIntroAndWait(string text = null)
-            => ShowAndWait(m_PracticeIntroPanel, m_PracticeIntroText, text);
-
-        public IEnumerator ShowBlockIntroAndWait(string text = null)
-            => ShowAndWait(m_BlockIntroPanel, m_BlockIntroText, text);
-
-        /// <summary>Wire this to every "Continue" button on Instructions / Practice / Block panels.</summary>
         public void OnContinue()
         {
             m_WaitingForContinue = false;
         }
 
-        // ---- Auto-advance panels ----
-
-        public IEnumerator ShowRestAndAutoAdvance(float seconds)
+        public void OnStop()
         {
-            SetActive(m_RestPanel, true);
-            yield return new WaitForSeconds(seconds);
-            SetActive(m_RestPanel, false);
-        }
-
-        public IEnumerator ShowOutro(string text = null, float holdSeconds = 5f)
-        {
-            if (m_OutroText != null && text != null) m_OutroText.text = text;
-            SetActive(m_OutroPanel, true);
-            yield return new WaitForSeconds(holdSeconds);
+            m_WaitingForContinue = false;
+            HideAll();
         }
 
         static void SetActive(GameObject go, bool on)
         {
-            if (go != null) go.SetActive(on);
+            if (go != null)
+                go.SetActive(on);
         }
     }
 }

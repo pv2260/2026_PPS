@@ -1,0 +1,67 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 2919a9a3c61e1de42a06911ab87fab41, type: 3}
+  m_Name: PpsTask
+  m_EditorClassIdentifier: Assembly-CSharp::HitOrMiss.Pps.PpsTaskAsset
+  m_TaskName: PPS Looming Task
+  m_BlockCount: 3
+  m_TrialsPerBlock: 80
+  m_PercentVT: 0.7
+  m_PercentV: 0.15
+  m_PercentT: 0.15
+  m_FastDurationSeconds: 1.5
+  m_SlowDurationSeconds: 3.5
+  m_ResponseGracePeriodSeconds: 1
+  m_ItiMinSeconds: 1.5
+  m_ItiMaxSeconds: 2.5
+  m_MotionCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  m_WideSeparation: 0.4
+  m_NarrowSeparation: 0.16
+  m_LedHeight: 0.15
+  m_DistanceD4: 2
+  m_DistanceD3: 1.5
+  m_DistanceD2: 1
+  m_DistanceD1: 0.6
+  m_ScaleAtD4: {x: 0.02, y: 0.02, z: 0.02}
+  m_ScaleAtD1: {x: 0.09, y: 0.09, z: 0.09}
+  m_VibrationDurationMs: 300
+  m_VibrationIntensity: 1
+  m_RestDurationSeconds: 30
+  m_InstructionsKey: pps.instructions
+  m_PracticeIntroKey: pps.practice_intro
+  m_BlockIntroKey: pps.block_intro
+  m_OutroKey: pps.outro
+  m_OrderingStrategy: 1
+  m_RngSeed: -1

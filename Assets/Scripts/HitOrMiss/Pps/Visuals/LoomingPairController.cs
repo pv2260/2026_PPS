@@ -16,6 +16,7 @@ namespace HitOrMiss.Pps
         [SerializeField] Transform m_LeftLed;
         [SerializeField] Transform m_RightLed;
         [SerializeField] DistanceLayout m_Layout;
+        public AnimationCurve speedCurve;
 
         public DistanceLayout Layout
         {
