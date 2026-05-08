@@ -15,29 +15,35 @@ namespace HitOrMiss.Pps
 
         private bool m_Running;
 
-        private void Start()
+        private IEnumerator Start()
         {
             Debug.Log("[PPSAppController] Start called.");
+
+            yield return null;
 
             if (m_Ui == null)
             {
                 Debug.LogError("[PPSAppController] UI is not assigned.");
-                return;
+                yield break;
             }
 
             if (m_TaskManager == null)
             {
                 Debug.LogError("[PPSAppController] TaskManager is not assigned.");
-                return;
+                yield break;
             }
 
             if (m_TaskAsset == null)
             {
                 Debug.LogError("[PPSAppController] TaskAsset is not assigned.");
-                return;
+                yield break;
             }
 
-            StartCoroutine(RunTask1());
+            if (m_Running)
+                yield break;
+
+            m_Running = true;
+            yield return RunTask1();
         }
 
         private IEnumerator RunTask1()
@@ -49,16 +55,23 @@ namespace HitOrMiss.Pps
             yield return m_Ui.ShowInstructionsAndWait();
             yield return m_Ui.ShowPositioningAndWait();
 
-            yield return m_Ui.ShowPracticeIntroVTOnlyAndWait();
+          // ---- Practice 1: vibration only ----
+           yield return m_Ui.ShowPracticeIntroVTOnlyAndWait();
+
+            Debug.Log("[PPSAppController] Starting VT-only practice.");
+
             yield return m_TaskManager.RunTrials(
-                PpsTrialGenerator.GeneratePractice(m_TaskAsset)
+                PpsTrialGenerator.GenerateVTOnlyPractice(m_TaskAsset)
             );
 
             yield return m_Ui.ShowPracticeIntroVTVisualAndWait();
+
+            Debug.Log("[PPSAppController] Starting VT+Visual practice.");
+
             yield return m_TaskManager.RunTrials(
-                PpsTrialGenerator.GeneratePractice(m_TaskAsset)
-            );     
-                        
+                PpsTrialGenerator.GenerateVTVisualPractice(m_TaskAsset)
+            );
+                                    
             yield return m_Ui.ShowNoFeedbackAndWait();
             yield return m_Ui.ShowReadyToStartAndWait();
 

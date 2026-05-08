@@ -56,10 +56,15 @@ namespace HitOrMiss.Pps
         }
 
         public IEnumerator ShowWelcomeAndWait()
-            => ShowAndWait(m_WelcomePanel);
+        {
+            Debug.Log("[UI FLOW] ShowWelcomeAndWait called");
+            yield return ShowAndWait(m_WelcomePanel);
+        }
 
         public IEnumerator ShowTriggerCheckAndWait(string text = null)
         {
+            Debug.Log("[UI FLOW] ShowTriggerCheckAndWait called");
+
             if (m_TriggerCheckText != null && text != null)
                 m_TriggerCheckText.text = text;
 
@@ -93,24 +98,27 @@ namespace HitOrMiss.Pps
             yield return ShowAndWait(m_BlockCounterPanel);
         }
 
-        public IEnumerator ShowBreakAndWait(float seconds)
+        public IEnumerator ShowAndWait(GameObject panel)
         {
             HideAll();
-            SetActive(m_BreakPanel, true);
 
-            float remaining = seconds;
-
-            while (remaining > 0f && m_WaitingForContinue == false)
+            if (panel == null)
             {
-                if (m_BreakText != null)
-                    m_BreakText.text =
-                        $"Break\n\n{Mathf.CeilToInt(remaining)} seconds remaining.\n\nPress Continue when ready.";
-
-                remaining -= Time.deltaTime;
-                yield return null;
+                Debug.LogError("[UI FLOW] Panel reference is NULL.");
+                yield break;
             }
 
-            SetActive(m_BreakPanel, false);
+            Debug.Log("[UI FLOW] Showing panel: " + panel.name);
+
+            panel.SetActive(true);
+            m_WaitingForContinue = true;
+
+            while (m_WaitingForContinue)
+                yield return null;
+
+            Debug.Log("[UI FLOW] Closing panel: " + panel.name);
+
+            panel.SetActive(false);
         }
 
         public IEnumerator ShowPauseAndWait()
@@ -135,28 +143,28 @@ namespace HitOrMiss.Pps
             yield return new WaitForSeconds(m_PracticeFeedbackSeconds);
             SetActive(m_PracticeFeedbackPanel, false);
         }
-
-        IEnumerator ShowAndWait(GameObject panel)
+        public IEnumerator ShowBreakAndWait(float seconds)
         {
             HideAll();
+            SetActive(m_BreakPanel, true);
 
-            if (panel == null)
+            float remaining = seconds;
+
+            while (remaining > 0f)
             {
-                Debug.LogWarning("[SessionFlowPanels] Missing panel reference.");
-                yield break;
+                if (m_BreakText != null)
+                    m_BreakText.text =
+                        $"Break\n\n{Mathf.CeilToInt(remaining)} seconds remaining.\n\nPress Continue when ready.";
+
+                remaining -= Time.deltaTime;
+                yield return null;
             }
 
-            panel.SetActive(true);
-            m_WaitingForContinue = true;
-
-            while (m_WaitingForContinue)
-                yield return null;
-
-            panel.SetActive(false);
+            SetActive(m_BreakPanel, false);
         }
-
         public void OnContinue()
         {
+            Debug.Log("[UI FLOW] OnContinue pressed");
             m_WaitingForContinue = false;
         }
 
