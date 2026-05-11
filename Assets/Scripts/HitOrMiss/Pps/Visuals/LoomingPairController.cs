@@ -61,10 +61,19 @@ namespace HitOrMiss.Pps
 
                 Vector3 center = Vector3.Lerp(start, end, curved);
                 Vector3 scale = Vector3.Lerp(asset.ScaleAtD4, asset.ScaleAtD1, curved);
-                Vector3 right = transform.right;
 
-                m_LeftLed.position = center - right * (separation * 0.5f);
-                m_RightLed.position = center + right * (separation * 0.5f);
+                Vector3 moveDirection = (end - start).normalized;
+                Quaternion beamRotation = Quaternion.LookRotation(moveDirection, Vector3.up);
+
+                // Temporary simple left/right axis for testing
+                Vector3 sideDirection = Vector3.right;
+
+                m_LeftLed.position = center - sideDirection * (separation * 0.5f);
+                m_RightLed.position = center + sideDirection * (separation * 0.5f);
+
+                m_LeftLed.rotation = beamRotation;
+                m_RightLed.rotation = beamRotation;
+
                 m_LeftLed.localScale = scale;
                 m_RightLed.localScale = scale;
 

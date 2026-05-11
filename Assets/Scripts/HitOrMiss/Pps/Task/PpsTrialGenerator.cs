@@ -66,44 +66,64 @@ namespace HitOrMiss.Pps
             AssignIds(trials, blockIndex: 0, practice: true);
             return trials.ToArray();
         }
-
-        public static PpsTrialDefinition[] GenerateVTOnlyPractice(PpsTaskAsset asset)
-{
-    if (asset == null) throw new ArgumentNullException(nameof(asset));
-
-    var trials = new List<PpsTrialDefinition>
+    public static PpsTrialDefinition[] GenerateVTOnlyPractice(PpsTaskAsset asset)
     {
-        PpsTrialDefinition.CreateTactileOnly(
-            -1, PpsSpeed.Slow, PpsWidth.Wide, DistanceStage.D2, isPractice: true),
-
-        PpsTrialDefinition.CreateTactileOnly(
-            -1, PpsSpeed.Slow, PpsWidth.Narrow, DistanceStage.D3, isPractice: true),
-    };
-
-    AssignIds(trials, blockIndex: 0, practice: true);
-    return trials.ToArray();
-}
-
-    public static PpsTrialDefinition[] GenerateVTVisualPractice(PpsTaskAsset asset)
-    {
-        if (asset == null) throw new ArgumentNullException(nameof(asset));
-
         var trials = new List<PpsTrialDefinition>
         {
-            PpsTrialDefinition.CreateVisualOnly(
-                -1, PpsSpeed.Slow, PpsWidth.Wide, isPractice: true),
+            PpsTrialDefinition.CreateTactileOnly(
+                -1,
+                PpsSpeed.Slow,
+                PpsWidth.Wide,
+                DistanceStage.D2,
+                isPractice: true
+            ),
 
-            PpsTrialDefinition.CreateBoth(
-                -1, PpsSpeed.Slow, PpsWidth.Wide, DistanceStage.D2, isPractice: true),
-
-            PpsTrialDefinition.CreateBoth(
-                -1, PpsSpeed.Slow, PpsWidth.Narrow, DistanceStage.D3, isPractice: true),
+            PpsTrialDefinition.CreateTactileOnly(
+                -1,
+                PpsSpeed.Slow,
+                PpsWidth.Narrow,
+                DistanceStage.D3,
+                isPractice: true
+            )
         };
 
-        AssignIds(trials, blockIndex: 0, practice: true);
+        AssignIds(trials, 0, true);
         return trials.ToArray();
     }
 
+    public static PpsTrialDefinition[] GenerateVTVisualPractice(PpsTaskAsset asset)
+    {
+        var trials = new List<PpsTrialDefinition>
+        {
+            // visual-only catch trial
+            PpsTrialDefinition.CreateVisualOnly(
+                -1,
+                PpsSpeed.Slow,
+                PpsWidth.Wide,
+                isPractice: true
+            ),
+
+            // visuotactile
+            PpsTrialDefinition.CreateBoth(
+                -1,
+                PpsSpeed.Slow,
+                PpsWidth.Wide,
+                DistanceStage.D2,
+                isPractice: true
+            ),
+
+            PpsTrialDefinition.CreateBoth(
+                -1,
+                PpsSpeed.Slow,
+                PpsWidth.Narrow,
+                DistanceStage.D3,
+                isPractice: true
+            )
+        };
+
+        AssignIds(trials, 0, true);
+        return trials.ToArray();
+    }
         static T Pick<T>(T[] arr, System.Random rng) => arr[rng.Next(0, arr.Length)];
 
         static void Shuffle(List<PpsTrialDefinition> trials, System.Random rng)

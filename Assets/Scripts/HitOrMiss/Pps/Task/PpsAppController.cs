@@ -6,6 +6,8 @@ namespace HitOrMiss.Pps
     public class PPSAppController : MonoBehaviour
     {
         [Header("References")]
+        [Header("Input")]
+        [SerializeField] private KeyboardCommandInput m_KeyboardInput;
         [SerializeField] private SessionFlowPanels m_Ui;
         [SerializeField] private PpsTaskManager m_TaskManager;
         [SerializeField] private PpsTaskAsset m_TaskAsset;
@@ -38,11 +40,18 @@ namespace HitOrMiss.Pps
                 Debug.LogError("[PPSAppController] TaskAsset is not assigned.");
                 yield break;
             }
-
             if (m_Running)
                 yield break;
 
+            if (m_KeyboardInput == null)
+            {
+                Debug.LogError("[PPSAppController] Keyboard input is not assigned.");
+                yield break;
+            }
+
             m_Running = true;
+            m_TaskManager.SetInputSource(m_KeyboardInput);
+            m_KeyboardInput.Enable();
             yield return RunTask1();
         }
 
@@ -53,24 +62,29 @@ namespace HitOrMiss.Pps
             //after this, WelcomePanel hides and passthrough is visible
             yield return m_Ui.ShowTriggerCheckAndWait();
             yield return m_Ui.ShowInstructionsAndWait();
+            m_Ui.ShowStandingCross();
             yield return m_Ui.ShowPositioningAndWait();
 
-          // ---- Practice 1: vibration only ----
-           yield return m_Ui.ShowPracticeIntroVTOnlyAndWait();
+            // ---- Practice 1: tactile only ----
 
-            Debug.Log("[PPSAppController] Starting VT-only practice.");
+            yield return m_Ui.ShowPracticeIntroVTOnlyAndWait();
+
+            Debug.Log("[PPS] Starting VT-only practice.");
 
             yield return m_TaskManager.RunTrials(
                 PpsTrialGenerator.GenerateVTOnlyPractice(m_TaskAsset)
             );
 
+            // ---- Practice 2: visual + tactile ----
+
             yield return m_Ui.ShowPracticeIntroVTVisualAndWait();
 
-            Debug.Log("[PPSAppController] Starting VT+Visual practice.");
+            Debug.Log("[PPS] Starting VT+Visual practice.");
 
             yield return m_TaskManager.RunTrials(
                 PpsTrialGenerator.GenerateVTVisualPractice(m_TaskAsset)
             );
+           
                                     
             yield return m_Ui.ShowNoFeedbackAndWait();
             yield return m_Ui.ShowReadyToStartAndWait();
@@ -89,7 +103,7 @@ namespace HitOrMiss.Pps
             }
 
             m_TaskManager.EndLogging();
-
+            m_Ui.HideStandingCross();
             yield return m_Ui.ShowEndAndWait("Task 1 complete.\n\nThank you.");
         }
     }

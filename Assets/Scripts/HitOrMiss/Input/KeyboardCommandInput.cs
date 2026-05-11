@@ -4,26 +4,61 @@ using UnityEngine.InputSystem;
 
 namespace HitOrMiss
 {
-    /// <summary>
-    /// Debug input source using the new Input System: H for HIT, M for MISS.
-    /// </summary>
+    public enum KeyboardInputTaskMode
+    {
+        HitOrMiss,
+        PPS
+    }
+
     public class KeyboardCommandInput : MonoBehaviour, IResponseInputSource
     {
+        [Header("Task Mode")]
+        [SerializeField] private KeyboardInputTaskMode m_TaskMode = KeyboardInputTaskMode.HitOrMiss;
+
         public event Action<ResponseEvent> ResponseReceived;
 
-        bool m_Enabled;
-        Keyboard m_Keyboard;
+        private bool m_Enabled;
+        private Keyboard m_Keyboard;
 
         public void Enable() => m_Enabled = true;
         public void Disable() => m_Enabled = false;
 
-        void Update()
+        private void Update()
         {
-            if (!m_Enabled) return;
+            if (!m_Enabled)
+                return;
 
             m_Keyboard = Keyboard.current;
-            if (m_Keyboard == null) return;
 
+            if (m_Keyboard == null)
+            {
+                Debug.LogWarning("[KeyboardCommandInput] Keyboard.current is null");
+                return;
+            }
+
+            if (m_TaskMode == KeyboardInputTaskMode.PPS)
+                CheckPpsInput();
+            else
+                CheckHitOrMissInput();
+        }
+
+// Check whether spacebar was pressed during an event
+        private void CheckPpsInput()
+        {
+            if (!m_Keyboard.spaceKey.wasPressedThisFrame)
+                return;
+
+            Debug.Log("[PPS INPUT] Space pressed");
+            ResponseReceived?.Invoke(new ResponseEvent
+            {
+                rawSource = "keyboard_space_felt_it",
+                command = SemanticCommand.Hit,
+                confidence = 1f,
+                timestamp = Time.timeAsDouble
+            });
+        }
+        private void CheckHitOrMissInput()
+        {
             if (m_Keyboard.hKey.wasPressedThisFrame)
             {
                 ResponseReceived?.Invoke(new ResponseEvent

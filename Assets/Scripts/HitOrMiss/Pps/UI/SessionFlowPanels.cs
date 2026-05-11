@@ -28,6 +28,10 @@ namespace HitOrMiss.Pps
         [SerializeField] TMP_Text m_PracticeFeedbackText;
         [SerializeField] TMP_Text m_EndText;
 
+// Used for the crosshair element: we want them to be oriented towards a fixation cross
+        [Header("AR Guidance")]
+        [SerializeField] private GameObject m_StandingCross;
+
         [Header("Feedback Timing")]
         [SerializeField] float m_PracticeFeedbackSeconds = 1f;
 
@@ -76,6 +80,16 @@ namespace HitOrMiss.Pps
 
         public IEnumerator ShowPositioningAndWait()
             => ShowAndWait(m_PositioningPanel);
+
+        public void ShowStandingCross()
+        {
+            SetActive(m_StandingCross, true);
+        }
+
+        public void HideStandingCross()
+        {
+            SetActive(m_StandingCross, false);
+        }
 
         public IEnumerator ShowPracticeIntroVTOnlyAndWait()
             => ShowAndWait(m_PracticeIntroVTOnlyPanel);
