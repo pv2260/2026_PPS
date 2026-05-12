@@ -29,7 +29,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 0.175, y: 0.175, z: 0.175}
+  m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
@@ -105,3 +105,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_ShadowPrefab: {fileID: 5591871194937706270}
   m_GroundY: 0
+  m_LeftPinchColor: {r: 0.2, g: 0.45, b: 1, a: 1}
+  m_RightPinchColor: {r: 1, g: 0.55, b: 0.1, a: 1}
+  m_SplatPrefab: {fileID: 7581229598783847705, guid: dec4022121da85b4a8f5cfb0c5bb2b79, type: 3}
+  m_SplatLifetime: 1.2
+  m_SplatPeakSize: 2
+  m_ImpactDistance: 1.2

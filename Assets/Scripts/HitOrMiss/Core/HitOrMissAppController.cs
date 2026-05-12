@@ -318,6 +318,12 @@ namespace HitOrMiss
 
         // ---- Practice ----
 
+        [Header("Practice gating")]
+        [Tooltip("Maximum number of times the practice trial list will be replayed if the participant fails to pinch on every trial. Set to 0 to disable gating.")]
+        [SerializeField] int m_PracticeReplayAttempts = 1;
+        [Tooltip("Popup shown before the practice trials are replayed because the participant did not pinch on every trial.")]
+        [SerializeField] TaskPopupPanel m_PracticeRetryPopup;
+
         IEnumerator RunPracticePhase()
         {
             bool feedbackWired = false;
@@ -332,11 +338,36 @@ namespace HitOrMiss
 
             yield return RunPopupSequence(m_PracticeTrialPopups);
 
-            var practiceTrials = Asset.GeneratePracticeTrials(m_SessionMetadata.shoulderWidthCm);
-            if (m_FixationCross != null) m_FixationCross.Show();
-            m_TaskManager.StartTrialList(-1, practiceTrials);
-            while (m_TaskManager.IsRunning) yield return null;
-            if (m_FixationCross != null) m_FixationCross.Hide();
+            int attempt = 0;
+            while (true)
+            {
+                int respondedCount = 0;
+                int totalCount = 0;
+                void CountResponses(TrialJudgement j)
+                {
+                    totalCount++;
+                    if (j.result != TrialResult.NoResponse) respondedCount++;
+                }
+                m_TaskManager.TrialJudged += CountResponses;
+
+                var practiceTrials = Asset.GeneratePracticeTrials(m_SessionMetadata.shoulderWidthCm);
+                if (m_FixationCross != null) m_FixationCross.Show();
+                m_TaskManager.StartTrialList(-1, practiceTrials);
+                while (m_TaskManager.IsRunning) yield return null;
+                if (m_FixationCross != null) m_FixationCross.Hide();
+
+                m_TaskManager.TrialJudged -= CountResponses;
+
+                bool allResponded = totalCount > 0 && respondedCount == totalCount;
+                if (allResponded || attempt >= m_PracticeReplayAttempts)
+                    break;
+
+                attempt++;
+                Debug.LogWarning($"[HitOrMissAppController] Practice attempt {attempt}: " +
+                                 $"{respondedCount}/{totalCount} trials answered with a pinch. Replaying.");
+                if (m_PracticeRetryPopup != null)
+                    yield return RunOnePopup(m_PracticeRetryPopup);
+            }
 
             if (feedbackWired)
                 m_TaskManager.ResponseIndicator -= m_ResponseIndicator.Show;

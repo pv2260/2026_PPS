@@ -492,6 +492,12 @@ namespace HitOrMiss
                 return;
             }
 
+            // Visual feedback on the ball — left pinch → blue, right pinch → orange,
+            // regardless of whether the response is the expected one. The controller
+            // ignores repeat calls within the same trial so the color only changes once.
+            if (bestTrial.ObjectController != null)
+                bestTrial.ObjectController.ApplyPinchFeedback(response.command);
+
             bool correct = response.command == bestTrial.Definition.expectedResponse;
             TrialResult result = correct ? TrialResult.Correct : TrialResult.Incorrect;
             float rt = (Time.time - bestTrial.SpawnTime) * 1000f;
