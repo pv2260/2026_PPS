@@ -54,8 +54,8 @@ MonoBehaviour:
   m_DistanceD3: 3
   m_DistanceD2: 2
   m_DistanceD1: 1
-  m_ScaleAtD4: {x: 0.05, y: 0.05, z: 0.05}
-  m_ScaleAtD1: {x: 0.35, y: 0.35, z: 0.35}
+  m_ScaleAtD4: {x: 1, y: 1, z: 1}
+  m_ScaleAtD1: {x: 1, y: 1, z: 1}
   m_VibrationDurationMs: 300
   m_VibrationIntensity: 1
   m_RestDurationSeconds: 30
