@@ -582,6 +582,14 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 6627871660748472693, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
+      propertyPath: m_BreakPopup
+      value: 
+      objectReference: {fileID: 1607736789}
+    - target: {fileID: 6627871660748472693, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
+      propertyPath: m_OutroPopup
+      value: 
+      objectReference: {fileID: 600042920}
+    - target: {fileID: 6627871660748472693, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
       propertyPath: m_Popup2Left
       value: 
       objectReference: {fileID: 685081439}
@@ -606,9 +614,29 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 600042920}
     - target: {fileID: 6627871660748472693, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
+      propertyPath: m_FixationCross
+      value: 
+      objectReference: {fileID: 2839298372119705873, guid: 39bc76c4199c8f442896b8071c99d5c5, type: 3}
+    - target: {fileID: 6627871660748472693, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
+      propertyPath: m_ForceLeftPopup
+      value: 
+      objectReference: {fileID: 685081439}
+    - target: {fileID: 6627871660748472693, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
       propertyPath: m_Popup4Practice
       value: 
       objectReference: {fileID: 60884232}
+    - target: {fileID: 6627871660748472693, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
+      propertyPath: m_BlockIntroPopup
+      value: 
+      objectReference: {fileID: 939287352}
+    - target: {fileID: 6627871660748472693, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
+      propertyPath: m_BlockReadyPopup
+      value: 
+      objectReference: {fileID: 191764148}
+    - target: {fileID: 6627871660748472693, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
+      propertyPath: m_ForceRightPopup
+      value: 
+      objectReference: {fileID: 2095364646}
     - target: {fileID: 6627871660748472693, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
       propertyPath: m_Popup8NextBlock
       value: 
@@ -617,6 +645,18 @@ PrefabInstance:
       propertyPath: m_Popup6BlockIntro
       value: 
       objectReference: {fileID: 939287352}
+    - target: {fileID: 6627871660748472693, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
+      propertyPath: m_PositioningPopupIndex
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6627871660748472693, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
+      propertyPath: m_PrePracticePopups.Array.size
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6627871660748472693, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
+      propertyPath: 'm_PrePracticePopups.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2080271990}
     - target: {fileID: 7732836034526354173, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
       propertyPath: m_AnchorMax.y
       value: 0
@@ -1772,9 +1812,29 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 984165670}
     m_Modifications:
+    - target: {fileID: 866343555088594807, guid: 849c46acce8682c44806d2b83f3d4027, type: 3}
+      propertyPath: m_BodyKey
+      value: popup7_break
+      objectReference: {fileID: 0}
+    - target: {fileID: 866343555088594807, guid: 849c46acce8682c44806d2b83f3d4027, type: 3}
+      propertyPath: m_Behavior
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 866343555088594807, guid: 849c46acce8682c44806d2b83f3d4027, type: 3}
+      propertyPath: m_DurationSource
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 896414566263221640, guid: 849c46acce8682c44806d2b83f3d4027, type: 3}
+      propertyPath: m_BodyKey
+      value: popup5_ready
+      objectReference: {fileID: 0}
     - target: {fileID: 1342042459136058648, guid: 849c46acce8682c44806d2b83f3d4027, type: 3}
       propertyPath: m_IsActive
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1583099757283143707, guid: 849c46acce8682c44806d2b83f3d4027, type: 3}
+      propertyPath: m_BodyKey
+      value: popup4_practice
       objectReference: {fileID: 0}
     - target: {fileID: 1633624216599539986, guid: 849c46acce8682c44806d2b83f3d4027, type: 3}
       propertyPath: m_IsActive
@@ -1820,9 +1880,29 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3466084636898477147, guid: 849c46acce8682c44806d2b83f3d4027, type: 3}
+      propertyPath: m_BodyKey
+      value: popup3_right
+      objectReference: {fileID: 0}
+    - target: {fileID: 3759988423183175761, guid: 849c46acce8682c44806d2b83f3d4027, type: 3}
+      propertyPath: m_BodyKey
+      value: pps.practice_intro
+      objectReference: {fileID: 0}
     - target: {fileID: 3998538729513832792, guid: 849c46acce8682c44806d2b83f3d4027, type: 3}
       propertyPath: m_IsActive
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4506893940796352070, guid: 849c46acce8682c44806d2b83f3d4027, type: 3}
+      propertyPath: m_BodyKey
+      value: popup6_block_intro
+      objectReference: {fileID: 0}
+    - target: {fileID: 4573613166703221316, guid: 849c46acce8682c44806d2b83f3d4027, type: 3}
+      propertyPath: m_BodyKey
+      value: popup2_left
+      objectReference: {fileID: 0}
+    - target: {fileID: 4743405174481681168, guid: 849c46acce8682c44806d2b83f3d4027, type: 3}
+      propertyPath: m_BodyKey
+      value: popup9_outro
       objectReference: {fileID: 0}
     - target: {fileID: 6310995387294692287, guid: 849c46acce8682c44806d2b83f3d4027, type: 3}
       propertyPath: m_IsActive
@@ -1875,6 +1955,10 @@ PrefabInstance:
     - target: {fileID: 8052916235409890039, guid: 849c46acce8682c44806d2b83f3d4027, type: 3}
       propertyPath: m_Name
       value: PopupPanel
+      objectReference: {fileID: 0}
+    - target: {fileID: 8435468341536756476, guid: 849c46acce8682c44806d2b83f3d4027, type: 3}
+      propertyPath: m_BodyKey
+      value: popup8_next_block
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
