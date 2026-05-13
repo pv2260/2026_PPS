@@ -28,14 +28,63 @@ namespace HitOrMiss.Pps
         [SerializeField] TMP_Text m_PracticeFeedbackText;
         [SerializeField] TMP_Text m_EndText;
 
-// Used for the crosshair element: we want them to be oriented towards a fixation cross
+        // Used for the crosshair element: we want them to be oriented towards a fixation cross.
         [Header("AR Guidance")]
         [SerializeField] private GameObject m_StandingCross;
 
         [Header("Feedback Timing")]
         [SerializeField] float m_PracticeFeedbackSeconds = 1f;
 
+        // True while a panel is waiting for the participant to press Continue.
         bool m_WaitingForContinue;
+
+        // Read by PPSAppController to decide whether the experiment should stop.
+        public bool StopRequested { get; private set; }
+
+        public enum UiLanguage
+        {
+            English,
+            French
+        }
+
+        [System.Serializable]
+        public class LocalizedTextEntry
+        {
+            public TMP_Text textTarget;
+
+            [TextArea(2, 6)]
+            public string english;
+
+            [TextArea(2, 6)]
+            public string french;
+        }
+
+        [Header("Language")]
+        [SerializeField] private UiLanguage m_CurrentLanguage = UiLanguage.English;
+        [SerializeField] private LocalizedTextEntry[] m_LocalizedTexts;
+
+        private string GetLocalizedText(string key)
+        {
+            if (string.IsNullOrEmpty(key) || m_TextEntries == null)
+                return string.Empty;
+
+            foreach (var entry in m_TextEntries)
+            {
+                if (entry == null)
+                    continue;
+
+                if (entry.key != key)
+                    continue;
+
+                return m_CurrentLanguage == UiLanguage.English
+                    ? entry.english
+                    : entry.french;
+            }
+
+            Debug.LogWarning($"[SessionFlowPanels] Missing localization key: {key}");
+            return key;
+        }
+
 
         void Awake()
         {
@@ -62,7 +111,23 @@ namespace HitOrMiss.Pps
         public IEnumerator ShowWelcomeAndWait()
         {
             Debug.Log("[UI FLOW] ShowWelcomeAndWait called");
-            yield return ShowAndWait(m_WelcomePanel);
+
+            HideAll();
+
+            if (m_WelcomePanel == null)
+            {
+                Debug.LogError("[UI FLOW] WelcomePanel reference is NULL.");
+                yield break;
+            }
+
+            ShowOnly(m_WelcomePanel);
+
+            m_WaitingForContinue = true;
+
+            while (m_WaitingForContinue && !StopRequested)
+                yield return null;
+
+            m_WelcomePanel.SetActive(false);
         }
 
         public IEnumerator ShowTriggerCheckAndWait(string text = null)
@@ -106,13 +171,85 @@ namespace HitOrMiss.Pps
         public IEnumerator ShowBlockCounterAndWait(int blockIndex, int totalBlocks)
         {
             if (m_BlockCounterText != null)
+            {
                 m_BlockCounterText.text =
                     $"Block {blockIndex + 1} / {totalBlocks}\n\nPress Begin when you are ready.";
+            }
 
             yield return ShowAndWait(m_BlockCounterPanel);
         }
 
+        public IEnumerator ShowPauseAndWait()
+            => ShowAndWait(m_PausePanel);
+
+        public IEnumerator ShowEndAndWait(string text = null)
+        {
+            if (m_EndText != null && text != null)
+                m_EndText.text = text;
+
+            // End screen should still be visible even if StopRequested is true.
+            yield return ShowAndWait(m_EndPanel, allowStopToClose: false);
+        }
+
+        public IEnumerator ShowPracticeFeedback(string message)
+        {
+            HideAll();
+
+            if (m_PracticeFeedbackText != null)
+                m_PracticeFeedbackText.text = message;
+
+            SetActive(m_PracticeFeedbackPanel, true);
+            RefreshLanguage();
+            float elapsed = 0f;
+
+            while (elapsed < m_PracticeFeedbackSeconds && !StopRequested)
+            {
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+
+            SetActive(m_PracticeFeedbackPanel, false);
+        }
+
+        public IEnumerator ShowBreakAndWait(float seconds)
+        {
+            HideAll();
+
+            if (m_BreakPanel == null)
+            {
+                Debug.LogError("[UI FLOW] BreakPanel reference is NULL.");
+                yield break;
+            }
+
+            SetActive(m_BreakPanel, true);
+            RefreshLanguage();
+            m_WaitingForContinue = true;
+            float remaining = seconds;
+
+            while (remaining > 0f && m_WaitingForContinue && !StopRequested)
+            {
+                if (m_BreakText != null)
+                {
+                    m_BreakText.text =
+                        $"Break\n\n{Mathf.CeilToInt(remaining)} seconds remaining.\n\nPress Continue when ready.";
+                }
+
+                remaining -= Time.deltaTime;
+                yield return null;
+            }
+
+            SetActive(m_BreakPanel, false);
+            m_WaitingForContinue = false;
+        }
+
         public IEnumerator ShowAndWait(GameObject panel)
+        {
+            yield return ShowAndWait(panel, allowStopToClose: true);
+        }
+
+
+
+        private IEnumerator ShowAndWait(GameObject panel, bool allowStopToClose)
         {
             HideAll();
 
@@ -125,57 +262,33 @@ namespace HitOrMiss.Pps
             Debug.Log("[UI FLOW] Showing panel: " + panel.name);
 
             panel.SetActive(true);
+            RefreshLanguage();
+            
             m_WaitingForContinue = true;
 
-            while (m_WaitingForContinue)
-                yield return null;
+            if (allowStopToClose)
+            {
+                while (m_WaitingForContinue && !StopRequested)
+                    yield return null;
+            }
+            else
+            {
+                while (m_WaitingForContinue)
+                    yield return null;
+            }
 
             Debug.Log("[UI FLOW] Closing panel: " + panel.name);
 
             panel.SetActive(false);
+            m_WaitingForContinue = false;
         }
 
-        public IEnumerator ShowPauseAndWait()
-            => ShowAndWait(m_PausePanel);
-
-        public IEnumerator ShowEndAndWait(string text = null)
-        {
-            if (m_EndText != null && text != null)
-                m_EndText.text = text;
-
-            yield return ShowAndWait(m_EndPanel);
-        }
-
-        public IEnumerator ShowPracticeFeedback(string message)
+        private void ShowOnly(GameObject panel)
         {
             HideAll();
-
-            if (m_PracticeFeedbackText != null)
-                m_PracticeFeedbackText.text = message;
-
-            SetActive(m_PracticeFeedbackPanel, true);
-            yield return new WaitForSeconds(m_PracticeFeedbackSeconds);
-            SetActive(m_PracticeFeedbackPanel, false);
+            SetActive(panel, true);
         }
-        public IEnumerator ShowBreakAndWait(float seconds)
-        {
-            HideAll();
-            SetActive(m_BreakPanel, true);
 
-            float remaining = seconds;
-
-            while (remaining > 0f)
-            {
-                if (m_BreakText != null)
-                    m_BreakText.text =
-                        $"Break\n\n{Mathf.CeilToInt(remaining)} seconds remaining.\n\nPress Continue when ready.";
-
-                remaining -= Time.deltaTime;
-                yield return null;
-            }
-
-            SetActive(m_BreakPanel, false);
-        }
         public void OnContinue()
         {
             Debug.Log("[UI FLOW] OnContinue pressed");
@@ -184,8 +297,44 @@ namespace HitOrMiss.Pps
 
         public void OnStop()
         {
+            OnStopPressed();
+        }
+
+        public void OnStopPressed()
+        {
+            Debug.Log("[SessionFlowPanels] Stop pressed.");
+
+            StopRequested = true;
             m_WaitingForContinue = false;
-            HideAll();
+        }
+
+        public void ToggleLanguage()
+        {
+            m_CurrentLanguage =
+                m_CurrentLanguage == UiLanguage.English
+                    ? UiLanguage.French
+                    : UiLanguage.English;
+
+            Debug.Log($"[SessionFlowPanels] Language changed to {m_CurrentLanguage}");
+
+            RefreshLanguage();
+        }
+
+        private void RefreshLanguage()
+        {
+            if (m_LocalizedTexts == null)
+                return;
+
+            foreach (var entry in m_LocalizedTexts)
+            {
+                if (entry == null || entry.textTarget == null)
+                    continue;
+
+                entry.textTarget.text =
+                    m_CurrentLanguage == UiLanguage.English
+                        ? entry.english
+                        : entry.french;
+            }
         }
 
         static void SetActive(GameObject go, bool on)

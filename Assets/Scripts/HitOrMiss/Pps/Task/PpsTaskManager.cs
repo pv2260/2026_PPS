@@ -6,6 +6,21 @@ using UnityEngine;
 
 namespace HitOrMiss.Pps
 {
+    /// <summary>
+    /// Runs PPS trials and records trial-level data.
+    ///
+    /// Current responsibilities:
+    /// - Run individual trials
+    /// - Control looming visual stimulus
+    /// - Trigger vibrotactile stimulation
+    /// - Capture participant responses
+    /// - Emit EEG/event markers
+    /// - Write CSV output
+    ///
+    /// Note:
+    /// In the refactored architecture, higher-level experiment flow
+    /// should move out of this class into PPSAppController.
+    /// </summary>
     public class PpsTaskManager : MonoBehaviour
     {
         [Header("Config")]
@@ -18,8 +33,12 @@ namespace HitOrMiss.Pps
         [Header("Practice Feedback")]
         [SerializeField] private SessionFlowPanels m_Ui;
 
-
+        // Tracks whether the currently running trial is a practice trial.
+        // Used only to decide whether feedback should be shown.
         private bool m_CurrentTrialIsPractice;
+
+        // True after the vibration command has been sent.
+        // Used to classify responses as valid vibration responses or false alarms.
         private bool m_VibrationHasFired;
 
         [Header("Output")]
@@ -28,18 +47,25 @@ namespace HitOrMiss.Pps
         [Header("Logging")]
         [SerializeField] private EegMarkerEmitter m_MarkerEmitter;
 
+        // Runtime interface references.
+        // These allow the task manager to work with different vibration and input implementations.
         private IVibrotactileOutput m_Output;
         private IResponseInputSource m_InputSource;
+
+        // Response-capture state for the active trial.
         private bool m_CaptureResponses;
         private double m_VibrationFiredTime;
         private double m_FirstResponseTime;
         private bool m_Responded;
 
+        // Random number generator used for inter-trial intervals.
         private System.Random m_ItiRng;
 
+        // CSV logging state.
         private StreamWriter m_CsvWriter;
         private string m_CsvPath;
 
+        // External systems can subscribe to these events to react to trial start/end.
         public event Action<PpsTrialDefinition> TrialStarted;
         public event Action<PpsTrialResult> TrialCompleted;
 
@@ -51,17 +77,22 @@ namespace HitOrMiss.Pps
 
         private void Awake()
         {
+            // Convert the assigned MonoBehaviour into the vibration output interface.
+            // This keeps the Inspector simple while allowing different output implementations.
             m_Output = m_VibrotactileOutputBehaviour as IVibrotactileOutput;
 
             if (m_VibrotactileOutputBehaviour != null && m_Output == null)
                 Debug.LogError($"[PpsTaskManager] {m_VibrotactileOutputBehaviour.name} does not implement IVibrotactileOutput.");
 
+            // Listen for the actual vibration start event.
+            // This gives a more accurate vibration onset time than the command time.
             if (m_Output != null)
                 m_Output.PulseStarted += OnPulseStarted;
         }
 
         private void OnDestroy()
         {
+            // Always unsubscribe from events to avoid callbacks after this object is destroyed.
             if (m_Output != null)
                 m_Output.PulseStarted -= OnPulseStarted;
 
@@ -71,27 +102,42 @@ namespace HitOrMiss.Pps
             EndLogging();
         }
 
+        /// <summary>
+        /// Initializes runtime dependencies before trials are run.
+        /// </summary>
         public void Initialize()
         {
+            // Provide the looming controller with the spatial distance layout.
             if (m_Loom != null && m_Layout != null)
                 m_Loom.Layout = m_Layout;
 
+            // Create a reproducible ITI random generator when a seed is provided.
+            // The offset keeps this RNG stream separate from other task RNGs.
             m_ItiRng = m_TaskAsset != null && m_TaskAsset.RngSeed.HasValue
                 ? new System.Random(m_TaskAsset.RngSeed.Value + 9973)
                 : new System.Random();
         }
 
+        /// <summary>
+        /// Assigns the active response input source.
+        /// This can be keyboard now, and later XR controller, hand tracking, etc.
+        /// </summary>
         public void SetInputSource(IResponseInputSource source)
         {
+            // Unsubscribe from the previous input source before replacing it.
             if (m_InputSource != null)
                 m_InputSource.ResponseReceived -= OnResponseReceived;
 
             m_InputSource = source;
 
+            // Subscribe to the new input source.
             if (m_InputSource != null)
                 m_InputSource.ResponseReceived += OnResponseReceived;
         }
 
+        /// <summary>
+        /// Starts CSV logging and enables participant input.
+        /// </summary>
         public void BeginLogging(string subjectId)
         {
             if (m_TaskAsset == null)
@@ -100,12 +146,15 @@ namespace HitOrMiss.Pps
                 return;
             }
 
+            // Use a fallback subject ID if none was provided.
             if (string.IsNullOrWhiteSpace(subjectId))
                 subjectId = "P000";
 
+            // Create a persistent Logs folder.
             var dir = Path.Combine(Application.persistentDataPath, "Logs");
             Directory.CreateDirectory(dir);
 
+            // Create a unique CSV file for this session.
             var sessionId = DateTime.Now.ToString("yyyyMMdd_HHmmss");
             m_CsvPath = Path.Combine(dir, $"{subjectId}_{sessionId}_{m_TaskAsset.TaskName}.csv");
 
@@ -113,12 +162,16 @@ namespace HitOrMiss.Pps
             m_CsvWriter.WriteLine(PpsTrialResult.CsvHeader);
             m_CsvWriter.Flush();
 
+            // Emit session-start marker and enable input capture.
             m_MarkerEmitter?.Emit("pps_session_start", extra: subjectId);
             m_InputSource?.Enable();
 
             Debug.Log($"[PpsTaskManager] CSV: {m_CsvPath}");
         }
 
+        /// <summary>
+        /// Ends logging, disables input, and closes the CSV file.
+        /// </summary>
         public void EndLogging()
         {
             m_MarkerEmitter?.Emit("pps_session_end");
@@ -128,6 +181,12 @@ namespace HitOrMiss.Pps
             m_CsvWriter = null;
         }
 
+        /// <summary>
+        /// Runs a sequence of trials with an inter-trial interval after each trial.
+        ///
+        /// In the future, PPSAppController should call this or RunOneTrial
+        /// as part of the higher-level experiment flow.
+        /// </summary>
         public IEnumerator RunTrials(PpsTrialDefinition[] trials)
         {
             if (m_TaskAsset == null)
@@ -151,17 +210,22 @@ namespace HitOrMiss.Pps
             {
                 yield return RunOneTrial(trial);
 
+                // Wait a randomized inter-trial interval before the next trial.
                 float iti = NextItiSeconds();
                 if (iti > 0f)
                     yield return new WaitForSeconds(iti);
             }
         }
 
+        /// <summary>
+        /// Returns a randomized inter-trial interval using the configured min/max values.
+        /// </summary>
         private float NextItiSeconds()
         {
             float min = m_TaskAsset.ItiMinSeconds;
             float max = m_TaskAsset.ItiMaxSeconds;
 
+            // If no valid range is configured, use the minimum value.
             if (max <= min)
                 return min;
 
@@ -169,10 +233,23 @@ namespace HitOrMiss.Pps
             return (float)(min + u * (max - min));
         }
 
+        /// <summary>
+        /// Runs one PPS trial from start to finish.
+        ///
+        /// This method handles:
+        /// - resetting trial state
+        /// - starting visual looming when needed
+        /// - firing vibration at the configured distance stage
+        /// - collecting responses
+        /// - computing reaction time
+        /// - logging the result
+        /// </summary>
         private IEnumerator RunOneTrial(PpsTrialDefinition trial)
         {
+            // Create an empty result object and fill it during the trial.
             var result = PpsTrialResult.Empty(trial);
             result.vibrationDeviceName = m_Output != null ? m_Output.DeviceName : "None";
+
             m_CurrentTrialIsPractice = trial.isPractice;
 
             Debug.Log(
@@ -187,12 +264,15 @@ namespace HitOrMiss.Pps
 
             TrialStarted?.Invoke(trial);
 
+            // Emit trial-start marker for EEG/event synchronization.
             m_MarkerEmitter?.Emit(
                 "pps_trial_start",
                 trial.trialId,
                 trial.modality.ToString(),
                 extra: trial.vibrationStage.ToString()
             );
+
+            // Reset all trial-specific response and timing state.
             m_CurrentTrialIsPractice = trial.isPractice;
             m_VibrationHasFired = false;
             m_CaptureResponses = true;
@@ -200,6 +280,8 @@ namespace HitOrMiss.Pps
             m_FirstResponseTime = double.NaN;
             m_Responded = false;
 
+            // Stores the time at which the looming stimulus reaches each distance stage.
+            // Index corresponds to DistanceStage enum values.
             double[] crossings =
             {
                 double.NaN,
@@ -211,6 +293,9 @@ namespace HitOrMiss.Pps
 
             if (trial.modality == PpsModality.TactileOnly)
             {
+                // In tactile-only trials, no visual stimulus is shown.
+                // The vibration is fired at the same time it would have fired
+                // if a looming stimulus had moved to the configured stage.
                 float waitToFire = m_TaskAsset.TimeToReachStage(trial.speed, trial.vibrationStage);
 
                 if (waitToFire > 0f)
@@ -218,6 +303,7 @@ namespace HitOrMiss.Pps
 
                 FireVibration(trial, trial.vibrationStage);
 
+                // Keep the trial duration comparable to visual/visuotactile trials.
                 float total = m_TaskAsset.DurationFor(trial.speed);
                 float remaining = Mathf.Max(0f, total - waitToFire);
 
@@ -226,10 +312,13 @@ namespace HitOrMiss.Pps
             }
             else
             {
+                // Visual-only and visuotactile trials both run the looming stimulus.
                 result.loomOnsetTime = Time.timeAsDouble;
                 m_MarkerEmitter?.Emit("pps_loom_onset", trial.trialId);
 
                 bool vibFired = false;
+
+                // Only Both trials should fire vibration during looming.
                 bool fireOnStageMatch = trial.modality == PpsModality.Both;
 
                 yield return m_Loom.RunLoom(trial, m_TaskAsset, stage =>
@@ -237,6 +326,7 @@ namespace HitOrMiss.Pps
                     double now = Time.timeAsDouble;
                     int idx = (int)stage;
 
+                    // Record the first time this stage is entered.
                     if (idx >= 0 && idx < crossings.Length && double.IsNaN(crossings[idx]))
                         crossings[idx] = now;
 
@@ -246,8 +336,10 @@ namespace HitOrMiss.Pps
                         $"time={now:F3}"
                     );
 
+                    // Emit stage-entry marker for EEG/event synchronization.
                     m_MarkerEmitter?.Emit("pps_stage_enter", trial.trialId, extra: stage.ToString());
 
+                    // In visuotactile trials, fire vibration when the configured stage is reached.
                     if (fireOnStageMatch && !vibFired && stage == trial.vibrationStage)
                     {
                         vibFired = true;
@@ -256,11 +348,14 @@ namespace HitOrMiss.Pps
                 });
             }
 
+            // Store stage-crossing times in the result.
             result.crossingD4Time = crossings[(int)DistanceStage.D4];
             result.crossingD3Time = crossings[(int)DistanceStage.D3];
             result.crossingD2Time = crossings[(int)DistanceStage.D2];
             result.crossingD1Time = crossings[(int)DistanceStage.D1];
 
+            // If the trial required a response but none occurred yet,
+            // keep listening briefly during the response grace period.
             if (trial.RequiresResponse && !m_Responded)
             {
                 float grace = m_TaskAsset.ResponseGracePeriodSeconds;
@@ -273,9 +368,11 @@ namespace HitOrMiss.Pps
                 }
             }
 
+            // Finalize response timing and reaction-time data.
             result.vibrationFiredTime = m_VibrationFiredTime;
             result.responseTime = m_FirstResponseTime;
             result.responded = m_Responded;
+
             result.reactionTimeMs =
                 m_Responded && !double.IsNaN(m_VibrationFiredTime)
                     ? (float)((m_FirstResponseTime - m_VibrationFiredTime) * 1000.0)
@@ -294,19 +391,29 @@ namespace HitOrMiss.Pps
                 $"RTms={FormatRt(result.reactionTimeMs)}"
             );
 
+            // Emit trial-end marker.
             m_MarkerEmitter?.Emit(
                 "pps_trial_end",
                 trial.trialId,
                 extra: m_Responded ? result.reactionTimeMs.ToString("F1") : "no_response"
             );
 
+            // Stop accepting responses after the trial is finished.
             m_CaptureResponses = false;
             m_CurrentTrialIsPractice = false;
             m_VibrationHasFired = false;
+
+            // Save and broadcast the completed result.
             WriteCsvRow(result);
             TrialCompleted?.Invoke(result);
         }
 
+        /// <summary>
+        /// Sends the vibration command to the vibrotactile output device.
+        ///
+        /// The actual confirmed onset time is recorded in OnPulseStarted,
+        /// because the device may not start vibrating at the exact frame this method is called.
+        /// </summary>
         private void FireVibration(PpsTrialDefinition trial, DistanceStage stage)
         {
             m_VibrationHasFired = true;
@@ -327,6 +434,11 @@ namespace HitOrMiss.Pps
 
             m_MarkerEmitter?.Emit("pps_vib_fired", trial.trialId, extra: stage.ToString());
         }
+
+        /// <summary>
+        /// Called by the vibration output device when the pulse actually starts.
+        /// This timestamp is used as the reaction-time reference.
+        /// </summary>
         private void OnPulseStarted()
         {
             m_VibrationFiredTime = Time.timeAsDouble;
@@ -337,9 +449,20 @@ namespace HitOrMiss.Pps
             );
         }
 
-// Once spacebar has been pressed, the taskmanager can decide whether it was a reponse to a vibration event or a false alarm
+        /// <summary>
+        /// Called when the participant responds.
+        ///
+        /// The task manager decides whether the response was:
+        /// - a valid response to a vibration
+        /// - an early response / false alarm
+        ///
+        /// Currently this may come from the keyboard,
+        /// but the same interface can later support XR controller or hand input.
+        /// </summary>
         private void OnResponseReceived(ResponseEvent ev)
         {
+            // Ignore responses outside the active response window,
+            // or ignore additional responses after the first one.
             if (!m_CaptureResponses || m_Responded)
                 return;
 
@@ -350,6 +473,7 @@ namespace HitOrMiss.Pps
             {
                 Debug.Log("[PPS RESPONSE] Felt vibration response accepted.");
 
+                // Show feedback only during practice trials.
                 if (m_CurrentTrialIsPractice && m_Ui != null)
                     StartCoroutine(m_Ui.ShowPracticeFeedback("Felt it"));
             }
@@ -357,6 +481,7 @@ namespace HitOrMiss.Pps
             {
                 Debug.Log("[PPS RESPONSE] Response before vibration / false alarm.");
 
+                // Show early-response feedback only during practice trials.
                 if (m_CurrentTrialIsPractice && m_Ui != null)
                     StartCoroutine(m_Ui.ShowPracticeFeedback("Too early"));
             }
@@ -364,6 +489,9 @@ namespace HitOrMiss.Pps
             m_MarkerEmitter?.Emit("pps_response", extra: ev.rawSource);
         }
 
+        /// <summary>
+        /// Writes one trial result to the CSV file.
+        /// </summary>
         private void WriteCsvRow(PpsTrialResult result)
         {
             if (m_CsvWriter == null)
@@ -373,11 +501,17 @@ namespace HitOrMiss.Pps
             m_CsvWriter.Flush();
         }
 
+        /// <summary>
+        /// Formats a time value for readable debug output.
+        /// </summary>
         private static string FormatTime(double value)
         {
             return double.IsNaN(value) ? "NA" : value.ToString("F3");
         }
 
+        /// <summary>
+        /// Formats a reaction time value for readable debug output.
+        /// </summary>
         private static string FormatRt(float value)
         {
             return float.IsNaN(value) ? "NA" : value.ToString("F1");
