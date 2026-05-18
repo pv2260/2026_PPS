@@ -28,17 +28,14 @@ namespace HitOrMiss.Pps
         [SerializeField] TMP_Text m_PracticeFeedbackText;
         [SerializeField] TMP_Text m_EndText;
 
-        // Used for the crosshair element: we want them to be oriented towards a fixation cross.
         [Header("AR Guidance")]
         [SerializeField] private GameObject m_StandingCross;
 
         [Header("Feedback Timing")]
         [SerializeField] float m_PracticeFeedbackSeconds = 1f;
 
-        // True while a panel is waiting for the participant to press Continue.
         bool m_WaitingForContinue;
 
-        // Read by PPSAppController to decide whether the experiment should stop.
         public bool StopRequested { get; private set; }
 
         public enum UiLanguage
@@ -63,32 +60,10 @@ namespace HitOrMiss.Pps
         [SerializeField] private UiLanguage m_CurrentLanguage = UiLanguage.English;
         [SerializeField] private LocalizedTextEntry[] m_LocalizedTexts;
 
-        private string GetLocalizedText(string key)
-        {
-            if (string.IsNullOrEmpty(key) || m_TextEntries == null)
-                return string.Empty;
-
-            foreach (var entry in m_TextEntries)
-            {
-                if (entry == null)
-                    continue;
-
-                if (entry.key != key)
-                    continue;
-
-                return m_CurrentLanguage == UiLanguage.English
-                    ? entry.english
-                    : entry.french;
-            }
-
-            Debug.LogWarning($"[SessionFlowPanels] Missing localization key: {key}");
-            return key;
-        }
-
-
         void Awake()
         {
             HideAll();
+            RefreshLanguage();
         }
 
         public void HideAll()
@@ -111,23 +86,7 @@ namespace HitOrMiss.Pps
         public IEnumerator ShowWelcomeAndWait()
         {
             Debug.Log("[UI FLOW] ShowWelcomeAndWait called");
-
-            HideAll();
-
-            if (m_WelcomePanel == null)
-            {
-                Debug.LogError("[UI FLOW] WelcomePanel reference is NULL.");
-                yield break;
-            }
-
-            ShowOnly(m_WelcomePanel);
-
-            m_WaitingForContinue = true;
-
-            while (m_WaitingForContinue && !StopRequested)
-                yield return null;
-
-            m_WelcomePanel.SetActive(false);
+            yield return ShowAndWait(m_WelcomePanel);
         }
 
         public IEnumerator ShowTriggerCheckAndWait(string text = null)
@@ -172,8 +131,16 @@ namespace HitOrMiss.Pps
         {
             if (m_BlockCounterText != null)
             {
-                m_BlockCounterText.text =
-                    $"Block {blockIndex + 1} / {totalBlocks}\n\nPress Begin when you are ready.";
+                if (m_CurrentLanguage == UiLanguage.English)
+                {
+                    m_BlockCounterText.text =
+                        $"Block {blockIndex + 1} / {totalBlocks}\n\nPress Begin when you are ready.";
+                }
+                else
+                {
+                    m_BlockCounterText.text =
+                        $"Bloc {blockIndex + 1} / {totalBlocks}\n\nAppuyez sur Démarrer lorsque vous êtes prêt.";
+                }
             }
 
             yield return ShowAndWait(m_BlockCounterPanel);
@@ -187,7 +154,6 @@ namespace HitOrMiss.Pps
             if (m_EndText != null && text != null)
                 m_EndText.text = text;
 
-            // End screen should still be visible even if StopRequested is true.
             yield return ShowAndWait(m_EndPanel, allowStopToClose: false);
         }
 
@@ -199,7 +165,7 @@ namespace HitOrMiss.Pps
                 m_PracticeFeedbackText.text = message;
 
             SetActive(m_PracticeFeedbackPanel, true);
-            RefreshLanguage();
+
             float elapsed = 0f;
 
             while (elapsed < m_PracticeFeedbackSeconds && !StopRequested)
@@ -222,7 +188,7 @@ namespace HitOrMiss.Pps
             }
 
             SetActive(m_BreakPanel, true);
-            RefreshLanguage();
+
             m_WaitingForContinue = true;
             float remaining = seconds;
 
@@ -230,8 +196,16 @@ namespace HitOrMiss.Pps
             {
                 if (m_BreakText != null)
                 {
-                    m_BreakText.text =
-                        $"Break\n\n{Mathf.CeilToInt(remaining)} seconds remaining.\n\nPress Continue when ready.";
+                    if (m_CurrentLanguage == UiLanguage.English)
+                    {
+                        m_BreakText.text =
+                            $"Break\n\n{Mathf.CeilToInt(remaining)} seconds remaining.\n\nPress Continue when ready.";
+                    }
+                    else
+                    {
+                        m_BreakText.text =
+                            $"Pause\n\nIl reste {Mathf.CeilToInt(remaining)} secondes.\n\nAppuyez sur Continuer lorsque vous êtes prêt.";
+                    }
                 }
 
                 remaining -= Time.deltaTime;
@@ -247,8 +221,6 @@ namespace HitOrMiss.Pps
             yield return ShowAndWait(panel, allowStopToClose: true);
         }
 
-
-
         private IEnumerator ShowAndWait(GameObject panel, bool allowStopToClose)
         {
             HideAll();
@@ -263,7 +235,7 @@ namespace HitOrMiss.Pps
 
             panel.SetActive(true);
             RefreshLanguage();
-            
+
             m_WaitingForContinue = true;
 
             if (allowStopToClose)
@@ -281,12 +253,6 @@ namespace HitOrMiss.Pps
 
             panel.SetActive(false);
             m_WaitingForContinue = false;
-        }
-
-        private void ShowOnly(GameObject panel)
-        {
-            HideAll();
-            SetActive(panel, true);
         }
 
         public void OnContinue()
