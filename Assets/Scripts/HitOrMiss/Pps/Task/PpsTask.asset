@@ -49,13 +49,13 @@ MonoBehaviour:
     m_RotationOrder: 4
   m_WideSeparation: 0.4
   m_NarrowSeparation: 0.16
-  m_LedHeight: 1.4
+  m_LedHeight: 0
   m_DistanceD4: 4
   m_DistanceD3: 3
   m_DistanceD2: 2
   m_DistanceD1: 1
-  m_ScaleAtD4: {x: 1, y: 1, z: 1}
-  m_ScaleAtD1: {x: 1, y: 1, z: 1}
+  m_ScaleAtD4: {x: 2, y: 2, z: 2}
+  m_ScaleAtD1: {x: 2, y: 2, z: 2}
   m_VibrationDurationMs: 300
   m_VibrationIntensity: 1
   m_RestDurationSeconds: 30
