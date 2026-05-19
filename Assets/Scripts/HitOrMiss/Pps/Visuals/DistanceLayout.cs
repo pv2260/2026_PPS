@@ -37,6 +37,7 @@ namespace HitOrMiss.Pps
             EnsureChild(ref m_D1, "D1", asset.DistanceD1, asset.LedHeight);
         }
 
+
         /// <summary>
         /// Map normalized loom progress t ∈ [0,1] (D4 → D1) onto the current stage.
         /// Uses fixed quartile thresholds; override if the asset defines non-uniform
@@ -54,13 +55,19 @@ namespace HitOrMiss.Pps
         public Vector3 StartCenter => m_D4 != null ? m_D4.position : transform.position + transform.forward * 2f;
         public Vector3 EndCenter => m_D1 != null ? m_D1.position : transform.position + transform.forward * 0.6f;
 
-        void EnsureChild(ref Transform slot, string childName, float forwardDistance, float height)
+        void EnsureChild(ref Transform slot, string childName, float forwardDistance, float worldHeight)
         {
-            if (slot != null) return;
-            var go = new GameObject(childName);
-            go.transform.SetParent(transform, false);
-            go.transform.localPosition = new Vector3(0f, height, forwardDistance);
-            slot = go.transform;
+            if (slot == null)
+            {
+                var go = new GameObject(childName);
+                go.transform.SetParent(transform, false);
+                slot = go.transform;
+            }
+
+            Vector3 worldPos = transform.position + transform.forward * forwardDistance;
+            worldPos.y = worldHeight;
+
+            slot.position = worldPos;
         }
     }
 }

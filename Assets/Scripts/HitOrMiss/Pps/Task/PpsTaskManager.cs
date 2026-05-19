@@ -47,6 +47,10 @@ namespace HitOrMiss.Pps
         [Header("Logging")]
         [SerializeField] private EegMarkerEmitter m_MarkerEmitter;
 
+        [Header("Response Input")]
+        [Tooltip("Drag the GameObject with an IResponseInputSource component (e.g. XrTriggerResponseInputSource).")]
+        [SerializeField] private MonoBehaviour m_InputSourceBehaviour;
+
         // Runtime interface references.
         // These allow the task manager to work with different vibration and input implementations.
         private IVibrotactileOutput m_Output;
@@ -74,20 +78,34 @@ namespace HitOrMiss.Pps
             get => m_TaskAsset;
             set => m_TaskAsset = value;
         }
-
         private void Awake()
         {
-            // Convert the assigned MonoBehaviour into the vibration output interface.
-            // This keeps the Inspector simple while allowing different output implementations.
             m_Output = m_VibrotactileOutputBehaviour as IVibrotactileOutput;
 
             if (m_VibrotactileOutputBehaviour != null && m_Output == null)
                 Debug.LogError($"[PpsTaskManager] {m_VibrotactileOutputBehaviour.name} does not implement IVibrotactileOutput.");
 
-            // Listen for the actual vibration start event.
-            // This gives a more accurate vibration onset time than the command time.
             if (m_Output != null)
                 m_Output.PulseStarted += OnPulseStarted;
+
+            // NEW: auto-wire input source from inspector reference
+            if (m_InputSourceBehaviour != null)
+            {
+                var source = m_InputSourceBehaviour as IResponseInputSource;
+                if (source != null)
+                {
+                    SetInputSource(source);
+                    Debug.Log($"[PpsTaskManager] Input source wired: {m_InputSourceBehaviour.name}");
+                }
+                else
+                {
+                    Debug.LogError($"[PpsTaskManager] {m_InputSourceBehaviour.name} does not implement IResponseInputSource.");
+                }
+            }
+            else
+            {
+                Debug.LogWarning("[PpsTaskManager] No input source assigned. Trial responses will not be captured.");
+            }
         }
 
         private void OnDestroy()

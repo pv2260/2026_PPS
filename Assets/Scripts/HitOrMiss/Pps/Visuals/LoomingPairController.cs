@@ -16,6 +16,8 @@ namespace HitOrMiss.Pps
         [SerializeField] Transform m_LeftLed;
         [SerializeField] Transform m_RightLed;
         [SerializeField] DistanceLayout m_Layout;
+
+
         public AnimationCurve speedCurve;
 
         public DistanceLayout Layout
@@ -43,8 +45,14 @@ namespace HitOrMiss.Pps
             float duration = asset.DurationFor(trial.speed);
             float separation = asset.SeparationFor(trial.width);
             var curve = asset.MotionCurve;
+            
             Vector3 start = m_Layout.StartCenter;
             Vector3 end = m_Layout.EndCenter;
+
+            // Force looming lights to floor / foot level.
+            // This prevents the LEDs from inheriting the XR camera height.
+            //start.y = m_StimulusWorldY;
+            //end.y = m_StimulusWorldY;
 
             m_LeftLed.gameObject.SetActive(true);
             m_RightLed.gameObject.SetActive(true);
@@ -61,6 +69,11 @@ namespace HitOrMiss.Pps
 
                 Vector3 center = Vector3.Lerp(start, end, curved);
                 Vector3 scale = Vector3.Lerp(asset.ScaleAtD4, asset.ScaleAtD1, curved);
+
+                if (elapsed < Time.deltaTime * 2f)
+                {
+                    Debug.Log($"[LOOM SCALE] D4={asset.ScaleAtD4} D1={asset.ScaleAtD1} current={scale}");
+                }
 
                 Vector3 moveDirection = (end - start).normalized;
                 Quaternion beamRotation = Quaternion.LookRotation(moveDirection, Vector3.up);

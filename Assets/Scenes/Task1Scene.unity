@@ -431,8 +431,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: 0, y: 100}
-  m_SizeDelta: {x: 150, y: 60}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 200, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &25483919
 MonoBehaviour:
@@ -711,6 +711,20 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 25483917}
   m_CullTransparentMesh: 0
+--- !u!114 &39597534
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fc1515ab76e54f068e2f2207940fab32, type: 3}
+  m_Name: XRI Right Interaction/Activate
+  m_EditorClassIdentifier: Unity.InputSystem::UnityEngine.InputSystem.InputActionReference
+  m_Asset: {fileID: -944628639613478452, guid: c348712bda248c246b8c49b3db54643f, type: 3}
+  m_ActionId: 41976d89-60de-4deb-bff9-16b4af96b290
 --- !u!1 &42433505
 GameObject:
   m_ObjectHideFlags: 0
@@ -1707,8 +1721,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: -200, y: 100}
-  m_SizeDelta: {x: 150, y: 60}
+  m_AnchoredPosition: {x: -250, y: 0}
+  m_SizeDelta: {x: 200, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &79255432
 MonoBehaviour:
@@ -2168,7 +2182,7 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 92701989}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 2}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -2179,8 +2193,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: 200, y: 100}
-  m_SizeDelta: {x: 150, y: 60}
+  m_AnchoredPosition: {x: 250, y: 0}
+  m_SizeDelta: {x: 200, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &92701991
 MonoBehaviour:
@@ -2470,7 +2484,6 @@ GameObject:
   - component: {fileID: 93650242}
   - component: {fileID: 93650245}
   - component: {fileID: 93650244}
-  - component: {fileID: 93650243}
   - component: {fileID: 93650246}
   m_Layer: 5
   m_Name: PausePanel
@@ -2499,30 +2512,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 1000, y: 700}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &93650243
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 93650241}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 104ba756a9c3d934581197d62df91a3e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HitOrMiss.TaskPopupPanel
-  m_Root: {fileID: 0}
-  m_Body: {fileID: 323607683}
-  m_ContinueButton: {fileID: 0}
-  m_ContinueLabel: {fileID: 0}
-  m_CountdownText: {fileID: 0}
-  m_BodyKey: 
-  m_BodyFallback: 
-  m_ButtonLabelKey: 
-  m_ButtonLabelFallback: Continue
-  m_Behavior: 0
-  m_DurationSeconds: 5
-  m_DurationSource: 0
 --- !u!114 &93650244
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2536,7 +2525,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 0}
+  m_Color: {r: 0, g: 0, b: 0, a: 0.7647059}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -2662,7 +2651,7 @@ Canvas:
   m_Enabled: 1
   serializedVersion: 3
   m_RenderMode: 2
-  m_Camera: {fileID: 0}
+  m_Camera: {fileID: 382856814}
   m_PlaneDistance: 100
   m_PixelPerfect: 0
   m_ReceivesEvents: 1
@@ -3568,7 +3557,7 @@ Transform:
   m_GameObject: {fileID: 132007272}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1.4, z: 1}
+  m_LocalPosition: {x: 0, y: 0.2, z: 1}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -4568,7 +4557,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: 1.5, y: 350}
+  m_AnchoredPosition: {x: 1.5, y: 450}
   m_SizeDelta: {x: 100, y: 200}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &204790617
@@ -4859,7 +4848,7 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 245139984}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 2}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -4870,8 +4859,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: 200, y: 100}
-  m_SizeDelta: {x: 150, y: 60}
+  m_AnchoredPosition: {x: 250, y: 0}
+  m_SizeDelta: {x: 200, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &245139986
 MonoBehaviour:
@@ -5625,7 +5614,7 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 269336351}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 2}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -5636,8 +5625,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: 200, y: 100}
-  m_SizeDelta: {x: 150, y: 60}
+  m_AnchoredPosition: {x: 250, y: 0}
+  m_SizeDelta: {x: 200, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &269336353
 MonoBehaviour:
@@ -5927,7 +5916,6 @@ GameObject:
   - component: {fileID: 277381996}
   - component: {fileID: 277381995}
   - component: {fileID: 277381994}
-  - component: {fileID: 277381993}
   - component: {fileID: 277381997}
   m_Layer: 5
   m_Name: PracticeFeedbackPanel
@@ -5936,30 +5924,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 0
---- !u!114 &277381993
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 277381992}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 104ba756a9c3d934581197d62df91a3e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HitOrMiss.TaskPopupPanel
-  m_Root: {fileID: 0}
-  m_Body: {fileID: 1465355867}
-  m_ContinueButton: {fileID: 0}
-  m_ContinueLabel: {fileID: 0}
-  m_CountdownText: {fileID: 0}
-  m_BodyKey: 
-  m_BodyFallback: 
-  m_ButtonLabelKey: 
-  m_ButtonLabelFallback: Continue
-  m_Behavior: 0
-  m_DurationSeconds: 5
-  m_DurationSource: 0
 --- !u!114 &277381994
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5973,7 +5937,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 0}
+  m_Color: {r: 0, g: 0, b: 0, a: 0.7647059}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -7058,7 +7022,6 @@ GameObject:
   - component: {fileID: 357540655}
   - component: {fileID: 357540658}
   - component: {fileID: 357540657}
-  - component: {fileID: 357540656}
   - component: {fileID: 357540659}
   m_Layer: 5
   m_Name: NoFeedbackPanel
@@ -7087,30 +7050,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 1000, y: 700}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &357540656
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 357540654}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 104ba756a9c3d934581197d62df91a3e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HitOrMiss.TaskPopupPanel
-  m_Root: {fileID: 0}
-  m_Body: {fileID: 518538310}
-  m_ContinueButton: {fileID: 0}
-  m_ContinueLabel: {fileID: 0}
-  m_CountdownText: {fileID: 0}
-  m_BodyKey: 
-  m_BodyFallback: 
-  m_ButtonLabelKey: 
-  m_ButtonLabelFallback: Continue
-  m_Behavior: 0
-  m_DurationSeconds: 5
-  m_DurationSource: 0
 --- !u!114 &357540657
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7124,7 +7063,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0, g: 0, b: 0, a: 0}
+  m_Color: {r: 0, g: 0, b: 0, a: 0.7647059}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -7554,7 +7493,6 @@ GameObject:
   - component: {fileID: 395796436}
   - component: {fileID: 395796439}
   - component: {fileID: 395796438}
-  - component: {fileID: 395796437}
   - component: {fileID: 395796440}
   m_Layer: 5
   m_Name: PracticeIntroVTOnlyPanel
@@ -7583,30 +7521,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 1000, y: 700}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &395796437
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 395796435}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 104ba756a9c3d934581197d62df91a3e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HitOrMiss.TaskPopupPanel
-  m_Root: {fileID: 0}
-  m_Body: {fileID: 1345587028}
-  m_ContinueButton: {fileID: 0}
-  m_ContinueLabel: {fileID: 0}
-  m_CountdownText: {fileID: 0}
-  m_BodyKey: 
-  m_BodyFallback: 
-  m_ButtonLabelKey: 
-  m_ButtonLabelFallback: Continue
-  m_Behavior: 0
-  m_DurationSeconds: 5
-  m_DurationSource: 0
 --- !u!114 &395796438
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7620,7 +7534,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 0}
+  m_Color: {r: 0, g: 0, b: 0, a: 0.7647059}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -7789,8 +7703,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: 0, y: 100}
-  m_SizeDelta: {x: 150, y: 60}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 200, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &412532736
 MonoBehaviour:
@@ -8098,7 +8012,7 @@ Transform:
   m_GameObject: {fileID: 416702263}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -200, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -8123,7 +8037,7 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 0.02
+  m_Radius: 0.04
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!23 &416702266
 MeshRenderer:
@@ -8334,8 +8248,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: -200, y: 100}
-  m_SizeDelta: {x: 150, y: 60}
+  m_AnchoredPosition: {x: -250, y: 0}
+  m_SizeDelta: {x: 200, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &423453095
 MonoBehaviour:
@@ -9634,8 +9548,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: 150, y: 0}
-  m_SizeDelta: {x: 150, y: 60}
+  m_AnchoredPosition: {x: 250, y: 0}
+  m_SizeDelta: {x: 200, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &528422540
 MonoBehaviour:
@@ -9956,8 +9870,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: -50, y: 0}
-  m_SizeDelta: {x: 150, y: 60}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 200, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &550755283
 MonoBehaviour:
@@ -10398,7 +10312,7 @@ Transform:
   m_GameObject: {fileID: 571202613}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1.4, z: 4}
+  m_LocalPosition: {x: 0, y: 0.2, z: 4}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -10521,8 +10435,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: -200, y: 100}
-  m_SizeDelta: {x: 150, y: 60}
+  m_AnchoredPosition: {x: -250, y: 0}
+  m_SizeDelta: {x: 200, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &578116129
 MonoBehaviour:
@@ -11358,7 +11272,7 @@ Canvas:
   m_Enabled: 1
   serializedVersion: 3
   m_RenderMode: 2
-  m_Camera: {fileID: 0}
+  m_Camera: {fileID: 382856814}
   m_PlaneDistance: 100
   m_PixelPerfect: 0
   m_ReceivesEvents: 1
@@ -11798,7 +11712,6 @@ GameObject:
   - component: {fileID: 635835274}
   - component: {fileID: 635835277}
   - component: {fileID: 635835276}
-  - component: {fileID: 635835275}
   - component: {fileID: 635835278}
   m_Layer: 5
   m_Name: PracticeIntroVTVisualPanel
@@ -11827,30 +11740,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 1000, y: 700}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &635835275
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 635835273}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 104ba756a9c3d934581197d62df91a3e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HitOrMiss.TaskPopupPanel
-  m_Root: {fileID: 0}
-  m_Body: {fileID: 929655511}
-  m_ContinueButton: {fileID: 0}
-  m_ContinueLabel: {fileID: 0}
-  m_CountdownText: {fileID: 0}
-  m_BodyKey: 
-  m_BodyFallback: 
-  m_ButtonLabelKey: 
-  m_ButtonLabelFallback: Continue
-  m_Behavior: 0
-  m_DurationSeconds: 5
-  m_DurationSource: 0
 --- !u!114 &635835276
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11864,7 +11753,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 0}
+  m_Color: {r: 0, g: 0, b: 0, a: 0.7647059}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -12367,7 +12256,7 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 653297442}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 2}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -12378,8 +12267,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: 200, y: 100}
-  m_SizeDelta: {x: 150, y: 60}
+  m_AnchoredPosition: {x: 250, y: 0}
+  m_SizeDelta: {x: 200, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &653297444
 MonoBehaviour:
@@ -13257,8 +13146,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: 0, y: 100}
-  m_SizeDelta: {x: 150, y: 60}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 200, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &690716570
 MonoBehaviour:
@@ -13548,7 +13437,6 @@ GameObject:
   - component: {fileID: 696450629}
   - component: {fileID: 696450628}
   - component: {fileID: 696450627}
-  - component: {fileID: 696450626}
   - component: {fileID: 696450630}
   m_Layer: 5
   m_Name: TriggerCheckPanel
@@ -13557,30 +13445,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 0
---- !u!114 &696450626
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 696450625}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 104ba756a9c3d934581197d62df91a3e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HitOrMiss.TaskPopupPanel
-  m_Root: {fileID: 0}
-  m_Body: {fileID: 912753167}
-  m_ContinueButton: {fileID: 0}
-  m_ContinueLabel: {fileID: 0}
-  m_CountdownText: {fileID: 0}
-  m_BodyKey: 
-  m_BodyFallback: 
-  m_ButtonLabelKey: 
-  m_ButtonLabelFallback: Continue
-  m_Behavior: 0
-  m_DurationSeconds: 5
-  m_DurationSource: 0
 --- !u!114 &696450627
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13594,7 +13458,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0, g: 0, b: 0, a: 0}
+  m_Color: {r: 0, g: 0, b: 0, a: 0.7647059}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -14224,8 +14088,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: -200, y: 100}
-  m_SizeDelta: {x: 150, y: 60}
+  m_AnchoredPosition: {x: -250, y: 0}
+  m_SizeDelta: {x: 200, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &732558948
 MonoBehaviour:
@@ -15396,8 +15260,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: 0, y: 100}
-  m_SizeDelta: {x: 150, y: 60}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 200, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &825064312
 MonoBehaviour:
@@ -15968,6 +15832,7 @@ MonoBehaviour:
   m_Ui: {fileID: 1643808109}
   m_VibrotactileOutputBehaviour: {fileID: 440917402}
   m_MarkerEmitter: {fileID: 624187188}
+  m_InputSourceBehaviour: {fileID: 4719210530456875037}
 --- !u!1 &869205361
 GameObject:
   m_ObjectHideFlags: 0
@@ -17009,8 +16874,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: 0, y: 100}
-  m_SizeDelta: {x: 150, y: 60}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 200, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &916059416
 MonoBehaviour:
@@ -17647,7 +17512,6 @@ GameObject:
   - component: {fileID: 940394640}
   - component: {fileID: 940394643}
   - component: {fileID: 940394642}
-  - component: {fileID: 940394641}
   - component: {fileID: 940394644}
   m_Layer: 5
   m_Name: EndPanel
@@ -17676,30 +17540,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 1000, y: 700}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &940394641
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 940394639}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 104ba756a9c3d934581197d62df91a3e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HitOrMiss.TaskPopupPanel
-  m_Root: {fileID: 0}
-  m_Body: {fileID: 2143914962}
-  m_ContinueButton: {fileID: 0}
-  m_ContinueLabel: {fileID: 0}
-  m_CountdownText: {fileID: 0}
-  m_BodyKey: 
-  m_BodyFallback: 
-  m_ButtonLabelKey: 
-  m_ButtonLabelFallback: Continue
-  m_Behavior: 0
-  m_DurationSeconds: 5
-  m_DurationSource: 0
 --- !u!114 &940394642
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -17713,7 +17553,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 0}
+  m_Color: {r: 0, g: 0, b: 0, a: 0.7647059}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -18185,7 +18025,6 @@ GameObject:
   - component: {fileID: 965426599}
   - component: {fileID: 965426602}
   - component: {fileID: 965426601}
-  - component: {fileID: 965426600}
   - component: {fileID: 965426603}
   m_Layer: 5
   m_Name: InstructionsPanel
@@ -18214,30 +18053,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 1000, y: 700}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &965426600
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 965426598}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 104ba756a9c3d934581197d62df91a3e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HitOrMiss.TaskPopupPanel
-  m_Root: {fileID: 0}
-  m_Body: {fileID: 869205363}
-  m_ContinueButton: {fileID: 0}
-  m_ContinueLabel: {fileID: 0}
-  m_CountdownText: {fileID: 0}
-  m_BodyKey: 
-  m_BodyFallback: 
-  m_ButtonLabelKey: 
-  m_ButtonLabelFallback: Continue
-  m_Behavior: 0
-  m_DurationSeconds: 5
-  m_DurationSource: 0
 --- !u!114 &965426601
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -18251,7 +18066,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 0}
+  m_Color: {r: 0, g: 0, b: 0, a: 0.7647059}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -18634,7 +18449,7 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1008852713}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 2}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -18645,8 +18460,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: 200, y: 100}
-  m_SizeDelta: {x: 150, y: 60}
+  m_AnchoredPosition: {x: 250, y: 0}
+  m_SizeDelta: {x: 200, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1008852715
 MonoBehaviour:
@@ -20377,8 +20192,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: 0, y: 100}
-  m_SizeDelta: {x: 150, y: 60}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 200, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1179005545
 MonoBehaviour:
@@ -20733,7 +20548,7 @@ Canvas:
   m_Enabled: 1
   serializedVersion: 3
   m_RenderMode: 2
-  m_Camera: {fileID: 0}
+  m_Camera: {fileID: 382856814}
   m_PlaneDistance: 100
   m_PixelPerfect: 0
   m_ReceivesEvents: 1
@@ -20813,7 +20628,7 @@ Transform:
   m_GameObject: {fileID: 1186889164}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -200, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -20838,7 +20653,7 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 0.02
+  m_Radius: 0.04
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!23 &1186889167
 MeshRenderer:
@@ -21367,7 +21182,7 @@ Canvas:
   m_Enabled: 1
   serializedVersion: 3
   m_RenderMode: 2
-  m_Camera: {fileID: 0}
+  m_Camera: {fileID: 382856814}
   m_PlaneDistance: 100
   m_PixelPerfect: 0
   m_ReceivesEvents: 1
@@ -22197,8 +22012,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: 0, y: 100}
-  m_SizeDelta: {x: 150, y: 60}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 200, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1250276888
 MonoBehaviour:
@@ -22502,7 +22317,7 @@ Transform:
   m_GameObject: {fileID: 1252419143}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1.4, z: 3}
+  m_LocalPosition: {x: 0, y: 0.2, z: 3}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -22687,7 +22502,7 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1289135991}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 2}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -22698,8 +22513,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: 200, y: 100}
-  m_SizeDelta: {x: 150, y: 60}
+  m_AnchoredPosition: {x: 250, y: 0}
+  m_SizeDelta: {x: 200, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1289135993
 MonoBehaviour:
@@ -23020,8 +22835,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: 0, y: 100}
-  m_SizeDelta: {x: 150, y: 60}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 200, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1302508993
 MonoBehaviour:
@@ -23938,7 +23753,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: 0, y: 400}
+  m_AnchoredPosition: {x: 0, y: 300}
   m_SizeDelta: {x: 500, y: 22.90805}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1345587028
@@ -24310,8 +24125,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: -200, y: 0}
-  m_SizeDelta: {x: 150, y: 60}
+  m_AnchoredPosition: {x: -250, y: 0}
+  m_SizeDelta: {x: 200, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1371339028
 MonoBehaviour:
@@ -24707,8 +24522,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: 200, y: 100}
-  m_SizeDelta: {x: 150, y: 60}
+  m_AnchoredPosition: {x: 250, y: 0}
+  m_SizeDelta: {x: 200, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1396296131
 MonoBehaviour:
@@ -25062,7 +24877,7 @@ Canvas:
   m_Enabled: 1
   serializedVersion: 3
   m_RenderMode: 2
-  m_Camera: {fileID: 0}
+  m_Camera: {fileID: 382856814}
   m_PlaneDistance: 100
   m_PixelPerfect: 0
   m_ReceivesEvents: 1
@@ -25261,7 +25076,7 @@ Canvas:
   m_Enabled: 1
   serializedVersion: 3
   m_RenderMode: 2
-  m_Camera: {fileID: 0}
+  m_Camera: {fileID: 382856814}
   m_PlaneDistance: 100
   m_PixelPerfect: 0
   m_ReceivesEvents: 1
@@ -27010,8 +26825,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: -200, y: 100}
-  m_SizeDelta: {x: 150, y: 60}
+  m_AnchoredPosition: {x: -250, y: 0}
+  m_SizeDelta: {x: 200, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1567753041
 MonoBehaviour:
@@ -27418,7 +27233,7 @@ Transform:
   m_GameObject: {fileID: 1592417790}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1.4, z: 2}
+  m_LocalPosition: {x: 0, y: 0.2, z: 2}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -27773,11 +27588,11 @@ MonoBehaviour:
   m_BreakPanel: {fileID: 2041645118}
   m_PausePanel: {fileID: 93650241}
   m_EndPanel: {fileID: 940394639}
-  m_TriggerCheckText: {fileID: 0}
-  m_BlockCounterText: {fileID: 0}
-  m_BreakText: {fileID: 0}
-  m_PracticeFeedbackText: {fileID: 0}
-  m_EndText: {fileID: 0}
+  m_TriggerCheckText: {fileID: 912753167}
+  m_BlockCounterText: {fileID: 623462703}
+  m_BreakText: {fileID: 1910229895}
+  m_PracticeFeedbackText: {fileID: 1465355867}
+  m_EndText: {fileID: 2143914962}
   m_StandingCross: {fileID: 148152798}
   m_PracticeFeedbackSeconds: 1
   m_CurrentLanguage: 0
@@ -27989,7 +27804,7 @@ Canvas:
   m_Enabled: 1
   serializedVersion: 3
   m_RenderMode: 2
-  m_Camera: {fileID: 0}
+  m_Camera: {fileID: 382856814}
   m_PlaneDistance: 100
   m_PixelPerfect: 0
   m_ReceivesEvents: 1
@@ -28379,7 +28194,7 @@ Canvas:
   m_Enabled: 1
   serializedVersion: 3
   m_RenderMode: 2
-  m_Camera: {fileID: 0}
+  m_Camera: {fileID: 382856814}
   m_PlaneDistance: 100
   m_PixelPerfect: 0
   m_ReceivesEvents: 1
@@ -28623,7 +28438,7 @@ Canvas:
   m_Enabled: 1
   serializedVersion: 3
   m_RenderMode: 2
-  m_Camera: {fileID: 0}
+  m_Camera: {fileID: 382856814}
   m_PlaneDistance: 100
   m_PixelPerfect: 0
   m_ReceivesEvents: 1
@@ -28730,7 +28545,7 @@ Canvas:
   m_Enabled: 1
   serializedVersion: 3
   m_RenderMode: 2
-  m_Camera: {fileID: 0}
+  m_Camera: {fileID: 382856814}
   m_PlaneDistance: 100
   m_PixelPerfect: 0
   m_ReceivesEvents: 1
@@ -29300,8 +29115,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 24
-  m_fontSizeBase: 24
+  m_fontSize: 30
+  m_fontSizeBase: 30
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -29395,8 +29210,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: -200, y: 100}
-  m_SizeDelta: {x: 150, y: 60}
+  m_AnchoredPosition: {x: -250, y: 0}
+  m_SizeDelta: {x: 200, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1793120643
 MonoBehaviour:
@@ -31002,8 +30817,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: -200, y: 100}
-  m_SizeDelta: {x: 150, y: 60}
+  m_AnchoredPosition: {x: -250, y: 0}
+  m_SizeDelta: {x: 200, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1906566484
 MonoBehaviour:
@@ -31673,8 +31488,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: -200, y: 100}
-  m_SizeDelta: {x: 150, y: 60}
+  m_AnchoredPosition: {x: -250, y: 0}
+  m_SizeDelta: {x: 200, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1910235914
 MonoBehaviour:
@@ -31995,8 +31810,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: -200, y: 100}
-  m_SizeDelta: {x: 150, y: 60}
+  m_AnchoredPosition: {x: -250, y: 0}
+  m_SizeDelta: {x: 200, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1914208421
 MonoBehaviour:
@@ -32419,7 +32234,6 @@ GameObject:
   - component: {fileID: 1927333693}
   - component: {fileID: 1927333696}
   - component: {fileID: 1927333695}
-  - component: {fileID: 1927333694}
   - component: {fileID: 1927333697}
   m_Layer: 5
   m_Name: BlockCounterPanel
@@ -32448,30 +32262,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 1000, y: 700}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1927333694
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1927333692}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 104ba756a9c3d934581197d62df91a3e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HitOrMiss.TaskPopupPanel
-  m_Root: {fileID: 0}
-  m_Body: {fileID: 623462703}
-  m_ContinueButton: {fileID: 0}
-  m_ContinueLabel: {fileID: 0}
-  m_CountdownText: {fileID: 0}
-  m_BodyKey: 
-  m_BodyFallback: 
-  m_ButtonLabelKey: 
-  m_ButtonLabelFallback: Continue
-  m_Behavior: 0
-  m_DurationSeconds: 5
-  m_DurationSource: 0
 --- !u!114 &1927333695
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -32485,7 +32275,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0, g: 0, b: 0, a: 0}
+  m_Color: {r: 0, g: 0, b: 0, a: 0.7647059}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -32868,7 +32658,7 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1953638886}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 2}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -32879,8 +32669,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: 200, y: 100}
-  m_SizeDelta: {x: 150, y: 60}
+  m_AnchoredPosition: {x: 250, y: 0}
+  m_SizeDelta: {x: 200, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1953638888
 MonoBehaviour:
@@ -33201,8 +32991,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: 0, y: 100}
-  m_SizeDelta: {x: 150, y: 60}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 200, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1967323696
 MonoBehaviour:
@@ -34160,7 +33950,7 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2019649656}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 2}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -34171,8 +33961,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: 200, y: 100}
-  m_SizeDelta: {x: 150, y: 60}
+  m_AnchoredPosition: {x: 250, y: 0}
+  m_SizeDelta: {x: 200, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2019649658
 MonoBehaviour:
@@ -34626,8 +34416,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: -200, y: 100}
-  m_SizeDelta: {x: 150, y: 60}
+  m_AnchoredPosition: {x: -250, y: 0}
+  m_SizeDelta: {x: 200, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2035663819
 MonoBehaviour:
@@ -34992,7 +34782,6 @@ GameObject:
   - component: {fileID: 2041645119}
   - component: {fileID: 2041645122}
   - component: {fileID: 2041645121}
-  - component: {fileID: 2041645120}
   - component: {fileID: 2041645123}
   m_Layer: 5
   m_Name: BreakPanel
@@ -35021,30 +34810,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 1000, y: 700}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &2041645120
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2041645118}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 104ba756a9c3d934581197d62df91a3e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HitOrMiss.TaskPopupPanel
-  m_Root: {fileID: 0}
-  m_Body: {fileID: 1910229895}
-  m_ContinueButton: {fileID: 0}
-  m_ContinueLabel: {fileID: 0}
-  m_CountdownText: {fileID: 0}
-  m_BodyKey: 
-  m_BodyFallback: 
-  m_ButtonLabelKey: 
-  m_ButtonLabelFallback: Continue
-  m_Behavior: 0
-  m_DurationSeconds: 5
-  m_DurationSource: 0
 --- !u!114 &2041645121
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -35058,7 +34823,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 0}
+  m_Color: {r: 0, g: 0, b: 0, a: 0.7647059}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -35502,7 +35267,7 @@ Canvas:
   m_Enabled: 1
   serializedVersion: 3
   m_RenderMode: 2
-  m_Camera: {fileID: 0}
+  m_Camera: {fileID: 382856814}
   m_PlaneDistance: 100
   m_PixelPerfect: 0
   m_ReceivesEvents: 1
@@ -35819,7 +35584,6 @@ GameObject:
   - component: {fileID: 2070559568}
   - component: {fileID: 2070559571}
   - component: {fileID: 2070559570}
-  - component: {fileID: 2070559569}
   - component: {fileID: 2070559572}
   m_Layer: 5
   m_Name: PositioningPanel
@@ -35848,30 +35612,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 1000, y: 700}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &2070559569
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2070559567}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 104ba756a9c3d934581197d62df91a3e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HitOrMiss.TaskPopupPanel
-  m_Root: {fileID: 0}
-  m_Body: {fileID: 1270008075}
-  m_ContinueButton: {fileID: 0}
-  m_ContinueLabel: {fileID: 0}
-  m_CountdownText: {fileID: 0}
-  m_BodyKey: 
-  m_BodyFallback: 
-  m_ButtonLabelKey: 
-  m_ButtonLabelFallback: Continue
-  m_Behavior: 0
-  m_DurationSeconds: 5
-  m_DurationSource: 0
 --- !u!114 &2070559570
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -35885,7 +35625,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 0}
+  m_Color: {r: 0, g: 0, b: 0, a: 0.7647059}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -36116,8 +35856,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: -200, y: 100}
-  m_SizeDelta: {x: 150, y: 60}
+  m_AnchoredPosition: {x: -250, y: 0}
+  m_SizeDelta: {x: 200, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2089091987
 MonoBehaviour:
@@ -36482,7 +36222,6 @@ GameObject:
   - component: {fileID: 2093654694}
   - component: {fileID: 2093654697}
   - component: {fileID: 2093654696}
-  - component: {fileID: 2093654695}
   - component: {fileID: 2093654698}
   m_Layer: 5
   m_Name: ReadyToStartPanel
@@ -36511,30 +36250,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 1000, y: 700}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &2093654695
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2093654693}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 104ba756a9c3d934581197d62df91a3e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HitOrMiss.TaskPopupPanel
-  m_Root: {fileID: 0}
-  m_Body: {fileID: 580178337}
-  m_ContinueButton: {fileID: 0}
-  m_ContinueLabel: {fileID: 0}
-  m_CountdownText: {fileID: 0}
-  m_BodyKey: 
-  m_BodyFallback: 
-  m_ButtonLabelKey: 
-  m_ButtonLabelFallback: Continue
-  m_Behavior: 0
-  m_DurationSeconds: 5
-  m_DurationSource: 0
 --- !u!114 &2093654696
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -36548,7 +36263,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0, g: 0, b: 0, a: 0}
+  m_Color: {r: 0, g: 0, b: 0, a: 0.7647059}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -36674,7 +36389,7 @@ Canvas:
   m_Enabled: 1
   serializedVersion: 3
   m_RenderMode: 2
-  m_Camera: {fileID: 0}
+  m_Camera: {fileID: 382856814}
   m_PlaneDistance: 100
   m_PixelPerfect: 0
   m_ReceivesEvents: 1
@@ -36737,7 +36452,7 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2102397988}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 2}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -36748,8 +36463,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: 200, y: 100}
-  m_SizeDelta: {x: 150, y: 60}
+  m_AnchoredPosition: {x: 250, y: 0}
+  m_SizeDelta: {x: 200, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2102397990
 MonoBehaviour:
@@ -37553,6 +37268,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4719210530456875036}
+  - component: {fileID: 4719210530456875037}
   m_Layer: 0
   m_Name: Input
   m_TagString: Untagged
@@ -38171,6 +37887,31 @@ Transform:
   - {fileID: 6301994796558711938}
   m_Father: {fileID: 8848404438533868169}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4719210530456875037
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 112795558477990138}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 03ce0eb08c7cdb04b88ba7be66684a87, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HitOrMiss.XrTriggerResponseInputSource
+  m_TriggerAction:
+    m_UseReference: 1
+    m_Action:
+      m_Name: Trigger
+      m_Type: 0
+      m_ExpectedControlType: 
+      m_Id: f250495d-8ab5-4e32-a4f4-5fef83cd86c2
+      m_Processors: 
+      m_Interactions: 
+      m_SingletonActionBindings: []
+      m_Flags: 0
+    m_Reference: {fileID: 39597534}
+  m_SourceLabel: controller_right_trigger
 --- !u!4 &4890155538278055198
 Transform:
   m_ObjectHideFlags: 0
@@ -38202,7 +37943,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: 0, y: 300}
+  m_AnchoredPosition: {x: 0, y: 400}
   m_SizeDelta: {x: 500, y: 22.90805}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!4 &6301994796558711938
@@ -38267,8 +38008,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 42
-  m_fontSizeBase: 42
+  m_fontSize: 50
+  m_fontSizeBase: 50
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 24
@@ -38438,7 +38179,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0, g: 0, b: 0, a: 0.5019608}
+  m_Color: {r: 0, g: 0, b: 0, a: 0.7647059}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
