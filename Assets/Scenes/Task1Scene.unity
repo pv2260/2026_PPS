@@ -3578,7 +3578,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &148152799
 Transform:
   m_ObjectHideFlags: 0
@@ -27593,7 +27593,7 @@ MonoBehaviour:
   m_BreakText: {fileID: 1910229895}
   m_PracticeFeedbackText: {fileID: 1465355867}
   m_EndText: {fileID: 2143914962}
-  m_StandingCross: {fileID: 148152798}
+  m_StandingCross: {fileID: 2068488786}
   m_PracticeFeedbackSeconds: 1
   m_CurrentLanguage: 0
   m_LocalizedTexts:
@@ -35496,6 +35496,11 @@ PrefabInstance:
 --- !u!4 &2068488785 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 1358338792424752590, guid: 39bc76c4199c8f442896b8071c99d5c5, type: 3}
+  m_PrefabInstance: {fileID: 2068488784}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &2068488786 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 1942432076152751309, guid: 39bc76c4199c8f442896b8071c99d5c5, type: 3}
   m_PrefabInstance: {fileID: 2068488784}
   m_PrefabAsset: {fileID: 0}
 --- !u!1 &2069936684

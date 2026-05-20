@@ -48,7 +48,8 @@ namespace HitOrMiss.Pps
         [Header("Spatial layout (meters)")]
         [SerializeField] float m_WideSeparation = 0.40f;
         [SerializeField] float m_NarrowSeparation = 0.16f;
-        [SerializeField] float m_LedHeight = 0.15f;
+        [Tooltip("World Y position of the side LEDs in meters. Default 0 = floor level (airplane runway light look).")]
+        [SerializeField] float m_LedHeight = 0f;
 
         [Tooltip("Distance from body to D4 (far stage / spawn)")]
         [SerializeField] float m_DistanceD4 = 2.0f;

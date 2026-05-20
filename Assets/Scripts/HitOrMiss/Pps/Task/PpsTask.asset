@@ -49,7 +49,7 @@ MonoBehaviour:
     m_RotationOrder: 4
   m_WideSeparation: 0.4
   m_NarrowSeparation: 0.16
-  m_LedHeight: 0.04
+  m_LedHeight: 0
   m_DistanceD4: 6
   m_DistanceD3: 4
   m_DistanceD2: 2

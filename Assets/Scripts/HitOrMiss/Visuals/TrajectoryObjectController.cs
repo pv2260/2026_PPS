@@ -40,6 +40,8 @@ namespace HitOrMiss
         [SerializeField] float m_SplatPeakSize = 0.45f;
         [Tooltip("Distance from the player (meters) at which the ball collides and the splat fires. 0 = disabled — the ball runs all the way to its lateral end position.")]
         [SerializeField] float m_ImpactDistance = 0f;
+        [Tooltip("Restrict splat to trials whose expected response is Hit (Hit and NearHit categories). Miss-class trials (NearMiss, ClearMiss) pass through without bursting.")]
+        [SerializeField] bool m_SplatOnlyOnHitClass = true;
 
         Transform m_Shadow;
         TrialDefinition m_Trial;
@@ -181,6 +183,13 @@ namespace HitOrMiss
 
         void SpawnSplat(Vector3 worldPos)
         {
+            // Gate on category: by default only Hit-class trials (those whose
+            // expected response is Hit — i.e. Hit and NearHit) splat. Miss-class
+            // trials are visually "the ball passed without hitting you" and
+            // shouldn't leave a splat.
+            if (m_SplatOnlyOnHitClass && !m_Trial.WillHit)
+                return;
+
             if (m_SplatPrefab != null)
             {
                 var go = Instantiate(m_SplatPrefab, worldPos, Quaternion.identity);

@@ -32,6 +32,8 @@ namespace HitOrMiss
         [Header("Response")]
         [Tooltip("Extra seconds after ball vanishes during which the participant can still respond")]
         [SerializeField] float m_ResponseGracePeriod = 1.5f;
+        [Tooltip("If true, the next trial doesn't spawn until the current one has received a response. Trials never time out — the manager waits indefinitely for the participant to pinch.")]
+        [SerializeField] bool m_RequireResponseToAdvance = false;
 
         // Events
         public event Action<string, TrialDefinition> TrialSpawned;
@@ -231,10 +233,20 @@ namespace HitOrMiss
             if (!m_Running || m_Paused) return;
 
             // Spawn next trial when its earliest spawn time has elapsed.
-            // The earliest is set after each spawn to (just-spawned trial's
-            // deadline + jittered ITI) so trials never overlap their response
-            // windows and there's no fixed dead time.
-            if (m_NextTrialIndex < m_BlockTrials.Length && Time.time >= m_NextSpawnEarliest)
+            // When RequireResponseToAdvance is on, the next trial also waits
+            // until all previously-spawned trials are resolved (i.e. the
+            // participant has actually pinched). The earliest-spawn timer is
+            // still honored on top of that so the participant gets at least
+            // one ITI of pause between trials.
+            bool hasUnresolvedTrial = false;
+            for (int i = 0; i < m_ActiveTrials.Count; i++)
+                if (!m_ActiveTrials[i].Resolved) { hasUnresolvedTrial = true; break; }
+
+            bool gateOnPriorResponse = m_RequireResponseToAdvance && hasUnresolvedTrial;
+
+            if (m_NextTrialIndex < m_BlockTrials.Length
+                && Time.time >= m_NextSpawnEarliest
+                && !gateOnPriorResponse)
             {
                 var def = m_BlockTrials[m_NextTrialIndex];
                 SpawnTrial(def);
@@ -252,8 +264,10 @@ namespace HitOrMiss
                 float duration = trial.Definition.Duration;
                 float deadline = duration + m_ResponseGracePeriod;
 
-                // Timeout: ball vanished AND grace period elapsed with no response
-                if (!trial.Resolved && trialElapsed >= deadline)
+                // Timeout: ball vanished AND grace period elapsed with no response.
+                // Suppressed entirely when RequireResponseToAdvance is on —
+                // the manager waits indefinitely for the participant.
+                if (!trial.Resolved && trialElapsed >= deadline && !m_RequireResponseToAdvance)
                 {
                     ResolveTrial(trial, SemanticCommand.None, TrialResult.NoResponse, "timeout");
                     m_MarkerEmitter?.Emit("trial_timeout", trial.Definition.trialId,
