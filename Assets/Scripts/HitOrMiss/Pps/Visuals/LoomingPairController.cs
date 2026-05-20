@@ -17,7 +17,6 @@ namespace HitOrMiss.Pps
         [SerializeField] Transform m_RightLed;
         [SerializeField] DistanceLayout m_Layout;
 
-
         public AnimationCurve speedCurve;
 
         public DistanceLayout Layout
@@ -30,12 +29,23 @@ namespace HitOrMiss.Pps
         public bool IsRunning { get; private set; }
 
         /// <summary>
-        /// Run one looming pass. <paramref name="onStageEnter"/> fires each time the
-        /// pair crosses into a new stage (D4→D3, D3→D2, D2→D1).
+        /// Run one looming pass.
+        /// 
+        /// participantShoulderWidthMeters:
+        ///     Used to compute the left/right separation at runtime.
+        ///     Narrow = participant shoulder width.
+        ///     Wide   = participant shoulder width + asset wide offset.
+        ///
+        /// onStageEnter fires each time the pair crosses into a new stage.
         /// </summary>
-        public IEnumerator RunLoom(PpsTrialDefinition trial, PpsTaskAsset asset, Action<DistanceStage> onStageEnter = null)
+        public IEnumerator RunLoom(
+            PpsTrialDefinition trial,
+            PpsTaskAsset asset,
+            float participantShoulderWidthMeters,
+            Action<DistanceStage> onStageEnter = null)
         {
             if (asset == null) yield break;
+
             if (m_LeftLed == null || m_RightLed == null || m_Layout == null)
             {
                 Debug.LogError("[LoomingPairController] Missing references (LEDs or layout).");
@@ -43,27 +53,30 @@ namespace HitOrMiss.Pps
             }
 
             float duration = asset.DurationFor(trial.speed);
-            float separation = asset.SeparationFor(trial.width);
+
+            // Participant-specific separation:
+            // Narrow = shoulder width
+            // Wide   = shoulder width + wide offset
+            float separation = asset.SeparationFor(trial.width, participantShoulderWidthMeters);
+
             var curve = asset.MotionCurve;
-            
+
             Vector3 start = m_Layout.StartCenter;
             Vector3 end = m_Layout.EndCenter;
 
-            // Force looming lights to floor / foot level.
-            // This prevents the LEDs from inheriting the XR camera height.
-            //start.y = m_StimulusWorldY;
-            //end.y = m_StimulusWorldY;
-
             m_LeftLed.gameObject.SetActive(true);
             m_RightLed.gameObject.SetActive(true);
+
             IsRunning = true;
             CurrentStage = DistanceStage.D4;
             onStageEnter?.Invoke(DistanceStage.D4);
 
             float elapsed = 0f;
+
             while (elapsed < duration)
             {
                 elapsed += Time.deltaTime;
+
                 float t = Mathf.Clamp01(elapsed / duration);
                 float curved = curve != null ? curve.Evaluate(t) : t;
 
@@ -72,13 +85,19 @@ namespace HitOrMiss.Pps
 
                 if (elapsed < Time.deltaTime * 2f)
                 {
-                    Debug.Log($"[LOOM SCALE] D4={asset.ScaleAtD4} D1={asset.ScaleAtD1} current={scale}");
+                    Debug.Log(
+                        $"[LOOM PPS] width={trial.width} " +
+                        $"participantShoulder={participantShoulderWidthMeters:F3}m " +
+                        $"separation={separation:F3}m " +
+                        $"D4Scale={asset.ScaleAtD4} D1Scale={asset.ScaleAtD1} currentScale={scale}"
+                    );
                 }
 
                 Vector3 moveDirection = (end - start).normalized;
                 Quaternion beamRotation = Quaternion.LookRotation(moveDirection, Vector3.up);
 
-                // Temporary simple left/right axis for testing
+                // Left/right axis. For now this is world right.
+                // Later, if the participant turns, this should probably come from the body/XR anchor.
                 Vector3 sideDirection = Vector3.right;
 
                 m_LeftLed.position = center - sideDirection * (separation * 0.5f);
@@ -102,13 +121,16 @@ namespace HitOrMiss.Pps
 
             m_LeftLed.gameObject.SetActive(false);
             m_RightLed.gameObject.SetActive(false);
+
             IsRunning = false;
+            CurrentStage = DistanceStage.None;
         }
 
         public void ForceHide()
         {
             if (m_LeftLed != null) m_LeftLed.gameObject.SetActive(false);
             if (m_RightLed != null) m_RightLed.gameObject.SetActive(false);
+
             IsRunning = false;
             CurrentStage = DistanceStage.None;
         }

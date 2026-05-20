@@ -5,22 +5,20 @@ namespace HitOrMiss
 {
     /// <summary>
     /// Generates the per-block trial list. 4 categories × <see cref="TrajectoryTaskAsset.TrialsPerCategory"/>.
-    /// Each ball spawns at the same point in front of the player and travels toward the player.
-    /// Lateral curve magnitude scales with category — Hits are straight, Misses curve hard outward.
+    /// Each ball spawns at the same point in front of the player and travels in a straight line
+    /// toward an end point laterally offset from the player. The category is encoded entirely in
+    /// that final lateral offset, anchored on the participant's shoulder edge:
+    ///   • ClearHit  — dead-center on torso.
+    ///   • NearHit   — inside the shoulder line (still hits the body).
+    ///   • NearMiss  — just outside the shoulder edge by 0–10 cm.
+    ///   • ClearMiss — well outside the shoulder edge by 20–35 cm.
+    /// All ranges scale with the participant's actual shoulder width so a narrower participant
+    /// gets a narrower body but the bands stay anchored on their shoulder edge.
     /// </summary>
     public static class TrialGenerator
     {
-        // Final lateral offset ranges per category (meters from player center
-        // where the ball ends). These are calibrated to the asset's reference
-        // shoulder width (default 42 cm) and scaled per-participant by
-        // ComputeShoulderScale at generation time.
-        static readonly Vector2 HitRange      = new(0f,    0f);    // dead-center, on body
-        static readonly Vector2 NearHitRange  = new(0f,    0.10f); // 0–10 cm
-        static readonly Vector2 NearMissRange = new(0.10f, 0.25f); // 10–25 cm
-        static readonly Vector2 MissRange     = new(0.30f, 0.45f); // 30–45 cm
-
         /// <summary>
-        /// Returns the per-participant lateral / curve scale factor.
+        /// Returns the per-participant lateral scale factor.
         /// <paramref name="shoulderWidthCm"/> ≤ 0 returns 1.0 (no scaling),
         /// useful when metadata isn't yet set.
         /// </summary>
@@ -49,8 +47,7 @@ namespace HitOrMiss
             {
                 bool isHit = (i % 2 == 0);
                 var category = isHit ? TrialCategory.ClearHit : TrialCategory.ClearMiss;
-                var range = isHit ? HitRange : MissRange;
-                trials.AddRange(GenerateCategory(category, range,
+                trials.AddRange(GenerateCategory(category,
                     isHit ? SemanticCommand.Hit : SemanticCommand.Miss,
                     1, asset.SpawnDistance, asset.BallDiameter, asset, scale));
             }
@@ -76,10 +73,10 @@ namespace HitOrMiss
             float scale = ComputeShoulderScale(asset, shoulderWidthCm);
 
             var trials = new List<TrialDefinition>(perCat * 4);
-            trials.AddRange(GenerateCategory(TrialCategory.ClearHit,  HitRange,      SemanticCommand.Hit,  perCat, spawnDistance, ballDiameter, asset, scale));
-            trials.AddRange(GenerateCategory(TrialCategory.NearHit,   NearHitRange,  SemanticCommand.Hit,  perCat, spawnDistance, ballDiameter, asset, scale));
-            trials.AddRange(GenerateCategory(TrialCategory.NearMiss,  NearMissRange, SemanticCommand.Miss, perCat, spawnDistance, ballDiameter, asset, scale));
-            trials.AddRange(GenerateCategory(TrialCategory.ClearMiss, MissRange,     SemanticCommand.Miss, perCat, spawnDistance, ballDiameter, asset, scale));
+            trials.AddRange(GenerateCategory(TrialCategory.ClearHit,  SemanticCommand.Hit,  perCat, spawnDistance, ballDiameter, asset, scale));
+            trials.AddRange(GenerateCategory(TrialCategory.NearHit,   SemanticCommand.Hit,  perCat, spawnDistance, ballDiameter, asset, scale));
+            trials.AddRange(GenerateCategory(TrialCategory.NearMiss,  SemanticCommand.Miss, perCat, spawnDistance, ballDiameter, asset, scale));
+            trials.AddRange(GenerateCategory(TrialCategory.ClearMiss, SemanticCommand.Miss, perCat, spawnDistance, ballDiameter, asset, scale));
 
             ShuffleNoConsecutive(trials);
             AssignIds(trials, blockIndex);
@@ -90,36 +87,74 @@ namespace HitOrMiss
             return trials.ToArray();
         }
 
+        /// <summary>
+        /// Builds <paramref name="count"/> trials of the given category. The
+        /// lateral offset of each trial is anchored on the participant's
+        /// shoulder edge (not their center), so the bands stay perceptually
+        /// meaningful regardless of body size:
+        ///   • ClearHit  — magnitude 0 (dead-center on torso).
+        ///   • NearHit   — 0 to (shoulderHalf × 0.7) inside the shoulder line.
+        ///   • NearMiss  — shoulderHalf + ballRadius + 0..10 cm outside.
+        ///   • ClearMiss — shoulderHalf + ballRadius + 20..35 cm outside.
+        /// Side (left vs right of the body) is randomized 50/50.
+        /// </summary>
         static List<TrialDefinition> GenerateCategory(TrialCategory category,
-            Vector2 offsetRange, SemanticCommand expected, int count,
+            SemanticCommand expected, int count,
             float spawnDistance, float ballDiameter, TrajectoryTaskAsset asset, float shoulderScale)
         {
             var result = new List<TrialDefinition>(count);
-            float baseCurve = asset.CurveMagnitudeFor(category) * shoulderScale;
 
-            // Scale the lateral-offset band so a wider participant gets a
-            // proportionally wider miss band, and a narrower participant a
-            // narrower one. Hit (0..0) is a no-op under scaling.
-            Vector2 scaledRange = new Vector2(offsetRange.x * shoulderScale, offsetRange.y * shoulderScale);
+            // Shoulder geometry, scaled to the participant.
+            float referenceShoulder = asset != null && asset.ReferenceShoulderWidthCm > 0f
+                ? asset.ReferenceShoulderWidthCm
+                : 42f;
+            float participantShoulderM = (referenceShoulder * shoulderScale) * 0.01f; // cm → m
+            float shoulderHalfM = participantShoulderM * 0.5f;
+            float ballRadiusM = ballDiameter * 0.5f;
 
             for (int i = 0; i < count; i++)
             {
-                float magnitude = Random.Range(scaledRange.x, Mathf.Max(scaledRange.x + 0.001f, scaledRange.y));
+                float magnitude;
+                switch (category)
+                {
+                    case TrialCategory.ClearHit:
+                        // Dead-center on torso.
+                        magnitude = 0f;
+                        break;
+
+                    case TrialCategory.NearHit:
+                        // Inside the shoulder line by up to 70% of half-shoulder width.
+                        // Distinguishable from ClearHit (ball isn't always dead-center)
+                        // but still clearly on the body.
+                        magnitude = Random.Range(0f, shoulderHalfM * 0.7f);
+                        break;
+
+                    case TrialCategory.NearMiss:
+                        // Ball center 0–10 cm past the shoulder edge, with ball radius
+                        // added so the ball's near edge is already past the body line.
+                        // Visually: "would have grazed, but cleanly missed."
+                        magnitude = shoulderHalfM + ballRadiusM + Random.Range(0f, 0.10f);
+                        break;
+
+                    case TrialCategory.ClearMiss:
+                        // 20–35 cm clear of the shoulder edge (plus ball radius).
+                        // Visually unambiguous miss.
+                        magnitude = shoulderHalfM + ballRadiusM + Random.Range(0.20f, 0.35f);
+                        break;
+
+                    default:
+                        magnitude = 0f;
+                        break;
+                }
+
                 float side = Random.value > 0.5f ? 1f : -1f;
                 float lateral = magnitude * side;
-
-                // Slight per-trial variation around the per-category curve
-                // magnitude. Jitter scales with shoulder width so the relative
-                // wobble stays consistent across participants.
-                float curveJitter = baseCurve > 0f ? Random.Range(-0.05f * shoulderScale, 0.05f * shoulderScale) : 0f;
-                float curve = Mathf.Max(0f, baseCurve + curveJitter);
 
                 result.Add(new TrialDefinition
                 {
                     category = category,
                     spawnDistance = spawnDistance,
                     finalLateralOffset = lateral,
-                    curveMagnitude = curve,
                     speed = 0f, // assigned later by group pattern
                     ballDiameter = ballDiameter,
                     expectedResponse = expected,

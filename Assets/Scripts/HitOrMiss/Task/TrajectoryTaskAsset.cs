@@ -26,20 +26,11 @@ namespace HitOrMiss
         [SerializeField] float m_BallDiameter = 0.175f;
 
         [Header("Per-participant scaling")]
-        [Tooltip("Reference shoulder width in cm. Lateral offsets and curve magnitudes scale by " +
-                 "(participant.shoulderWidthCm / this) so a wider participant gets proportionally wider " +
-                 "near-hit / near-miss / miss bands. Default 42 cm (the PDF spec example value).")]
+        [Tooltip("Design-baseline shoulder width in cm. NOT the current participant's value — that " +
+                 "lives in session metadata. Real participants are scaled by " +
+                 "(participant.shoulderWidthCm / this), so a wider participant gets proportionally " +
+                 "wider near-hit / near-miss / miss bands. Default 42 cm (the PDF spec example).")]
         [SerializeField] float m_ReferenceShoulderWidthCm = 42f;
-
-        [Header("Lateral curve magnitude per category (peak outward bow at midpoint, meters)")]
-        [Tooltip("Hit: 0 = straight line. The ball arrives at the player with no lateral deflection.")]
-        [SerializeField] float m_HitCurveMagnitude = 0f;
-        [Tooltip("NearHit: small outward curve.")]
-        [SerializeField] float m_NearHitCurveMagnitude = 0.10f;
-        [Tooltip("NearMiss: moderate outward curve.")]
-        [SerializeField] float m_NearMissCurveMagnitude = 0.35f;
-        [Tooltip("Miss: pronounced outward curve.")]
-        [SerializeField] float m_MissCurveMagnitude = 0.65f;
 
         [Header("Speeds")]
         [SerializeField] float m_FastSpeed = 3.5f;
@@ -92,11 +83,6 @@ namespace HitOrMiss
         public float SpawnDistance => m_SpawnDistance;
         public float BallDiameter => m_BallDiameter;
 
-        public float HitCurveMagnitude => m_HitCurveMagnitude;
-        public float NearHitCurveMagnitude => m_NearHitCurveMagnitude;
-        public float NearMissCurveMagnitude => m_NearMissCurveMagnitude;
-        public float MissCurveMagnitude => m_MissCurveMagnitude;
-
         public float FastSpeed => m_FastSpeed;
         public float SlowSpeed => m_SlowSpeed;
         public float ItiMinSeconds => m_ItiMinSeconds;
@@ -120,15 +106,6 @@ namespace HitOrMiss
         public float ReferenceShoulderWidthCm => m_ReferenceShoulderWidthCm;
 
         public int TrialsPerBlock => m_TrialsPerCategory * 4; // 4 categories
-
-        public float CurveMagnitudeFor(TrialCategory category) => category switch
-        {
-            TrialCategory.ClearHit  => m_HitCurveMagnitude,
-            TrialCategory.NearHit   => m_NearHitCurveMagnitude,
-            TrialCategory.NearMiss  => m_NearMissCurveMagnitude,
-            TrialCategory.ClearMiss => m_MissCurveMagnitude,
-            _ => 0f,
-        };
 
         public TrialDefinition[] GenerateBlock(int blockIndex)
         {
@@ -214,10 +191,6 @@ namespace HitOrMiss
             if (m_SlowSpeed <= 0f) m_SlowSpeed = 0.25f;
             if (m_FastSpeed <= m_SlowSpeed) m_FastSpeed = m_SlowSpeed + 0.1f;
             if (m_BallDiameter <= 0f) m_BallDiameter = 0.1f;
-            if (m_HitCurveMagnitude < 0f) m_HitCurveMagnitude = 0f;
-            if (m_NearHitCurveMagnitude < 0f) m_NearHitCurveMagnitude = 0f;
-            if (m_NearMissCurveMagnitude < 0f) m_NearMissCurveMagnitude = 0f;
-            if (m_MissCurveMagnitude < 0f) m_MissCurveMagnitude = 0f;
             if (m_ItiMinSeconds < 0f) m_ItiMinSeconds = 0f;
             if (m_ItiMaxSeconds < m_ItiMinSeconds) m_ItiMaxSeconds = m_ItiMinSeconds;
         }

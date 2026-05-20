@@ -16,6 +16,7 @@ namespace HitOrMiss
         [SerializeField] TrajectoryTaskManager m_TaskManager;
 
         [Header("Setup Controls (hidden during task)")]
+        [SerializeField] GameObject m_StartPanelRoot; // Full start panel: title, logo, buttons, card
         [SerializeField] Button m_StartButton;
         [SerializeField] Button m_LanguageToggleButton;
         [SerializeField] TMP_InputField m_ParticipantIdField;
@@ -125,9 +126,16 @@ namespace HitOrMiss
         /// </summary>
         public void EnterTaskMode()
         {
-            SetActive(m_StartButton, false);
-            SetActive(m_LanguageToggleButton, false);
-            if (m_ParticipantIdField != null) m_ParticipantIdField.gameObject.SetActive(false);
+            if (m_StartPanelRoot != null)
+                m_StartPanelRoot.SetActive(false);
+            else
+            {
+                SetActive(m_StartButton, false);
+                SetActive(m_LanguageToggleButton, false);
+                if (m_ParticipantIdField != null) 
+                    m_ParticipantIdField.gameObject.SetActive(false);
+            }
+
             SetActive(m_StopButton, true);
         }
 
@@ -137,10 +145,18 @@ namespace HitOrMiss
         /// </summary>
         public void ExitTaskMode()
         {
-            SetActive(m_StartButton, true);
-            SetActive(m_LanguageToggleButton, true);
-            if (m_ParticipantIdField != null) m_ParticipantIdField.gameObject.SetActive(true);
+            if (m_StartPanelRoot != null)
+                m_StartPanelRoot.SetActive(true);
+            else
+            {
+                SetActive(m_StartButton, true);
+                SetActive(m_LanguageToggleButton, true);
+                if (m_ParticipantIdField != null) 
+                    m_ParticipantIdField.gameObject.SetActive(true);
+            }
+
             SetActive(m_StopButton, true);
+
             // Clean up pause UI if the session was ended directly from a paused state.
             SetActive(m_ResumeButton, false);
             SetActive(m_EndSessionButton, false);

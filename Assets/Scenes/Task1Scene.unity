@@ -711,20 +711,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 25483917}
   m_CullTransparentMesh: 0
---- !u!114 &39597534
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fc1515ab76e54f068e2f2207940fab32, type: 3}
-  m_Name: XRI Right Interaction/Activate
-  m_EditorClassIdentifier: Unity.InputSystem::UnityEngine.InputSystem.InputActionReference
-  m_Asset: {fileID: -944628639613478452, guid: c348712bda248c246b8c49b3db54643f, type: 3}
-  m_ActionId: 41976d89-60de-4deb-bff9-16b4af96b290
 --- !u!1 &42433505
 GameObject:
   m_ObjectHideFlags: 0
@@ -3557,7 +3543,7 @@ Transform:
   m_GameObject: {fileID: 132007272}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.2, z: 1}
+  m_LocalPosition: {x: 0, y: 0.2, z: 0.5}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -3578,7 +3564,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!4 &148152799
 Transform:
   m_ObjectHideFlags: 0
@@ -8037,7 +8023,7 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 0.04
+  m_Radius: 2
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!23 &416702266
 MeshRenderer:
@@ -10312,7 +10298,7 @@ Transform:
   m_GameObject: {fileID: 571202613}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.2, z: 4}
+  m_LocalPosition: {x: 0, y: 0.2, z: 6}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -15829,10 +15815,11 @@ MonoBehaviour:
   m_TaskAsset: {fileID: 11400000, guid: b6a0232453b4a5f4182f868a7d2920f0, type: 2}
   m_Loom: {fileID: 1976196462}
   m_Layout: {fileID: 1086280596}
+  m_ParticipantShoulderWidthMeters: 0.42
   m_Ui: {fileID: 1643808109}
   m_VibrotactileOutputBehaviour: {fileID: 440917402}
   m_MarkerEmitter: {fileID: 624187188}
-  m_InputSourceBehaviour: {fileID: 4719210530456875037}
+  m_InputSourceBehaviour: {fileID: 0}
 --- !u!1 &869205361
 GameObject:
   m_ObjectHideFlags: 0
@@ -20653,7 +20640,7 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 0.04
+  m_Radius: 2
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!23 &1186889167
 MeshRenderer:
@@ -22317,7 +22304,7 @@ Transform:
   m_GameObject: {fileID: 1252419143}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.2, z: 3}
+  m_LocalPosition: {x: 0, y: 0.2, z: 4}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -31810,8 +31797,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: -250, y: 0}
-  m_SizeDelta: {x: 200, y: 100}
+  m_AnchoredPosition: {x: -150, y: 100}
+  m_SizeDelta: {x: 150, y: 60}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1914208421
 MonoBehaviour:
@@ -37273,7 +37260,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4719210530456875036}
-  - component: {fileID: 4719210530456875037}
   m_Layer: 0
   m_Name: Input
   m_TagString: Untagged
@@ -37844,6 +37830,7 @@ GameObject:
   - component: {fileID: 8848092876310593470}
   - component: {fileID: 8239534501844801285}
   - component: {fileID: 8848092876310593471}
+  - component: {fileID: 8848092876310593472}
   m_Layer: 5
   m_Name: WelcomePanel
   m_TagString: Untagged
@@ -37892,31 +37879,6 @@ Transform:
   - {fileID: 6301994796558711938}
   m_Father: {fileID: 8848404438533868169}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &4719210530456875037
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 112795558477990138}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 03ce0eb08c7cdb04b88ba7be66684a87, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HitOrMiss.XrTriggerResponseInputSource
-  m_TriggerAction:
-    m_UseReference: 1
-    m_Action:
-      m_Name: Trigger
-      m_Type: 0
-      m_ExpectedControlType: 
-      m_Id: f250495d-8ab5-4e32-a4f4-5fef83cd86c2
-      m_Processors: 
-      m_Interactions: 
-      m_SingletonActionBindings: []
-      m_Flags: 0
-    m_Reference: {fileID: 39597534}
-  m_SourceLabel: controller_right_trigger
 --- !u!4 &4890155538278055198
 Transform:
   m_ObjectHideFlags: 0
@@ -38236,6 +38198,21 @@ MonoBehaviour:
   m_MinAngleAllowed: 180
   m_MaxAngleAllowed: 360
   m_TimeUntilThresholdReachesMaxAngle: 999
+--- !u!114 &8848092876310593472
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4424058234026343715}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 90c7c2cb15bc9604f8a8713a1c31f6cc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HitOrMiss.LocalizedUITextBinder
+  m_TermTable: {fileID: 0}
+  m_Key: 
+  m_Text: {fileID: 0}
 --- !u!4 &8848404438533868169
 Transform:
   m_ObjectHideFlags: 0

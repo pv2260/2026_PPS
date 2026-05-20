@@ -47,15 +47,15 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  m_WideSeparation: 0.4
-  m_NarrowSeparation: 0.16
-  m_LedHeight: 0
+  m_DefaultShoulderWidthMeters: 0.5
+  m_WideOffsetMeters: 0.6
+  m_LedHeight: 1
   m_DistanceD4: 6
   m_DistanceD3: 4
   m_DistanceD2: 2
   m_DistanceD1: 1
-  m_ScaleAtD4: {x: 0.5, y: 0.5, z: 0.5}
-  m_ScaleAtD1: {x: 1.5, y: 1.5, z: 1.5}
+  m_ScaleAtD4: {x: 2, y: 2, z: 2}
+  m_ScaleAtD1: {x: 6, y: 6, z: 6}
   m_VibrationDurationMs: 300
   m_VibrationIntensity: 1
   m_RestDurationSeconds: 30

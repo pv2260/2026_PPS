@@ -45,6 +45,10 @@ namespace HitOrMiss
 
         // Runtime state
         readonly List<RuntimeTrial> m_ActiveTrials = new();
+        // Trials whose ball has despawned (deadline elapsed) but which are still
+        // awaiting a pinch under RequireResponseToAdvance. The block does not
+        // advance while this list is non-empty.
+        readonly List<RuntimeTrial> m_AwaitingLateResponse = new();
         TrialDefinition[] m_BlockTrials;
         int m_NextTrialIndex;
         readonly List<TrialJudgement> m_AllResults = new();
@@ -132,6 +136,7 @@ namespace HitOrMiss
             m_NextSpawnEarliest = Time.time;
             m_LastSpawnEndTime = 0f;
             m_ActiveTrials.Clear();
+            m_AwaitingLateResponse.Clear();
 
             m_Running = true;
             m_InputSource?.Enable();
@@ -166,6 +171,7 @@ namespace HitOrMiss
             m_NextSpawnEarliest = Time.time;
             m_LastSpawnEndTime = 0f;
             m_ActiveTrials.Clear();
+            m_AwaitingLateResponse.Clear();
             m_Paused = false;
             m_Running = true;
             m_InputSource?.Enable();
@@ -189,6 +195,14 @@ namespace HitOrMiss
                     ResolveTrial(trial, SemanticCommand.None, TrialResult.NoResponse, "block_stopped");
             }
 
+            // Same treatment for trials still waiting on a late pinch.
+            foreach (var trial in m_AwaitingLateResponse)
+            {
+                if (!trial.Resolved)
+                    ResolveTrial(trial, SemanticCommand.None, TrialResult.NoResponse, "block_stopped");
+            }
+            m_AwaitingLateResponse.Clear();
+
             DespawnAll();
             m_MarkerEmitter?.Emit("block_end", "", m_CurrentBlock.ToString());
             BlockEnded?.Invoke(m_CurrentBlock);
@@ -210,6 +224,8 @@ namespace HitOrMiss
             // Discard in-flight balls without scoring. They are not "no response" —
             // the trial was interrupted. They simply don't go into the log.
             DespawnAll();
+            // Same for trials sitting in the late-response queue.
+            m_AwaitingLateResponse.Clear();
 
             m_MarkerEmitter?.Emit("block_paused", "", m_CurrentBlock.ToString());
         }
@@ -234,13 +250,19 @@ namespace HitOrMiss
 
             // Spawn next trial when its earliest spawn time has elapsed.
             // When RequireResponseToAdvance is on, the next trial also waits
-            // until all previously-spawned trials are resolved (i.e. the
-            // participant has actually pinched). The earliest-spawn timer is
-            // still honored on top of that so the participant gets at least
-            // one ITI of pause between trials.
+            // until every previously-spawned trial has been resolved — that
+            // includes both in-flight trials AND trials whose ball already
+            // despawned and are sitting in m_AwaitingLateResponse. Without the
+            // second list in this check, late-response trials wouldn't gate
+            // the spawn and the block would advance with unanswered trials.
             bool hasUnresolvedTrial = false;
             for (int i = 0; i < m_ActiveTrials.Count; i++)
                 if (!m_ActiveTrials[i].Resolved) { hasUnresolvedTrial = true; break; }
+            if (!hasUnresolvedTrial)
+            {
+                for (int i = 0; i < m_AwaitingLateResponse.Count; i++)
+                    if (!m_AwaitingLateResponse[i].Resolved) { hasUnresolvedTrial = true; break; }
+            }
 
             bool gateOnPriorResponse = m_RequireResponseToAdvance && hasUnresolvedTrial;
 
@@ -264,9 +286,8 @@ namespace HitOrMiss
                 float duration = trial.Definition.Duration;
                 float deadline = duration + m_ResponseGracePeriod;
 
-                // Timeout: ball vanished AND grace period elapsed with no response.
-                // Suppressed entirely when RequireResponseToAdvance is on —
-                // the manager waits indefinitely for the participant.
+                // Timeout (auto-advance mode only): ball vanished AND grace period elapsed
+                // with no response → score as NoResponse and clean up.
                 if (!trial.Resolved && trialElapsed >= deadline && !m_RequireResponseToAdvance)
                 {
                     ResolveTrial(trial, SemanticCommand.None, TrialResult.NoResponse, "timeout");
@@ -274,17 +295,34 @@ namespace HitOrMiss
                         trial.Definition.category.ToString());
                 }
 
-                // Clean up after resolved and visual is done
+                // Clean up resolved trials once the visual is done.
                 if (trial.Resolved && trialElapsed >= deadline)
                 {
                     if (trial.ObjectController != null)
                         trial.ObjectController.Despawn();
                     m_ActiveTrials.RemoveAt(i);
+                    continue;
+                }
+
+                // Wait-for-response mode: ball reached deadline but no pinch yet.
+                // Despawn the visual so the participant sees only the crosshair,
+                // and move the trial into m_AwaitingLateResponse so the spawn
+                // gate keeps holding the next trial until they finally pinch.
+                if (!trial.Resolved && trialElapsed >= deadline && m_RequireResponseToAdvance)
+                {
+                    if (trial.ObjectController != null)
+                        trial.ObjectController.Despawn();
+                    m_AwaitingLateResponse.Add(trial);
+                    m_ActiveTrials.RemoveAt(i);
                 }
             }
 
-            // Check if block is complete
-            if (m_NextTrialIndex >= m_BlockTrials.Length && m_ActiveTrials.Count == 0)
+            // Check if block is complete. Must also wait on the late-response
+            // queue so a participant pinching the very last trial after its
+            // ball already despawned still gets scored.
+            if (m_NextTrialIndex >= m_BlockTrials.Length
+                && m_ActiveTrials.Count == 0
+                && m_AwaitingLateResponse.Count == 0)
             {
                 m_Running = false;
                 m_InputSource?.Disable();
@@ -475,27 +513,40 @@ namespace HitOrMiss
                 response.command == SemanticCommand.Hit ? "response_hit" : "response_miss",
                 "", "", "", response.rawSource);
 
-            // Find the most recent unresolved trial within its full response window
-            // (travel time + grace period after vanish)
+            // Find the most recent unresolved trial that can accept this response.
+            // Two sources, in priority order:
+            //   1) Active in-flight or in-grace trials (m_ActiveTrials, inside deadline)
+            //   2) Trials that timed out under RequireResponseToAdvance and are now
+            //      in m_AwaitingLateResponse — these have no upper time bound,
+            //      the participant has as long as they need.
+            // Most recent spawn wins in either case.
             RuntimeTrial bestTrial = null;
             float bestSpawnTime = float.MinValue;
+            bool bestIsLate = false;
 
             foreach (var trial in m_ActiveTrials)
             {
                 if (trial.Resolved) continue;
-
                 float trialElapsed = Time.time - trial.SpawnTime;
                 float deadline = trial.Definition.Duration + m_ResponseGracePeriod;
+                if (trialElapsed < 0f || trialElapsed > deadline) continue;
 
-                // Accept response during travel AND during grace period after vanish
-                if (trialElapsed < 0f || trialElapsed > deadline)
-                    continue;
-
-                // Prefer the most recently spawned trial
                 if (trial.SpawnTime > bestSpawnTime)
                 {
                     bestSpawnTime = trial.SpawnTime;
                     bestTrial = trial;
+                    bestIsLate = false;
+                }
+            }
+
+            foreach (var trial in m_AwaitingLateResponse)
+            {
+                if (trial.Resolved) continue;
+                if (trial.SpawnTime > bestSpawnTime)
+                {
+                    bestSpawnTime = trial.SpawnTime;
+                    bestTrial = trial;
+                    bestIsLate = true;
                 }
             }
 
@@ -522,6 +573,11 @@ namespace HitOrMiss
 
             ResolveTrial(bestTrial, response.command, result, "");
             ResponseIndicator?.Invoke(response.command, true);
+
+            // If we matched against a late-response trial, drop it from that list
+            // now that it's resolved. (Active trials are cleaned up by Update().)
+            if (bestIsLate)
+                m_AwaitingLateResponse.Remove(bestTrial);
         }
 
         /// <summary>

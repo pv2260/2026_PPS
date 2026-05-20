@@ -30,6 +30,26 @@ namespace HitOrMiss.Pps
         [SerializeField] private LoomingPairController m_Loom;
         [SerializeField] private DistanceLayout m_Layout;
 
+        [Header("Participant geometry")]
+        [Tooltip("Participant shoulder width in meters. Narrow PPS width uses this value. Wide PPS width adds the asset's wide offset.")]
+        [SerializeField] private float m_ParticipantShoulderWidthMeters = 0.42f;
+
+        public float ParticipantShoulderWidthMeters
+        {
+            get => m_ParticipantShoulderWidthMeters;
+            set => m_ParticipantShoulderWidthMeters = Mathf.Max(0.01f, value);
+        }
+
+        /// <summary>
+        /// Use this if the clinician GUI stores shoulder width in centimeters.
+        /// Example: 42 cm becomes 0.42 m.
+        /// </summary>
+        public void SetParticipantShoulderWidthCm(float shoulderWidthCm)
+        {
+            if (shoulderWidthCm > 0f)
+                m_ParticipantShoulderWidthMeters = shoulderWidthCm / 100f;
+        }
+
         [Header("Practice Feedback")]
         [SerializeField] private SessionFlowPanels m_Ui;
 
@@ -269,17 +289,17 @@ namespace HitOrMiss.Pps
             result.vibrationDeviceName = m_Output != null ? m_Output.DeviceName : "None";
 
             m_CurrentTrialIsPractice = trial.isPractice;
-
             Debug.Log(
                 $"[PPS TRIAL START] " +
                 $"id={trial.trialId} | " +
                 $"modality={trial.modality} | " +
                 $"speed={trial.speed} | " +
                 $"width={trial.width} | " +
+                $"participantShoulderWidthMeters={m_ParticipantShoulderWidthMeters:F3} | " +
+                $"computedSeparation={m_TaskAsset.SeparationFor(trial.width, m_ParticipantShoulderWidthMeters):F3} | " +
                 $"vibrationStage={trial.vibrationStage} | " +
                 $"requiresResponse={trial.RequiresResponse}"
             );
-
             TrialStarted?.Invoke(trial);
 
             // Emit trial-start marker for EEG/event synchronization.
@@ -338,8 +358,8 @@ namespace HitOrMiss.Pps
 
                 // Only Both trials should fire vibration during looming.
                 bool fireOnStageMatch = trial.modality == PpsModality.Both;
-
-                yield return m_Loom.RunLoom(trial, m_TaskAsset, stage =>
+                
+                yield return m_Loom.RunLoom(trial, m_TaskAsset, m_ParticipantShoulderWidthMeters, stage =>
                 {
                     double now = Time.timeAsDouble;
                     int idx = (int)stage;

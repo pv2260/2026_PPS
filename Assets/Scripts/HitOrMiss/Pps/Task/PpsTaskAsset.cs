@@ -46,15 +46,22 @@ namespace HitOrMiss.Pps
         [SerializeField] AnimationCurve m_MotionCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
 
         [Header("Spatial layout (meters)")]
-        [SerializeField] float m_WideSeparation = 0.40f;
-        [SerializeField] float m_NarrowSeparation = 0.16f;
-        [Tooltip("World Y position of the side LEDs in meters. Default 0 = floor level (airplane runway light look).")]
+
+        [Tooltip("Fallback shoulder width in meters, used if no participant-specific value is provided.")]
+        [SerializeField] float m_DefaultShoulderWidthMeters = 0.40f;
+
+        [Tooltip("How much wider than shoulder width the wide condition should be, in meters.")]
+        [SerializeField] float m_WideOffsetMeters = 0.30f;
+
+        [Tooltip("World Y position of the side LEDs in meters. Default 0 = floor level.")]
         [SerializeField] float m_LedHeight = 0f;
 
         [Tooltip("Distance from body to D4 (far stage / spawn)")]
         [SerializeField] float m_DistanceD4 = 2.0f;
+
         [SerializeField] float m_DistanceD3 = 1.5f;
         [SerializeField] float m_DistanceD2 = 1.0f;
+
         [Tooltip("Distance from body to D1 (near stage / vanish)")]
         [SerializeField] float m_DistanceD1 = 0.6f;
 
@@ -64,6 +71,7 @@ namespace HitOrMiss.Pps
 
         [Header("Vibrotactile")]
         [SerializeField] float m_VibrationDurationMs = 300f;
+
         [Range(0f, 1f)]
         [SerializeField] float m_VibrationIntensity = 1f;
 
@@ -83,6 +91,7 @@ namespace HitOrMiss.Pps
         [SerializeField] int m_RngSeed = -1;
 
         // ---- Public getters ----
+
         public string TaskName => m_TaskName;
         public int BlockCount => m_BlockCount;
         public int TrialsPerBlock => m_TrialsPerBlock;
@@ -99,8 +108,13 @@ namespace HitOrMiss.Pps
 
         public AnimationCurve MotionCurve => m_MotionCurve;
 
-        public float WideSeparation => m_WideSeparation;
-        public float NarrowSeparation => m_NarrowSeparation;
+        public float DefaultShoulderWidthMeters => m_DefaultShoulderWidthMeters;
+        public float WideOffsetMeters => m_WideOffsetMeters;
+
+        // Fallback values shown/available for code that does not yet pass a participant-specific width.
+        public float NarrowSeparation => m_DefaultShoulderWidthMeters;
+        public float WideSeparation => m_DefaultShoulderWidthMeters + m_WideOffsetMeters;
+
         public float LedHeight => m_LedHeight;
 
         public float DistanceD4 => m_DistanceD4;
@@ -124,10 +138,47 @@ namespace HitOrMiss.Pps
         public TrialOrder OrderingStrategy => m_OrderingStrategy;
         public int? RngSeed => m_RngSeed < 0 ? null : m_RngSeed;
 
-        public float DurationFor(PpsSpeed speed) => speed == PpsSpeed.Fast ? m_FastDurationSeconds : m_SlowDurationSeconds;
-        public float SeparationFor(PpsWidth width) => width == PpsWidth.Wide ? m_WideSeparation : m_NarrowSeparation;
+        public float DurationFor(PpsSpeed speed)
+        {
+            return speed == PpsSpeed.Fast ? m_FastDurationSeconds : m_SlowDurationSeconds;
+        }
 
-        public PpsTrialDefinition[] GenerateBlock(int blockIndex) => PpsTrialGenerator.Generate(this, blockIndex);
+        /// <summary>
+        /// Fallback separation method.
+        /// Uses DefaultShoulderWidthMeters when no participant-specific shoulder width is provided.
+        /// Kept for compatibility with older code.
+        /// </summary>
+        public float SeparationFor(PpsWidth width)
+        {
+            return SeparationFor(width, 0f);
+        }
+
+        /// <summary>
+        /// Runtime separation method.
+        ///
+        /// Narrow condition:
+        ///     separation = participant shoulder width
+        ///
+        /// Wide condition:
+        ///     separation = participant shoulder width + wide offset
+        ///
+        /// If participantShoulderWidthMeters is not valid, falls back to DefaultShoulderWidthMeters.
+        /// </summary>
+        public float SeparationFor(PpsWidth width, float participantShoulderWidthMeters)
+        {
+            float shoulder = participantShoulderWidthMeters > 0f
+                ? participantShoulderWidthMeters
+                : m_DefaultShoulderWidthMeters;
+
+            return width == PpsWidth.Wide
+                ? shoulder + m_WideOffsetMeters
+                : shoulder;
+        }
+
+        public PpsTrialDefinition[] GenerateBlock(int blockIndex)
+        {
+            return PpsTrialGenerator.Generate(this, blockIndex);
+        }
 
         /// <summary>
         /// Elapsed seconds from loom onset at which the motion curve reaches the given stage boundary.
@@ -144,48 +195,62 @@ namespace HitOrMiss.Pps
                 DistanceStage.D1 => 0.75f,
                 _ => 0f,
             };
+
             float duration = DurationFor(speed);
             if (threshold <= 0f) return 0f;
 
             const int steps = 512;
             float prevT = 0f;
             float prevY = m_MotionCurve.Evaluate(0f);
+
             for (int i = 1; i <= steps; i++)
             {
                 float t = (float)i / steps;
                 float y = m_MotionCurve.Evaluate(t);
+
                 if (y >= threshold)
                 {
-                    float frac = Mathf.Approximately(y, prevY) ? 0f : (threshold - prevY) / (y - prevY);
+                    float frac = Mathf.Approximately(y, prevY)
+                        ? 0f
+                        : (threshold - prevY) / (y - prevY);
+
                     return Mathf.Lerp(prevT, t, frac) * duration;
                 }
+
                 prevT = t;
                 prevY = y;
             }
+
             return duration;
         }
 
-        void OnValidate()
+              void OnValidate()
         {
             if (m_BlockCount < 1) m_BlockCount = 1;
             if (m_TrialsPerBlock < 1) m_TrialsPerBlock = 1;
-            if (m_FastDurationSeconds <= 0f) m_FastDurationSeconds = 0.1f;
-            if (m_SlowDurationSeconds <= m_FastDurationSeconds) m_SlowDurationSeconds = m_FastDurationSeconds + 0.1f;
-            if (m_DistanceD4 <= m_DistanceD3) m_DistanceD4 = m_DistanceD3 + 0.01f;
-            if (m_DistanceD3 <= m_DistanceD2) m_DistanceD3 = m_DistanceD2 + 0.01f;
-            if (m_DistanceD2 <= m_DistanceD1) m_DistanceD2 = m_DistanceD1 + 0.01f;
-            if (m_DistanceD1 <= 0f) m_DistanceD1 = 0.01f;
-            if (m_WideSeparation <= m_NarrowSeparation) m_WideSeparation = m_NarrowSeparation + 0.01f;
-            if (m_ItiMinSeconds < 0f) m_ItiMinSeconds = 0f;
-            if (m_ItiMaxSeconds < m_ItiMinSeconds) m_ItiMaxSeconds = m_ItiMinSeconds;
 
-            float sum = m_PercentVT + m_PercentV + m_PercentT;
-            if (sum > 0.0001f && Mathf.Abs(sum - 1f) > 0.001f)
-            {
-                m_PercentVT /= sum;
-                m_PercentV /= sum;
-                m_PercentT /= sum;
-            }
+            if (m_FastDurationSeconds <= 0f) m_FastDurationSeconds = 0.1f;
+            if (m_SlowDurationSeconds <= 0f) m_SlowDurationSeconds = 0.1f;
+
+            if (m_DistanceD1 <= 0f) m_DistanceD1 = 0.01f;
+            if (m_DistanceD2 <= 0f) m_DistanceD2 = 0.01f;
+            if (m_DistanceD3 <= 0f) m_DistanceD3 = 0.01f;
+            if (m_DistanceD4 <= 0f) m_DistanceD4 = 0.01f;
+
+            if (m_DefaultShoulderWidthMeters <= 0f)
+                m_DefaultShoulderWidthMeters = 0.40f;
+
+            if (m_WideOffsetMeters < 0f)
+                m_WideOffsetMeters = 0f;
+
+            if (m_ItiMinSeconds < 0f) m_ItiMinSeconds = 0f;
+            if (m_ItiMaxSeconds < 0f) m_ItiMaxSeconds = 0f;
+
+            if (m_ScaleAtD4.x <= 0f || m_ScaleAtD4.y <= 0f || m_ScaleAtD4.z <= 0f)
+                m_ScaleAtD4 = Vector3.one * 0.02f;
+
+            if (m_ScaleAtD1.x <= 0f || m_ScaleAtD1.y <= 0f || m_ScaleAtD1.z <= 0f)
+                m_ScaleAtD1 = Vector3.one * 0.09f;
         }
     }
 }
