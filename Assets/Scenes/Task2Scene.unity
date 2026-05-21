@@ -5451,7 +5451,7 @@ PrefabInstance:
     - target: {fileID: 6627871660748472693, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
       propertyPath: m_FixationCross
       value: 
-      objectReference: {fileID: 2839298372119705873, guid: 39bc76c4199c8f442896b8071c99d5c5, type: 3}
+      objectReference: {fileID: 1768455669}
     - target: {fileID: 6627871660748472693, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
       propertyPath: m_ForceLeftPopup
       value: 
@@ -5487,6 +5487,14 @@ PrefabInstance:
     - target: {fileID: 6627871660748472693, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
       propertyPath: m_PracticeReplayAttempts
       value: 100
+      objectReference: {fileID: 0}
+    - target: {fileID: 6627871660748472693, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
+      propertyPath: 'm_UITextBinders.Array.data[0]'
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 6627871660748472693, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
+      propertyPath: 'm_UITextBinders.Array.data[1]'
+      value: 
       objectReference: {fileID: 0}
     - target: {fileID: 6627871660748472693, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
       propertyPath: 'm_UITextBinders.Array.data[2]'
@@ -10020,6 +10028,78 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 5632266133985503989, guid: 86a5bf68cb51f4e44bd3893bd22a2ba7, type: 3}
   m_PrefabInstance: {fileID: 1766750150}
   m_PrefabAsset: {fileID: 0}
+--- !u!1001 &1768455668
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 1358338792424752590, guid: 39bc76c4199c8f442896b8071c99d5c5, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1358338792424752590, guid: 39bc76c4199c8f442896b8071c99d5c5, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1358338792424752590, guid: 39bc76c4199c8f442896b8071c99d5c5, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 1358338792424752590, guid: 39bc76c4199c8f442896b8071c99d5c5, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1358338792424752590, guid: 39bc76c4199c8f442896b8071c99d5c5, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1358338792424752590, guid: 39bc76c4199c8f442896b8071c99d5c5, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1358338792424752590, guid: 39bc76c4199c8f442896b8071c99d5c5, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1358338792424752590, guid: 39bc76c4199c8f442896b8071c99d5c5, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1358338792424752590, guid: 39bc76c4199c8f442896b8071c99d5c5, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1358338792424752590, guid: 39bc76c4199c8f442896b8071c99d5c5, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1942432076152751309, guid: 39bc76c4199c8f442896b8071c99d5c5, type: 3}
+      propertyPath: m_Name
+      value: CrosshairPrefab
+      objectReference: {fileID: 0}
+    - target: {fileID: 1942432076152751309, guid: 39bc76c4199c8f442896b8071c99d5c5, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 39bc76c4199c8f442896b8071c99d5c5, type: 3}
+--- !u!114 &1768455669 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2839298372119705873, guid: 39bc76c4199c8f442896b8071c99d5c5, type: 3}
+  m_PrefabInstance: {fileID: 1768455668}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fc2d651c064dcd14eb293f39eaed76a4, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HitOrMiss.FixationCrossController
 --- !u!1 &1835091082
 GameObject:
   m_ObjectHideFlags: 0
@@ -12304,3 +12384,4 @@ SceneRoots:
   - {fileID: 5339021968817259872}
   - {fileID: 984165669}
   - {fileID: 138103580}
+  - {fileID: 1768455668}

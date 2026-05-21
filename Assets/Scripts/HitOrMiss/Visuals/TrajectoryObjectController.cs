@@ -25,11 +25,23 @@ namespace HitOrMiss
         [Tooltip("World Y of the ground plane for shadow projection")]
         [SerializeField] float m_GroundY = 0f;
 
-        [Header("Pinch feedback (response-only color change)")]
-        [Tooltip("Color the ball turns when the participant gives a LEFT pinch (Hit). Applied once per trial.")]
-        [SerializeField] Color m_LeftPinchColor = new Color(0.20f, 0.45f, 1.00f, 1f);
-        [Tooltip("Color the ball turns when the participant gives a RIGHT pinch (Miss). Applied once per trial.")]
-        [SerializeField] Color m_RightPinchColor = new Color(1.00f, 0.55f, 0.10f, 1f);
+        [Header("Pinch feedback (side panels)")]
+        [Tooltip("Child GameObject shown when the participant gives a LEFT pinch (Hit). Should display YES on blue.")]
+        [SerializeField] GameObject m_LeftPanel;
+        [Tooltip("Child GameObject shown when the participant gives a RIGHT pinch (Miss). Should display NO on orange.")]
+        [SerializeField] GameObject m_RightPanel;
+        [Tooltip("Background color applied to the LEFT panel image on activation (also drives splat tint).")]
+        [SerializeField] Color m_LeftPanelColor = new Color(0.20f, 0.45f, 1.00f, 1f);
+        [Tooltip("Background color applied to the RIGHT panel image on activation (also drives splat tint).")]
+        [SerializeField] Color m_RightPanelColor = new Color(1.00f, 0.55f, 0.10f, 1f);
+
+        [Header("Hit-validation tolerance")]
+        [Tooltip("Extra radius (meters) added to the ball when computing impact. The ball's effective collision sphere is its visual radius + this bonus.")]
+        [SerializeField] float m_BallCollisionRadius = 0.05f;
+
+        [Header("Miss overreach (passes past the player)")]
+        [Tooltip("For Miss-class trials, extend the ball's travel by this many meters along the trajectory direction so it visibly passes past the participant rather than vanishing at the lateral end.")]
+        [SerializeField] float m_MissOverreachMeters = 0.8f;
 
         [Header("Splat on impact")]
         [Tooltip("Prefab spawned at the end of the trajectory. If empty a default splat is built procedurally.")]
@@ -77,13 +89,38 @@ namespace HitOrMiss
             m_EndPos = playerPosition + right * trial.finalLateralOffset;
             m_PlayerPos = playerPosition;
 
+            // Miss-class overreach: extend the end point past the lateral
+            // landing point along the trajectory direction so the ball
+            // visibly flies past the participant. Duration is extended in
+            // proportion so the ball's apparent speed stays the same.
+            if (!trial.WillHit && m_MissOverreachMeters > 0f)
+            {
+                Vector3 trajDir = (m_EndPos - m_StartPos);
+                float baseLen = trajDir.magnitude;
+                if (baseLen > 0.0001f)
+                {
+                    trajDir /= baseLen;
+                    m_EndPos += trajDir * m_MissOverreachMeters;
+                    // Keep speed constant: new duration scales with new length.
+                    m_Duration = trial.Duration * ((baseLen + m_MissOverreachMeters) / baseLen);
+                }
+                else
+                {
+                    m_Duration = trial.Duration;
+                }
+            }
+            else
+            {
+                m_Duration = trial.Duration;
+            }
+
             Debug.Log($"[TrajectoryObjectController] Spawn trial={trial.trialId} cat={trial.category} " +
-                      $"impactDistance={m_ImpactDistance:F3}m playerPos={playerPosition} " +
-                      $"startPos={m_StartPos} endPos={m_EndPos} " +
+                      $"willHit={trial.WillHit} impactDistance={m_ImpactDistance:F3}m " +
+                      $"ballCollisionRadius={m_BallCollisionRadius:F3}m " +
+                      $"missOverreach={m_MissOverreachMeters:F2}m " +
+                      $"playerPos={playerPosition} startPos={m_StartPos} endPos={m_EndPos} " +
                       $"startDistToPlayer={Vector3.Distance(m_StartPos, playerPosition):F2}m " +
                       $"endDistToPlayer={Vector3.Distance(m_EndPos, playerPosition):F2}m");
-
-            m_Duration = trial.Duration;
 
             float diameter = trial.ballDiameter > 0f ? trial.ballDiameter : 0.175f;
             transform.localScale = Vector3.one * diameter;
@@ -92,6 +129,11 @@ namespace HitOrMiss
             m_Renderers = GetComponentsInChildren<Renderer>(true);
             m_Mpb = new MaterialPropertyBlock();
             m_PinchColorApplied = false;
+
+            // Always start with the YES/NO panels hidden — only one becomes
+            // visible on the first matching pinch via ApplyPinchFeedback.
+            if (m_LeftPanel != null)  m_LeftPanel.SetActive(false);
+            if (m_RightPanel != null) m_RightPanel.SetActive(false);
 
             CreateShadow(diameter);
             SetVisible(false);
@@ -125,8 +167,10 @@ namespace HitOrMiss
             // normally because IsComplete is set, which the manager polls.
             if (m_ImpactDistance > 0f)
             {
+                float ballRadius = (m_Trial.ballDiameter > 0f ? m_Trial.ballDiameter : 0.175f) * 0.5f;
+                float effectiveImpact = m_ImpactDistance + ballRadius + m_BallCollisionRadius;
                 float distToPlayer = Vector3.Distance(pos, m_PlayerPos);
-                if (distToPlayer <= m_ImpactDistance)
+                if (distToPlayer <= effectiveImpact)
                 {
                     IsComplete = true;
                     m_Active = false;
@@ -154,29 +198,45 @@ namespace HitOrMiss
         /// receives a pinch response. Recolors the ball once per trial:
         /// LEFT pinch (Hit semantic) → blue, RIGHT pinch (Miss semantic) → orange.
         /// Subsequent pinches in the same trial are ignored.
-        /// Color choice is purely visual feedback — independent of whether the
-        /// response was the expected one.
+        /// Activates the side panel matching the pinch direction:
+        /// LEFT pinch (Hit semantic) → m_LeftPanel goes active with blue/YES.
+        /// RIGHT pinch (Miss semantic) → m_RightPanel goes active with orange/NO.
+        /// The ball itself stays its authored color (grey). The activated
+        /// panel's color is also cached as m_PinchTint so the eventual splat
+        /// inherits it.
+        /// Subsequent pinches in the same trial are ignored.
         /// </summary>
         public void ApplyPinchFeedback(SemanticCommand command)
         {
             if (m_PinchColorApplied) return;
-            if (m_Renderers == null) return;
 
-            Color tint = command == SemanticCommand.Hit
-                ? m_LeftPinchColor
-                : (command == SemanticCommand.Miss ? m_RightPinchColor : Color.white);
-
-            for (int i = 0; i < m_Renderers.Length; i++)
+            GameObject panel;
+            Color tint;
+            if (command == SemanticCommand.Hit)
             {
-                var r = m_Renderers[i];
-                if (r == null) continue;
-                r.GetPropertyBlock(m_Mpb);
-                // URP/Lit uses _BaseColor; built-in shaders use _Color. Set
-                // both so the change works regardless of the material's shader.
-                m_Mpb.SetColor("_BaseColor", tint);
-                m_Mpb.SetColor("_Color", tint);
-                r.SetPropertyBlock(m_Mpb);
+                panel = m_LeftPanel;
+                tint  = m_LeftPanelColor;
             }
+            else if (command == SemanticCommand.Miss)
+            {
+                panel = m_RightPanel;
+                tint  = m_RightPanelColor;
+            }
+            else
+            {
+                return;
+            }
+
+            if (panel != null)
+            {
+                panel.SetActive(true);
+                // Color any Image components found in the panel hierarchy so
+                // the background reflects the configured tint at runtime.
+                var images = panel.GetComponentsInChildren<UnityEngine.UI.Image>(true);
+                for (int i = 0; i < images.Length; i++)
+                    if (images[i] != null) images[i].color = tint;
+            }
+
             m_PinchColorApplied = true;
             m_PinchTint = tint;
         }

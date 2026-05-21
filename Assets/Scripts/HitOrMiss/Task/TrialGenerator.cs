@@ -118,14 +118,18 @@ namespace HitOrMiss
                 switch (category)
                 {
                     case TrialCategory.ClearHit:
-                        // Dead-center on torso.
-                        magnitude = 0f;
+                        // Anywhere within the participant's full shoulder
+                        // reach — randomized per trial so the ball doesn't
+                        // always land dead-center. Side (left/right of body
+                        // midline) is then picked 50/50 below, so the final
+                        // lateral spans the full ±shoulderHalfM range.
+                        magnitude = Random.Range(0f, shoulderHalfM);
                         break;
 
                     case TrialCategory.NearHit:
                         // Inside the shoulder line by up to 70% of half-shoulder width.
-                        // Distinguishable from ClearHit (ball isn't always dead-center)
-                        // but still clearly on the body.
+                        // Kept tighter than ClearHit so the two Hit categories
+                        // still produce visibly different ball paths on average.
                         magnitude = Random.Range(0f, shoulderHalfM * 0.7f);
                         break;
 
