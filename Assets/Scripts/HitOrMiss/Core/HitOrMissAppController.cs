@@ -423,6 +423,78 @@ namespace HitOrMiss
             }
         }
 
+        PopupContext BuildPopupContext()
+                {
+                    return new PopupContext
+                    {
+                        Localize = (key, fallback) => GetLocalizedString(key, fallback),
+                        GetBreakDuration = () => Asset != null ? Asset.BreakDurationSeconds : 60f,
+                        GetOutroDuration = () => Asset != null ? Asset.OutroDuration : 10f,
+                        CurrentBlockNumber = CurrentBlockIndex + 1,
+                    };
+                }
+/////////////////////////////////////////////////////////////// added by pam
+IEnumerator RunOnePopup(TaskPopupPanel panel)
+        {
+            if (panel == null) yield break;
+
+            bool isLeftPanel = panel.gameObject.name == "Popup3a_LeftBlue";
+            bool isRightPanel = panel.gameObject.name == "Popup3b_RightOrange";
+            bool isInstructionPanel = isLeftPanel || isRightPanel;
+
+            if (isInstructionPanel)
+            {
+                // 1. Manually show the panel structure
+                panel.Show();
+
+                // 2. Find the GiantSquare Button and its Image component
+                var button = panel.GetComponentInChildren<UnityEngine.UI.Button>(true);
+                var buttonImage = button != null ? button.GetComponent<UnityEngine.UI.Image>() : null;
+                
+                // Initialize it to a clean, passive Light Grey
+                if (buttonImage != null) buttonImage.color = new Color(0.8f, 0.8f, 0.8f, 1f);
+
+                Color fillBlue = new Color(0.20f, 0.45f, 1.00f, 1f);
+                Color fillOrange = new Color(1.00f, 0.55f, 0.10f, 1f);
+
+                bool buttonClicked = false;
+
+                // 3. Listen for the click event natively
+                button.onClick.RemoveAllListeners(); // Clear template listeners so it doesn't auto-close
+                button.onClick.AddListener(() => {
+                    buttonClicked = true;
+                });
+
+                // 4. Stay frozen right here until they physically click/trigger the GiantSquare
+                while (!buttonClicked)
+                {
+                    // Keyboard testing fallback (Left Arrow for Left Panel, Right Arrow for Right Panel)
+                    if (isLeftPanel && Input.GetKeyDown(KeyCode.LeftArrow)) buttonClicked = true;
+                    if (isRightPanel && Input.GetKeyDown(KeyCode.RightArrow)) buttonClicked = true;
+                    
+                    yield return null;
+                }
+
+                // 5. THE COLOR CHANGE: Apply the exact color based on which panel we are on
+                if (buttonImage != null)
+                {
+                    buttonImage.color = isLeftPanel ? fillBlue : fillOrange;
+                }
+
+                // 6. THE PAUSE: Keep the filled color on screen for 0.5 seconds so they see it!
+                yield return new WaitForSeconds(0.5f);
+
+                // 7. THE ADVANCE: Close this panel and let the natural loop transition to the next index
+                panel.Hide();
+            }
+            else
+            {
+                // Fallback for all your normal panels (Intro, Outro, Trigger Check panels)
+                yield return panel.Run(BuildPopupContext());
+            }
+        }
+///////////////////////////////////////////////////////////////
+
         /// <summary>
         /// Pre-practice sequence with a slot-aware positioning step: the
         /// StandingCross is enabled only while the popup at
@@ -440,23 +512,6 @@ namespace HitOrMiss
                 yield return RunOnePopup(panel);
                 if (needsCross) m_StandingCross.Hide();
             }
-        }
-
-        IEnumerator RunOnePopup(TaskPopupPanel panel)
-        {
-            if (panel == null) yield break;
-            yield return panel.Run(BuildPopupContext());
-        }
-
-        PopupContext BuildPopupContext()
-        {
-            return new PopupContext
-            {
-                Localize = (key, fallback) => GetLocalizedString(key, fallback),
-                GetBreakDuration = () => Asset != null ? Asset.BreakDurationSeconds : 60f,
-                GetOutroDuration = () => Asset != null ? Asset.OutroDuration : 10f,
-                CurrentBlockNumber = CurrentBlockIndex + 1,
-            };
         }
 
         // ---- Lifecycle ----

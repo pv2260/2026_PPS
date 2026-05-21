@@ -13,6 +13,45 @@ MonoBehaviour:
   m_Name: HitOrMissTermTable
   m_EditorClassIdentifier: 
   m_Entries:
+  - key: popup1_intro
+    english: 'In this task, a ball will move towards you.  Your task is to decide
+      whether the ball will hit or miss you.   '
+    french: "Dans cette t\xE2che, une balle va se d\xE9placer vers vous. Votre r\xF4le
+      est de d\xE9cider si la balle va vous toucher ou vous \xE9viter (manquer). "
+  - key: popup2_left
+    english: 'Will the ball hit you? /n YES (It will hit me) /n  Press LEFT controller '
+    french: La balle va-t-elle vous toucher ?  /n  OUI (Elle va me toucher)   /n
+      Appuyez sur la manette GAUCHE
+  - key: popup3_right
+    english: 'Will the ball hit you?  /n NO (It will miss me)  /n Press RIGHT controller '
+    french: La balle va-t-elle vous toucher ?  /n NON (Elle ne va pas me toucher) 
+      /n Appuyez sur la manette DROITE
+  - key: popup3a_leftblue
+    english: YES responses will appear in BLUE
+    french: "Les r\xE9ponses OUI s'afficheront en BLEU"
+  - key: popup3b_rightorange
+    english: NO responses will appear in ORANGE
+    french: "Les r\xE9ponses NON s'afficheront en ORANGE"
+  - key: pps.practice_intro
+    english: "First, let\u2019s practice using the controllers.If you think you WILL
+      be hit, press LEFT (YES).  If you think you WILL NOT be hit, press RIGHT (NO)."
+    french: "Pour commencer, entra\xEEnons-nous \xE0 utiliser les manettes. Si vous
+      pensez que vous ALLEZ \xEAtre touch\xE9(e), appuyez sur GAUCHE (OUI). Si vous
+      pensez que vous NE SEREZ PAS touch\xE9(e), appuyez sur DROITE (NON). "
+  - key: popup4_practice
+    english: 'Now let''s put the controllers in use.  You will see balls moving toward
+      you. Decide as quickly as possible whether each ball will hit you. '
+    french: "Maintenant, mettons-le en pratique. Vous allez voir des balles se d\xE9placer
+      vers vous. D\xE9cidez le plus rapidement possible si chaque balle va vous toucher."
+  - key: popup5_ready
+    english: Ok. Now you are all set.\n\nDuring the task, you will not receive any
+      feedback. Just respond as quickly and accurately as you can.
+    french: "D'accord. Vous \xEAtes pr\xEAt(e).\\n\\nPendant la t\xE2che, vous ne
+      recevrez aucun retour. R\xE9pondez simplement aussi vite et pr\xE9cis\xE9ment
+      que possible."
+  - key: popup6_block_intro
+    english: Let's start with Block {block}.
+    french: "Commen\xE7ons avec le Bloc {block}"
   - key: instruction_title
     english: Hit or Miss
     french: "Touche ou Rat\xE9"
@@ -66,32 +105,18 @@ MonoBehaviour:
     english: MISS
     french: "RAT\xC9"
   - key: pps.instructions
-    english: "In this experiment, you will see two lights approaching you.\n\nOccasionally,
-      you will feel a brief vibration on your chest.\n\nYour goal is to:\n  \u2022
-      Focus on the approaching lights.\n  \u2022 Respond as quickly as possible when
-      you feel the vibration.\n  \u2022 Press the response button the moment you
-      detect the touch.\n\nKeep your hand ready on the button and respond as fast
-      and accurately as you can."
-    french: "Dans cette exp\xE9rience, vous verrez deux lumi\xE8res s'approcher de
-      vous.\n\nDe temps en temps, vous sentirez une br\xE8ve vibration sur votre
-      poitrine.\n\nVotre objectif est de:\n  \u2022 Vous concentrer sur les lumi\xE8res
-      qui approchent.\n  \u2022 R\xE9pondre aussi rapidement que possible lorsque
-      vous sentez la vibration.\n  \u2022 Appuyer sur le bouton de r\xE9ponse d\xE8s
-      que vous d\xE9tectez le contact.\n\nGardez la main pr\xEAte sur le bouton et
-      r\xE9pondez aussi vite et pr\xE9cis\xE9ment que possible."
-  - key: pps.practice_intro
-    english: 'We will start with a few practice trials so you can get used to the
-      lights and the vibration.
-
-
-      These trials will not be recorded.
-
-
-      When
-      you are ready, press Continue.'
-    french: "Nous allons commencer par quelques essais d'entra\xEEnement pour que
-      vous vous habituiez aux lumi\xE8res et \xE0 la vibration.\n\nCes essais ne
-      seront pas enregistr\xE9s.\n\nLorsque vous \xEAtes pr\xEAt, appuyez sur Continuer."
+    english: 
+    french: 
+  - key: popup1a_triggercheck
+    english: 'Trigger check. Please confirm that EEG/EMG triggers are being received
+      correctly. '
+    french: "V\xE9rification des triggers. Veuillez confirmer que les triggers EEG/EMG
+      sont correctement re\xE7us."
+  - key: popup1b_positioning
+    english: Please stand in front of the cross. Face forward and hold both controllers
+      comfortably.
+    french: Veuillez vous placer devant la croix. Regardez droit devant vous et tenez
+      les deux manettes confortablement.
   - key: pps.block_intro
     english: 'The next block is about to begin.
 
@@ -114,36 +139,6 @@ MonoBehaviour:
   - key: pps.outro
     english: "End of the experiment \u2014 Thank you for participating!"
     french: "Fin de l'exp\xE9rience \u2014 Merci d'avoir particip\xE9 !"
-  - key: popup1_intro
-    english: Hit or Miss Task\n\nIn this task, an object will come towards you. Determine
-      whether it will HIT or MISS you. Stay still and respond using the LEFT and
-      RIGHT controllers as quickly and accurately as possible.\n\nLet's try a little
-      practice.
-    french: "T\xE2che Hit or Miss\\n\\nDans cette t\xE2che, un objet s'approchera
-      de vous. D\xE9terminez s'il va vous TOUCHER ou vous MANQUER. Restez immobile
-      et r\xE9pondez avec les manettes GAUCHE et DROITE aussi vite et pr\xE9cis\xE9ment
-      que possible.\\n\\nFaisons un petit exercice."
-  - key: popup2_left
-    english: A ball will come towards you.\nPress LEFT if you think the ball will
-      HIT you.\nPress LEFT now.
-    french: "Une balle viendra vers vous.\\nAppuyez \xE0 GAUCHE si vous pensez qu'elle
-      va vous TOUCHER.\\nAppuyez \xE0 GAUCHE maintenant."
-  - key: popup3_right
-    english: Now press RIGHT if you think the ball will MISS you.\nPress RIGHT now.
-    french: "Maintenant, appuyez \xE0 DROITE si vous pensez qu'elle va vous MANQUER.\\nAppuyez
-      \xE0 DROITE maintenant."
-  - key: popup4_practice
-    english: Now let's put it into practice.
-    french: Maintenant, mettons-le en pratique.
-  - key: popup5_ready
-    english: Ok. Now you are all set.\n\nDuring the task, you will not receive any
-      feedback. Just respond as quickly and accurately as you can.
-    french: "D'accord. Vous \xEAtes pr\xEAt(e).\\n\\nPendant la t\xE2che, vous ne
-      recevrez aucun retour. R\xE9pondez simplement aussi vite et pr\xE9cis\xE9ment
-      que possible."
-  - key: popup6_block_intro
-    english: Let's start with Block {block}.
-    french: "Commen\xE7ons avec le Bloc {block}"
   - key: popup7_break
     english: All done with Block {block}. Take a little break.
     french: "Bloc {block} termin\xE9. Prenez une petite pause."

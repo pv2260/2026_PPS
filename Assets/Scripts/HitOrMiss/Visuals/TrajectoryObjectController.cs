@@ -69,6 +69,11 @@ namespace HitOrMiss
         Vector3 m_EndPos;
         Vector3 m_PlayerPos;
 
+        // --- Custom Fields Added for Instruction Setup ---
+        private UnityEngine.UI.Image m_LeftPanelImage;
+        private UnityEngine.UI.Image m_RightPanelImage;
+        private Color m_LightGrey = new Color(0.8f, 0.8f, 0.8f, 1.0f);
+
         public string TrialId { get; private set; }
         public bool IsComplete { get; private set; }
 
@@ -81,18 +86,10 @@ namespace HitOrMiss
             Vector3 right = Vector3.Cross(Vector3.up, forward).normalized;
             if (right.sqrMagnitude < 0.0001f) right = Vector3.right;
 
-            // Straight line from a single spawn point in front of the player to
-            // an end point laterally offset from the player. The category lives
-            // in the lateral offset; trial.curveMagnitude is intentionally
-            // ignored — old curved trajectories were replaced with straight ones.
             m_StartPos = playerPosition + forward * trial.spawnDistance;
             m_EndPos = playerPosition + right * trial.finalLateralOffset;
             m_PlayerPos = playerPosition;
 
-            // Miss-class overreach: extend the end point past the lateral
-            // landing point along the trajectory direction so the ball
-            // visibly flies past the participant. Duration is extended in
-            // proportion so the ball's apparent speed stays the same.
             if (!trial.WillHit && m_MissOverreachMeters > 0f)
             {
                 Vector3 trajDir = (m_EndPos - m_StartPos);
@@ -101,7 +98,6 @@ namespace HitOrMiss
                 {
                     trajDir /= baseLen;
                     m_EndPos += trajDir * m_MissOverreachMeters;
-                    // Keep speed constant: new duration scales with new length.
                     m_Duration = trial.Duration * ((baseLen + m_MissOverreachMeters) / baseLen);
                 }
                 else
@@ -130,10 +126,16 @@ namespace HitOrMiss
             m_Mpb = new MaterialPropertyBlock();
             m_PinchColorApplied = false;
 
-            // Always start with the YES/NO panels hidden — only one becomes
-            // visible on the first matching pinch via ApplyPinchFeedback.
             if (m_LeftPanel != null)  m_LeftPanel.SetActive(false);
             if (m_RightPanel != null) m_RightPanel.SetActive(false);
+
+            // Cache and store Image components for grey/color initialization
+            if (m_LeftPanel != null)
+                m_LeftPanelImage = m_LeftPanel.GetComponentInChildren<UnityEngine.UI.Image>(true);
+            if (m_RightPanel != null)
+                m_RightPanelImage = m_RightPanel.GetComponentInChildren<UnityEngine.UI.Image>(true);
+
+            ResetPanelsToDefault();
 
             CreateShadow(diameter);
             SetVisible(false);
@@ -146,6 +148,18 @@ namespace HitOrMiss
             m_StartTime = engineTime;
             m_Active = true;
             SetVisible(true);
+
+            if (m_LeftPanel != null)
+            {
+                m_LeftPanel.SetActive(true);
+                SetPanelInactiveStyle(m_LeftPanel);
+            }
+
+            if (m_RightPanel != null)
+            {
+                m_RightPanel.SetActive(true);
+                SetPanelInactiveStyle(m_RightPanel);
+            }
         }
 
         void Update()
@@ -160,11 +174,6 @@ namespace HitOrMiss
             transform.position = pos;
             UpdateShadow(pos);
 
-            // Early impact: if a positive impact distance is configured and
-            // the ball has entered that radius around the player, treat
-            // *here* as the collision point and burst the splat — even if
-            // the trajectory had farther to run. The trial still resolves
-            // normally because IsComplete is set, which the manager polls.
             if (m_ImpactDistance > 0f)
             {
                 float ballRadius = (m_Trial.ballDiameter > 0f ? m_Trial.ballDiameter : 0.175f) * 0.5f;
@@ -193,34 +202,22 @@ namespace HitOrMiss
             }
         }
 
-        /// <summary>
-        /// Called by <see cref="TrajectoryTaskManager"/> when this trial
-        /// receives a pinch response. Recolors the ball once per trial:
-        /// LEFT pinch (Hit semantic) → blue, RIGHT pinch (Miss semantic) → orange.
-        /// Subsequent pinches in the same trial are ignored.
-        /// Activates the side panel matching the pinch direction:
-        /// LEFT pinch (Hit semantic) → m_LeftPanel goes active with blue/YES.
-        /// RIGHT pinch (Miss semantic) → m_RightPanel goes active with orange/NO.
-        /// The ball itself stays its authored color (grey). The activated
-        /// panel's color is also cached as m_PinchTint so the eventual splat
-        /// inherits it.
-        /// Subsequent pinches in the same trial are ignored.
-        /// </summary>
         public void ApplyPinchFeedback(SemanticCommand command)
         {
             if (m_PinchColorApplied) return;
 
             GameObject panel;
             Color tint;
+
             if (command == SemanticCommand.Hit)
             {
                 panel = m_LeftPanel;
-                tint  = m_LeftPanelColor;
+                tint = m_LeftPanelColor;
             }
             else if (command == SemanticCommand.Miss)
             {
                 panel = m_RightPanel;
-                tint  = m_RightPanelColor;
+                tint = m_RightPanelColor;
             }
             else
             {
@@ -230,23 +227,87 @@ namespace HitOrMiss
             if (panel != null)
             {
                 panel.SetActive(true);
-                // Color any Image components found in the panel hierarchy so
-                // the background reflects the configured tint at runtime.
-                var images = panel.GetComponentsInChildren<UnityEngine.UI.Image>(true);
-                for (int i = 0; i < images.Length; i++)
-                    if (images[i] != null) images[i].color = tint;
+                SetPanelSelectedStyle(panel, tint);
             }
 
             m_PinchColorApplied = true;
             m_PinchTint = tint;
         }
 
+        // --- Custom Logic Methods Added for Instruction Setup ---
+        public void ResetPanelsToDefault()
+        {
+            if (m_LeftPanelImage != null) m_LeftPanelImage.color = m_LightGrey;
+            if (m_RightPanelImage != null) m_RightPanelImage.color = m_LightGrey;
+        }
+
+        public void SetInstructionFeedback(bool isYesState)
+        {
+            if (isYesState)
+            {
+                if (m_LeftPanelImage != null) m_LeftPanelImage.color = m_LeftPanelColor;
+                if (m_RightPanelImage != null) m_RightPanelImage.color = m_LightGrey;
+            }
+            else
+            {
+                if (m_LeftPanelImage != null) m_LeftPanelImage.color = m_LightGrey;
+                if (m_RightPanelImage != null) m_RightPanelImage.color = m_RightPanelColor;
+            }
+        }
+
+        //Style of panels:
+        void SetPanelInactiveStyle(GameObject panel)
+        {
+            if (panel == null) return;
+
+            var images = panel.GetComponentsInChildren<UnityEngine.UI.Image>(true);
+            for (int i = 0; i < images.Length; i++)
+            {
+                if (images[i] == null) continue;
+                images[i].color = new Color(1f, 1f, 1f, 0f);
+
+                var outline = images[i].GetComponent<UnityEngine.UI.Outline>();
+                if (outline == null)
+                    outline = images[i].gameObject.AddComponent<UnityEngine.UI.Outline>();
+
+                outline.effectColor = new Color(0.7f, 0.7f, 0.7f, 0.03f);
+                outline.effectDistance = new Vector2(0.5f, -0.5f);
+                outline.useGraphicAlpha = false;
+            }
+
+            var texts = panel.GetComponentsInChildren<TMPro.TMP_Text>(true);
+            for (int i = 0; i < texts.Length; i++)
+            {
+                if (texts[i] == null) continue;
+                 texts[i].color = new Color(0.85f, 0.85f, 0.85f, 0.25f);
+            }
+        }
+
+        void SetPanelSelectedStyle(GameObject panel, Color fillColor)
+        {
+            if (panel == null) return;
+
+            var images = panel.GetComponentsInChildren<UnityEngine.UI.Image>(true);
+            for (int i = 0; i < images.Length; i++)
+            {
+                if (images[i] == null) continue;
+                images[i].color = fillColor;
+
+                var outline = images[i].GetComponent<UnityEngine.UI.Outline>();
+                if (outline != null)
+                    outline.effectColor = fillColor;
+            }
+
+            var texts = panel.GetComponentsInChildren<TMPro.TMP_Text>(true);
+            for (int i = 0; i < texts.Length; i++)
+            {
+                if (texts[i] == null) continue;
+                texts[i].color = Color.white;
+            }
+        }
+
         void SpawnSplat(Vector3 worldPos)
         {
-            // Gate on category: by default only Hit-class trials (those whose
-            // expected response is Hit — i.e. Hit and NearHit) splat. Miss-class
-            // trials are visually "the ball passed without hitting you" and
-            // shouldn't leave a splat.
             if (m_SplatOnlyOnHitClass && !m_Trial.WillHit)
                 return;
 
@@ -260,24 +321,11 @@ namespace HitOrMiss
             BuildDefaultSplat(worldPos);
         }
 
-        /// <summary>
-        /// Initializes a freshly-instantiated splat: pushes per-instance shader
-        /// values (tint, start time, lifetime, peak size) via a
-        /// MaterialPropertyBlock so the source asset is not mutated, and
-        /// attaches a <see cref="SplatLifetime"/> driver so the GameObject
-        /// self-destroys after the configured lifetime (otherwise a fresh
-        /// splat would accumulate every trial and never go away).
-        /// Color is only overridden if the participant actually pinched —
-        /// otherwise the prefab keeps its authored material color.
-        /// </summary>
         static void InitializeSplatInstance(GameObject splatRoot, Color tint, bool overrideTint,
                                             float startTime, float lifetime, float peakSize)
         {
             if (splatRoot == null) return;
             var renderers = splatRoot.GetComponentsInChildren<Renderer>(true);
-            // Per-splat random seed so two splats with the same shader don't
-            // share the exact same noise pattern. Shared across the renderers
-            // of one splat so a multi-mesh splat reads as a single shape.
             float blobSeed = UnityEngine.Random.value * 1000f;
             if (renderers.Length > 0)
             {
@@ -300,20 +348,11 @@ namespace HitOrMiss
                 }
             }
 
-            // Drive lifetime in C# so the GameObject is destroyed when the
-            // shader is done. If a SplatLifetime is already on the prefab we
-            // re-init it; otherwise we add a fresh one.
             var driver = splatRoot.GetComponent<SplatLifetime>();
             if (driver == null) driver = splatRoot.AddComponent<SplatLifetime>();
             driver.Init(lifetime, peakSize);
         }
 
-        /// <summary>
-        /// Builds a procedural "sticky splat" GameObject at the impact point
-        /// when no SplatPrefab is wired. Uses the BallSplat shader if it
-        /// resolves; otherwise falls back to URP/Unlit so the splat is at
-        /// least visible. Self-destructs after <see cref="m_SplatLifetime"/>.
-        /// </summary>
         void BuildDefaultSplat(Vector3 worldPos)
         {
             var go = GameObject.CreatePrimitive(PrimitiveType.Sphere);
@@ -341,7 +380,6 @@ namespace HitOrMiss
             }
             else
             {
-                // Visible fallback if the splat shader can't be found.
                 var fallback = Shader.Find("Universal Render Pipeline/Unlit");
                 if (fallback != null)
                 {
@@ -422,13 +460,6 @@ namespace HitOrMiss
         }
     }
 
-    /// <summary>
-    /// Drives the lifetime + scale animation of a procedurally-built splat.
-    /// When the BallSplat shader is present the shader handles the visual
-    /// animation; this component still owns the GameObject's lifetime so it
-    /// can self-destroy. When the shader is missing the fallback Unlit
-    /// material is animated here so something visible still happens.
-    /// </summary>
     public class SplatLifetime : MonoBehaviour
     {
         float m_Lifetime;
@@ -457,9 +488,6 @@ namespace HitOrMiss
 
             if (!m_HasSplatShader)
             {
-                // Fallback animation: quick expansion, then fade. Matches the
-                // shader's intended behavior loosely so the splat reads
-                // similarly even when the shader hasn't been imported yet.
                 float scale = Mathf.SmoothStep(0.02f, m_PeakSize, Mathf.Min(1f, t * 3f));
                 transform.localScale = Vector3.one * scale;
                 if (m_Renderer != null && m_Renderer.material != null)
