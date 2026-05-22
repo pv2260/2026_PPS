@@ -36,6 +36,12 @@ namespace HitOrMiss.Pps
         // Contains timing, block count, trial generation settings, and task configuration.
         [SerializeField] private PpsTaskAsset m_TaskAsset;
 
+        [Header("Anchor (single reference point for panels + stimuli)")]
+        [Tooltip("Optional SessionAnchor that is calibrated to the participant's camera direction once at session start. Parent panels / DistanceLayout / floor cross to this anchor so they all appear from the same reference point.")]
+        [SerializeField] private HitOrMiss.SessionAnchor m_SessionAnchor;
+        [Tooltip("Camera transform used to calibrate the SessionAnchor. Leave empty to use Camera.main at runtime.")]
+        [SerializeField] private Transform m_CameraForAnchor;
+
         [Header("Session")]
 
         // Fallback participant/session ID used when no external subject ID is provided yet.
@@ -142,7 +148,11 @@ private IEnumerator RunTask1()
         yield break;
     }
 
-    // Show the standing cross during positioning/task setup.
+    // Show the standing cross during positioning/task setup. This cross is
+    // the *reference* the participant is asked to look at — when they press
+    // Continue on the Positioning panel below, the camera's current forward
+    // direction defines the SessionAnchor's forward for the rest of the
+    // session (panels, stimuli, fixation marks all originate from there).
     m_Ui.ShowStandingCross();
 
     yield return m_Ui.ShowPositioningAndWait();
@@ -153,8 +163,36 @@ private IEnumerator RunTask1()
         yield break;
     }
 
+    // Calibrate the SessionAnchor NOW — the participant has just confirmed
+    // they're standing in position and looking at the reference cross. The
+    // anchor's forward becomes whatever the camera is pointing at this
+    // moment. Anything parented to the anchor (panels, DistanceLayout,
+    // spawn origins, floor cross, etc.) snaps into place from this frame.
+    if (m_SessionAnchor != null)
+    {
+        Transform cam = m_CameraForAnchor != null
+            ? m_CameraForAnchor
+            : (Camera.main != null ? Camera.main.transform : null);
+        if (cam != null)
+        {
+            m_SessionAnchor.Calibrate(cam);
+            Debug.Log($"[PPSAppController] SessionAnchor calibrated from positioning confirmation. " +
+                      $"Camera forward at confirmation: {cam.forward}.");
+        }
+        else
+        {
+            Debug.LogWarning("[PPSAppController] No camera found for SessionAnchor calibration — neither m_CameraForAnchor nor Camera.main is set. Subsequent panels and stimuli will use the anchor's pre-calibration transform.");
+        }
+    }
+    else
+    {
+        Debug.LogWarning("[PPSAppController] m_SessionAnchor not wired in the inspector — calibration skipped. Panels will appear at their authored transforms (which may not match the participant's forward direction).");
+    }
+
     // ---- Practice 1: tactile only ----
+    Debug.Log("[PPSAppController] Practice 1 intro: showing PracticeIntroVTOnly panel.");
     yield return m_Ui.ShowPracticeIntroVTOnlyAndWait();
+    Debug.Log("[PPSAppController] PracticeIntroVTOnly panel closed — entering VT-only practice trials.");
 
     if (StopWasRequested())
     {
@@ -162,11 +200,17 @@ private IEnumerator RunTask1()
         yield break;
     }
 
-    Debug.Log("[PPS] Starting VT-only practice.");
+    var vtOnlyPractice = PpsTrialGenerator.GenerateVTOnlyPractice(m_TaskAsset);
+    Debug.Log($"[PPSAppController] Generated VT-only practice list: " +
+              $"{(vtOnlyPractice == null ? "NULL" : vtOnlyPractice.Length.ToString())} trials.");
+    if (vtOnlyPractice == null || vtOnlyPractice.Length == 0)
+    {
+        Debug.LogError("[PPSAppController] VT-only practice list is empty — RunTrials would return immediately. Check PpsTrialGenerator.GenerateVTOnlyPractice or PpsTaskAsset.");
+    }
 
-    yield return m_TaskManager.RunTrials(
-        PpsTrialGenerator.GenerateVTOnlyPractice(m_TaskAsset)
-    );
+    Debug.Log("[PPSAppController] Calling m_TaskManager.RunTrials for VT-only practice.");
+    yield return m_TaskManager.RunTrials(vtOnlyPractice);
+    Debug.Log("[PPSAppController] m_TaskManager.RunTrials returned for VT-only practice.");
 
     if (StopWasRequested())
     {
@@ -175,7 +219,9 @@ private IEnumerator RunTask1()
     }
 
     // ---- Practice 2: visual + tactile ----
+    Debug.Log("[PPSAppController] Practice 2 intro: showing PracticeIntroVTVisual panel.");
     yield return m_Ui.ShowPracticeIntroVTVisualAndWait();
+    Debug.Log("[PPSAppController] PracticeIntroVTVisual panel closed — entering VT+Visual practice trials.");
 
     if (StopWasRequested())
     {
@@ -183,11 +229,17 @@ private IEnumerator RunTask1()
         yield break;
     }
 
-    Debug.Log("[PPS] Starting VT+Visual practice.");
+    var vtVisualPractice = PpsTrialGenerator.GenerateVTVisualPractice(m_TaskAsset);
+    Debug.Log($"[PPSAppController] Generated VT+Visual practice list: " +
+              $"{(vtVisualPractice == null ? "NULL" : vtVisualPractice.Length.ToString())} trials.");
+    if (vtVisualPractice == null || vtVisualPractice.Length == 0)
+    {
+        Debug.LogError("[PPSAppController] VT+Visual practice list is empty — RunTrials would return immediately.");
+    }
 
-    yield return m_TaskManager.RunTrials(
-        PpsTrialGenerator.GenerateVTVisualPractice(m_TaskAsset)
-    );
+    Debug.Log("[PPSAppController] Calling m_TaskManager.RunTrials for VT+Visual practice.");
+    yield return m_TaskManager.RunTrials(vtVisualPractice);
+    Debug.Log("[PPSAppController] m_TaskManager.RunTrials returned for VT+Visual practice.");
 
     if (StopWasRequested())
     {
