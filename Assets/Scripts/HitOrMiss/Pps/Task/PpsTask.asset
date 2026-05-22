@@ -49,7 +49,7 @@ MonoBehaviour:
     m_RotationOrder: 4
   m_DefaultShoulderWidthMeters: 0.5
   m_WideOffsetMeters: 0.6
-  m_LedHeight: 0.3
+  m_LedHeight: 1
   m_DistanceD4: 6
   m_DistanceD3: 4
   m_DistanceD2: 2

@@ -422,11 +422,11 @@ MonoBehaviour:
   m_LeftPanelColor: {r: 0.2, g: 0.45, b: 1, a: 1}
   m_RightPanelColor: {r: 1, g: 0.55, b: 0.1, a: 1}
   m_BallCollisionRadius: 0.05
-  m_MissOverreachMeters: 10
+  m_MissOverreachMeters: 0.8
   m_SplatPrefab: {fileID: 7581229598783847705, guid: dec4022121da85b4a8f5cfb0c5bb2b79, type: 3}
   m_SplatLifetime: 1.2
   m_SplatPeakSize: 1.5
-  m_ImpactDistance: 0.2
+  m_ImpactDistance: 1
   m_SplatOnlyOnHitClass: 1
 --- !u!1 &6529534312608203172
 GameObject:
