@@ -83,6 +83,12 @@ namespace HitOrMiss
         [Tooltip("Index into m_PrePracticePopups[] of the positioning popup. -1 = no positioning step. The standing cross is visible only while that popup is up.")]
         [SerializeField] int m_PositioningPopupIndex = -1;
 
+        [Header("Session Anchor (single reference point)")]
+        [Tooltip("Optional SessionAnchor calibrated to the participant's camera direction when the positioning popup closes. Parent panels / SpawnOrigin / crosses to this anchor so they all appear from the same reference point.")]
+        [SerializeField] SessionAnchor m_SessionAnchor;
+        [Tooltip("Camera transform used to calibrate the SessionAnchor. Leave empty to use Camera.main at runtime.")]
+        [SerializeField] Transform m_CameraForAnchor;
+
         [Header("Participant Feedback")]
         [Tooltip("HIT/MISS visual flash. Wired only during the practice phase per the spec (no feedback during the main task).")]
         [SerializeField] ResponseIndicator m_ResponseIndicator;
@@ -468,10 +474,15 @@ IEnumerator RunOnePopup(TaskPopupPanel panel)
                 // 4. Stay frozen right here until they physically click/trigger the GiantSquare
                 while (!buttonClicked)
                 {
-                    // Keyboard testing fallback (Left Arrow for Left Panel, Right Arrow for Right Panel)
-                    if (isLeftPanel && Input.GetKeyDown(KeyCode.LeftArrow)) buttonClicked = true;
-                    if (isRightPanel && Input.GetKeyDown(KeyCode.RightArrow)) buttonClicked = true;
-                    
+                    // Keyboard testing fallback via the new Input System.
+                    // (Legacy UnityEngine.Input throws under the new backend.)
+                    var kb = UnityEngine.InputSystem.Keyboard.current;
+                    if (kb != null)
+                    {
+                        if (isLeftPanel  && kb.leftArrowKey.wasPressedThisFrame)  buttonClicked = true;
+                        if (isRightPanel && kb.rightArrowKey.wasPressedThisFrame) buttonClicked = true;
+                    }
+
                     yield return null;
                 }
 
@@ -507,11 +518,39 @@ IEnumerator RunOnePopup(TaskPopupPanel panel)
             {
                 var panel = m_PrePracticePopups[i];
                 if (panel == null) continue;
-                bool needsCross = (i == m_PositioningPopupIndex && m_StandingCross != null);
+                bool isPositioning = (i == m_PositioningPopupIndex);
+                bool needsCross = (isPositioning && m_StandingCross != null);
                 if (needsCross) m_StandingCross.Show();
                 yield return RunOnePopup(panel);
                 if (needsCross) m_StandingCross.Hide();
+
+                // The positioning popup is the participant's "look at the
+                // reference cross and confirm" step. The moment they close
+                // it, snapshot the camera's forward into the SessionAnchor —
+                // every subsequent panel / stimulus / cross parented to the
+                // anchor will appear from that direction.
+                if (isPositioning) CalibrateSessionAnchor();
             }
+        }
+
+        void CalibrateSessionAnchor()
+        {
+            if (m_SessionAnchor == null)
+            {
+                Debug.LogWarning("[HitOrMissAppController] m_SessionAnchor not wired — calibration skipped. Panels stay at their authored transforms.");
+                return;
+            }
+            Transform cam = m_CameraForAnchor != null
+                ? m_CameraForAnchor
+                : (Camera.main != null ? Camera.main.transform : null);
+            if (cam == null)
+            {
+                Debug.LogWarning("[HitOrMissAppController] No camera for SessionAnchor calibration (m_CameraForAnchor empty and Camera.main null).");
+                return;
+            }
+            m_SessionAnchor.Calibrate(cam);
+            Debug.Log($"[HitOrMissAppController] SessionAnchor calibrated from positioning confirmation. " +
+                      $"Camera forward at confirmation: {cam.forward}.");
         }
 
         // ---- Lifecycle ----
