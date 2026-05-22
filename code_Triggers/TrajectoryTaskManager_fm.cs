@@ -32,11 +32,8 @@ namespace HitOrMiss
         [Header("Response")]
         [Tooltip("Extra seconds after ball vanishes during which the participant can still respond")]
         [SerializeField] float m_ResponseGracePeriod = 1.5f;
-        [Tooltip("If true, the next trial doesn't spawn until the current one has received a response. " +
-                 "Default true: the protocol requires that participants always respond. When the ball " +
-                 "vanishes without a response the trial stays open, the TooSlow event fires, and the " +
-                 "block waits for the participant to press a trigger.")]
-        [SerializeField] bool m_RequireResponseToAdvance = true;
+        [Tooltip("If true, the next trial doesn't spawn until the current one has received a response. Trials never time out — the manager waits indefinitely for the participant to pinch.")]
+        [SerializeField] bool m_RequireResponseToAdvance = false;
 
         // Events
         public event Action<string, TrialDefinition> TrialSpawned;
@@ -45,15 +42,6 @@ namespace HitOrMiss
         public event Action<int> BlockEnded;
         /// <summary>Fires every time a response is received (for UI indicator). Bool = was matched to a trial.</summary>
         public event Action<SemanticCommand, bool> ResponseIndicator;
-
-        /// <summary>
-        /// Fires when a trial's ball has reached its endpoint + grace period
-        /// without a response, AND m_RequireResponseToAdvance is true. The
-        /// participant has not yet pressed; the block is now waiting on them.
-        /// Used by the controller to flash a TooSlow popup during practice.
-        /// Payload = the trial that timed out.
-        /// </summary>
-        public event Action<TrialDefinition> TooSlow;
 
         // Runtime state
         readonly List<RuntimeTrial> m_ActiveTrials = new();
@@ -69,11 +57,6 @@ namespace HitOrMiss
         float m_NextSpawnEarliest;
         bool m_Running;
         bool m_Paused;
-
-        // When true, the next StartTrialList run will ignore all input. Set by
-        // the passive overload below; reset to false at the end of every run.
-        bool m_PassiveMode;
-
         float m_LastSpawnEndTime;
         IResponseInputSource m_InputSource;
         EegMarkerEmitter m_MarkerEmitter;
@@ -139,18 +122,6 @@ namespace HitOrMiss
         /// </summary>
         public void StartTrialList(int blockIndex, TrialDefinition[] trials)
         {
-            StartTrialList(blockIndex, trials, passive: false);
-        }
-
-        /// <summary>
-        /// Runs a pre-generated trial list. When <paramref name="passive"/> is
-        /// true the manager spawns and animates the ball normally but ignores
-        /// all participant input — no judgement is emitted, no feedback fires,
-        /// trials auto-resolve when their ball's deadline elapses. Used by the
-        /// ball-demo phase where the participant just watches.
-        /// </summary>
-        public void StartTrialList(int blockIndex, TrialDefinition[] trials, bool passive)
-        {
             if (trials == null || trials.Length == 0)
             {
                 Debug.LogWarning("[TrajectoryTaskManager] StartTrialList called with empty trial list.");
@@ -166,20 +137,16 @@ namespace HitOrMiss
             m_LastSpawnEndTime = 0f;
             m_ActiveTrials.Clear();
             m_AwaitingLateResponse.Clear();
-            m_PassiveMode = passive;
 
             m_Running = true;
-            // In passive mode we intentionally don't enable the input source —
-            // any presses simply produce no events on our side.
-            if (!passive) m_InputSource?.Enable();
+            m_InputSource?.Enable();
             EnsureCrosshair();
             SetCrosshairActive(true);
 
-            m_MarkerEmitter?.Emit("block_start", "", blockIndex.ToString());
+            m_MarkerEmitter?.Emit("trial_block_start", "", blockIndex.ToString());
             BlockStarted?.Invoke(blockIndex);
 
-            Debug.Log($"[TrajectoryTaskManager] Block {blockIndex + 1} started with {trials.Length} trials. " +
-                      $"passive={passive}, requireResponseToAdvance={m_RequireResponseToAdvance}.");
+            Debug.Log($"[TrajectoryTaskManager] Block {blockIndex + 1} started with {trials.Length} trials.");
         }
 
         /// <summary>
@@ -206,7 +173,6 @@ namespace HitOrMiss
             m_ActiveTrials.Clear();
             m_AwaitingLateResponse.Clear();
             m_Paused = false;
-            m_PassiveMode = false;
             m_Running = true;
             m_InputSource?.Enable();
             SetCrosshairActive(true);
@@ -219,7 +185,6 @@ namespace HitOrMiss
         {
             m_Running = false;
             m_Paused = false;
-            m_PassiveMode = false;
             m_InputSource?.Disable();
             SetCrosshairActive(false);
 
@@ -274,7 +239,7 @@ namespace HitOrMiss
         {
             if (!m_Running || !m_Paused) return;
             m_Paused = false;
-            if (!m_PassiveMode) m_InputSource?.Enable();
+            m_InputSource?.Enable();
             m_NextSpawnEarliest = Time.time + NextItiSeconds();
             m_MarkerEmitter?.Emit("block_resumed", "", m_CurrentBlock.ToString());
         }
@@ -321,20 +286,13 @@ namespace HitOrMiss
                 float duration = trial.Definition.Duration;
                 float deadline = duration + m_ResponseGracePeriod;
 
-                // Auto-timeout: in auto-advance mode the trial naturally resolves
-                // as NoResponse. In passive (demo) mode we also auto-resolve so
-                // the next demo trial can spawn even though require-response is
-                // on for the main protocol.
-                if (!trial.Resolved && trialElapsed >= deadline
-                    && (!m_RequireResponseToAdvance || m_PassiveMode))
+                // Timeout (auto-advance mode only): ball vanished AND grace period elapsed
+                // with no response → score as NoResponse and clean up.
+                if (!trial.Resolved && trialElapsed >= deadline && !m_RequireResponseToAdvance)
                 {
-                    ResolveTrial(trial, SemanticCommand.None, TrialResult.NoResponse,
-                        m_PassiveMode ? "passive_demo" : "timeout");
-                    if (!m_PassiveMode)
-                    {
-                        m_MarkerEmitter?.Emit("trial_timeout", trial.Definition.trialId,
-                            trial.Definition.category.ToString());
-                    }
+                    ResolveTrial(trial, SemanticCommand.None, TrialResult.NoResponse, "timeout");
+                    m_MarkerEmitter?.Emit("trial_timeout", trial.Definition.trialId,
+                        trial.Definition.category.ToString());
                 }
 
                 // Clean up resolved trials once the visual is done.
@@ -350,20 +308,12 @@ namespace HitOrMiss
                 // Despawn the visual so the participant sees only the crosshair,
                 // and move the trial into m_AwaitingLateResponse so the spawn
                 // gate keeps holding the next trial until they finally pinch.
-                // Also fire TooSlow so the controller can flash a "Too slow"
-                // popup during practice.
                 if (!trial.Resolved && trialElapsed >= deadline && m_RequireResponseToAdvance)
                 {
                     if (trial.ObjectController != null)
                         trial.ObjectController.Despawn();
                     m_AwaitingLateResponse.Add(trial);
                     m_ActiveTrials.RemoveAt(i);
-                    if (!m_PassiveMode)
-                    {
-                        m_MarkerEmitter?.Emit("trial_too_slow", trial.Definition.trialId,
-                            trial.Definition.category.ToString());
-                        TooSlow?.Invoke(trial.Definition);
-                    }
                 }
             }
 
@@ -375,7 +325,6 @@ namespace HitOrMiss
                 && m_AwaitingLateResponse.Count == 0)
             {
                 m_Running = false;
-                m_PassiveMode = false;
                 m_InputSource?.Disable();
                 SetCrosshairActive(false);
                 m_MarkerEmitter?.Emit("block_end", "", m_CurrentBlock.ToString());
@@ -550,7 +499,6 @@ namespace HitOrMiss
         void OnResponseReceived(ResponseEvent response)
         {
             if (!m_Running || m_Paused) return;
-            if (m_PassiveMode) return; // demo trials ignore input by design
 
             // Drop duplicate events for the same command inside the dedup
             // window (see k_DedupWindowSeconds). Done BEFORE marker emission

@@ -5,13 +5,20 @@ using TMPro;
 namespace HitOrMiss
 {
     /// <summary>
-    /// Brief, neutral acknowledgement that an input was received.
+    /// Brief acknowledgement that an input was received.
     ///
-    /// Shows the same colour for both Hit and Miss — only the label differs —
-    /// so the participant gets feedback that their button/pinch/key was registered
-    /// without any positive or negative connotation. Optional head-locked mode
-    /// guarantees visibility in MR by following the main camera each frame, so
-    /// you don't have to wire a world-space canvas.
+    /// Two modes:
+    ///   • Neutral mode (default, used during the main task) — both Hit and
+    ///     Miss show the same grey colour. Only the label differs. No
+    ///     positive/negative connotation, per the spec ("no feedback during
+    ///     the real task").
+    ///   • Practice mode (enabled by SetPracticeMode(true) during easy /
+    ///     difficult practice) — uses green for correct, red for incorrect.
+    ///     Switch back to neutral with SetPracticeMode(false) before the
+    ///     main blocks.
+    ///
+    /// Optional head-locked mode follows the main camera each frame so the
+    /// indicator is always visible in MR without needing a world-space canvas.
     /// </summary>
     public class ResponseIndicator : MonoBehaviour
     {
@@ -24,9 +31,13 @@ namespace HitOrMiss
         [SerializeField] float m_HoldDuration = 0.18f;
         [SerializeField] float m_FadeDuration = 0.35f;
 
-        [Header("Neutral colour (used for both Hit and Miss)")]
+        [Header("Neutral colour (used during main task)")]
         [SerializeField] Color m_MatchedColor = new Color(0.92f, 0.92f, 0.92f, 1f);
         [SerializeField] Color m_IgnoredColor = new Color(0.55f, 0.55f, 0.55f, 0.85f);
+
+        [Header("Practice colours (used only while practice mode is on)")]
+        [SerializeField] Color m_CorrectColor   = new Color(0.20f, 0.85f, 0.20f, 1f);
+        [SerializeField] Color m_IncorrectColor = new Color(0.95f, 0.20f, 0.20f, 1f);
 
         [Header("Labels")]
         [SerializeField] string m_HitLabel = "HIT";
@@ -44,6 +55,18 @@ namespace HitOrMiss
         [SerializeField] float m_FollowScale = 0.6f;
 
         Coroutine m_FadeCoroutine;
+        bool m_PracticeMode;
+
+        /// <summary>
+        /// Toggle practice mode. When true, subsequent calls to Show() use
+        /// green/red based on correctness; when false, they use the neutral
+        /// matched/ignored colours.
+        /// </summary>
+        public void SetPracticeMode(bool on)
+        {
+            m_PracticeMode = on;
+            if (m_VerboseLogging) Debug.Log($"[ResponseIndicator] Practice mode = {on}");
+        }
 
         void Awake()
         {
@@ -73,14 +96,37 @@ namespace HitOrMiss
             return Camera.main != null ? Camera.main.transform : null;
         }
 
+        /// <summary>
+        /// Neutral-mode call (matches the existing signature TaskManager and
+        /// the controller already use). Hit/Miss are both shown in the same
+        /// matched colour; ignored events use the dimmer ignored colour.
+        /// In practice mode this defaults to "correct" since the caller
+        /// hasn't said otherwise — call the (command, matched, wasCorrect)
+        /// overload to distinguish correct from incorrect.
+        /// </summary>
         public void Show(SemanticCommand command, bool matched)
+        {
+            ShowInternal(command, matched, wasCorrect: null);
+        }
+
+        /// <summary>
+        /// Practice-aware call. If practice mode is on and <paramref name="wasCorrect"/>
+        /// is non-null, the indicator flashes green (correct) or red (incorrect).
+        /// Otherwise behaves identically to the two-arg Show.
+        /// </summary>
+        public void Show(SemanticCommand command, bool matched, bool? wasCorrect)
+        {
+            ShowInternal(command, matched, wasCorrect);
+        }
+
+        void ShowInternal(SemanticCommand command, bool matched, bool? wasCorrect)
         {
             if (m_VerboseLogging)
             {
                 string textState = m_IndicatorText == null
                     ? "TMP=null"
                     : $"TMP@{m_IndicatorText.transform.position} canvas={(m_IndicatorText.canvas != null ? m_IndicatorText.canvas.name : "<none>")} active={m_IndicatorText.gameObject.activeInHierarchy}";
-                Debug.Log($"[ResponseIndicator] Show({command}, matched={matched}) {textState}");
+                Debug.Log($"[ResponseIndicator] Show({command}, matched={matched}, wasCorrect={wasCorrect}, practice={m_PracticeMode}) {textState}");
             }
 
             if (m_IndicatorText == null)
@@ -93,7 +139,11 @@ namespace HitOrMiss
             if (!matched && !string.IsNullOrEmpty(m_IgnoredSuffix))
                 label += m_IgnoredSuffix;
 
-            Color color = matched ? m_MatchedColor : m_IgnoredColor;
+            Color color;
+            if (m_PracticeMode && matched && wasCorrect.HasValue)
+                color = wasCorrect.Value ? m_CorrectColor : m_IncorrectColor;
+            else
+                color = matched ? m_MatchedColor : m_IgnoredColor;
 
             m_IndicatorText.text = label;
             m_IndicatorText.color = color;

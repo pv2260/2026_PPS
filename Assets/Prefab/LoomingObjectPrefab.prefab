@@ -419,7 +419,7 @@ MonoBehaviour:
   m_GroundY: 0
   m_LeftPanel: {fileID: 2673557570320094734}
   m_RightPanel: {fileID: 5290693388580789626}
-  m_LeftPanelColor: {r: 0.2, g: 0.45, b: 1, a: 1}
+  m_LeftPanelColor: {r: 1, g: 0.54901963, b: 0.10196079, a: 1}
   m_RightPanelColor: {r: 1, g: 0.55, b: 0.1, a: 1}
   m_BallCollisionRadius: 0.05
   m_MissOverreachMeters: 0.8

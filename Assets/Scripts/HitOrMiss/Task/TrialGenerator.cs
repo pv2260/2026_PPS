@@ -65,6 +65,89 @@ namespace HitOrMiss
             return trials.ToArray();
         }
 
+        /// <summary>
+        /// Returns exactly TWO demo trials: [clear_hit, clear_miss] in that
+        /// fixed order. Used by the ball-demo phase where the participant
+        /// just watches — the controller passes these to the TaskManager
+        /// with passive=true so input is ignored.
+        ///
+        /// Both trials run at SlowSpeed so the demo is easy to follow visually
+        /// and are flagged isPractice=true so the logger skips them.
+        /// </summary>
+        public static TrialDefinition[] GenerateBallDemoTrials(
+            TrajectoryTaskAsset asset, float shoulderWidthCm = 0f)
+        {
+            float scale = ComputeShoulderScale(asset, shoulderWidthCm);
+            var trials = new List<TrialDefinition>(2);
+
+            trials.AddRange(GenerateCategory(
+                TrialCategory.ClearHit, SemanticCommand.Hit, 1,
+                asset.SpawnDistance, asset.BallDiameter, asset, scale));
+            trials.AddRange(GenerateCategory(
+                TrialCategory.ClearMiss, SemanticCommand.Miss, 1,
+                asset.SpawnDistance, asset.BallDiameter, asset, scale));
+
+            for (int i = 0; i < trials.Count; i++)
+            {
+                var t = trials[i];
+                t.trialId = $"DEMO_T{i + 1:D2}";
+                t.blockIndex = -1;
+                t.trialIndexInBlock = i;
+                t.isPractice = true;
+                t.speed = asset.SlowSpeed;
+                trials[i] = t;
+            }
+            AssignTrajectoryDescriptors(trials);
+            return trials.ToArray();
+        }
+
+        /// <summary>
+        /// Builds a practice block with an explicit category composition.
+        /// Used for the two active-practice phases:
+        ///   • Easy:      (2, 2, 0, 0)  → 4 trials
+        ///   • Difficult: (2, 2, 3, 3)  → 10 trials
+        ///
+        /// Trials are shuffled with the same no-consecutive-category rule as
+        /// a normal block, run at SlowSpeed (no fast/slow mixing during
+        /// practice), and flagged isPractice=true.
+        /// </summary>
+        public static TrialDefinition[] GeneratePracticeTrialsWithComposition(
+            TrajectoryTaskAsset asset, float shoulderWidthCm,
+            int clearHits, int clearMisses, int nearHits, int nearMisses,
+            string trialIdPrefix = "PRACTICE")
+        {
+            float scale = ComputeShoulderScale(asset, shoulderWidthCm);
+            int total = clearHits + clearMisses + nearHits + nearMisses;
+
+            Debug.LogWarning(
+                $"[PracticeGenerator] {trialIdPrefix} composition: " +
+                $"clearHits={clearHits}, clearMisses={clearMisses}, " +
+                $"nearHits={nearHits}, nearMisses={nearMisses}, total={total}"
+            );
+
+            var trials = new List<TrialDefinition>(total);
+            
+            if (clearHits   > 0) trials.AddRange(GenerateCategory(TrialCategory.ClearHit,  SemanticCommand.Hit,  clearHits,   asset.SpawnDistance, asset.BallDiameter, asset, scale));
+            if (nearHits    > 0) trials.AddRange(GenerateCategory(TrialCategory.NearHit,   SemanticCommand.Hit,  nearHits,    asset.SpawnDistance, asset.BallDiameter, asset, scale));
+            if (nearMisses  > 0) trials.AddRange(GenerateCategory(TrialCategory.NearMiss,  SemanticCommand.Miss, nearMisses,  asset.SpawnDistance, asset.BallDiameter, asset, scale));
+            if (clearMisses > 0) trials.AddRange(GenerateCategory(TrialCategory.ClearMiss, SemanticCommand.Miss, clearMisses, asset.SpawnDistance, asset.BallDiameter, asset, scale));
+
+            ShuffleNoConsecutive(trials);
+
+            for (int i = 0; i < trials.Count; i++)
+            {
+                var t = trials[i];
+                t.trialId = $"{trialIdPrefix}_T{i + 1:D2}";
+                t.blockIndex = -1;
+                t.trialIndexInBlock = i;
+                t.isPractice = true;
+                t.speed = asset.SlowSpeed;
+                trials[i] = t;
+            }
+            AssignTrajectoryDescriptors(trials);
+            return trials.ToArray();
+        }
+
         public static TrialDefinition[] GenerateBlock(int blockIndex, TrajectoryTaskAsset asset, float shoulderWidthCm = 0f)
         {
             int perCat = asset.TrialsPerCategory;

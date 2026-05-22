@@ -92,17 +92,32 @@ namespace HitOrMiss
 
         // ---- Display ----
 
+
         public void Show()
         {
             EnsureInit();
+
+            LogPopupState("ENTER");
+
             var target = m_Root != null ? m_Root : gameObject;
             target.SetActive(true);
         }
 
         public void Hide()
         {
+            LogPopupState("EXIT");
+
             var target = m_Root != null ? m_Root : gameObject;
             target.SetActive(false);
+        }
+        void LogPopupState(string state)
+        {
+            Debug.LogWarning(
+                $"[PopupLogging] {state}: {gameObject.name} | " +
+                $"root={(m_Root != null ? m_Root.name : "null")} | " +
+                $"bodyKey={m_BodyKey} | " +
+                $"behavior={m_Behavior}"
+            );
         }
 
         public void SetText(string text)

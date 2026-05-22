@@ -45,22 +45,54 @@ namespace HitOrMiss
         [SerializeField] float m_BreakDurationSeconds = 60f;
 
         [Header("Practice")]
-        [Tooltip("Number of practice trials run after the LEFT/RIGHT mapping popups. Default 2.")]
+        [Tooltip("Legacy generic practice trial count. Not used by the current easy/hard practice flow.")]
         [SerializeField] int m_PracticeTrialCount = 2;
 
         [Tooltip("Seconds the HIT/MISS feedback flash stays on after each practice response.")]
         [SerializeField] float m_PracticeFeedbackSeconds = 1.0f;
 
+        [Header("Easy practice composition")]
+        [Tooltip("Easy practice: number of clear hit trials.")]
+        [SerializeField] int m_EasyPracticeClearHits = 2;
+
+        [Tooltip("Easy practice: number of clear miss trials.")]
+        [SerializeField] int m_EasyPracticeClearMisses = 2;
+
+        [Tooltip("Easy practice: number of near hit trials. Usually 0 because easy practice should be unambiguous.")]
+        [SerializeField] int m_EasyPracticeNearHits = 0;
+
+        [Tooltip("Easy practice: number of near miss trials. Usually 0 because easy practice should be unambiguous.")]
+        [SerializeField] int m_EasyPracticeNearMisses = 0;
+
+        [Tooltip("If errors are greater than or equal to this value, easy practice repeats and the retry popup is shown.")]
+        [SerializeField] int m_EasyPracticeErrorThreshold = 2;
+
+        [Header("Hard / difficult practice composition")]
+        [Tooltip("Hard practice: number of clear hit trials.")]
+        [SerializeField] int m_HardPracticeClearHits = 2;
+
+        [Tooltip("Hard practice: number of clear miss trials.")]
+        [SerializeField] int m_HardPracticeClearMisses = 2;
+
+        [Tooltip("Hard practice: number of near hit trials.")]
+        [SerializeField] int m_HardPracticeNearHits = 3;
+
+        [Tooltip("Hard practice: number of near miss trials.")]
+        [SerializeField] int m_HardPracticeNearMisses = 3;
+
+        [Tooltip("If errors are greater than or equal to this value, hard/difficult practice repeats and the retry popup is shown.")]
+        [SerializeField] int m_HardPracticeErrorThreshold = 4;
+
         [Header("Popup localization keys (popups 1, 5, 6, 7, 8, 9)")]
-        [SerializeField] string m_Popup1IntroKey  = "popup1_intro";
-        [SerializeField] string m_Popup2LeftKey   = "popup2_left";
-        [SerializeField] string m_Popup3RightKey  = "popup3_right";
+        [SerializeField] string m_Popup1IntroKey = "popup1_intro";
+        [SerializeField] string m_Popup2LeftKey = "popup2_left";
+        [SerializeField] string m_Popup3RightKey = "popup3_right";
         [SerializeField] string m_Popup4PracticeKey = "popup4_practice";
-        [SerializeField] string m_Popup5ReadyKey  = "popup5_ready";
+        [SerializeField] string m_Popup5ReadyKey = "popup5_ready";
         [SerializeField] string m_Popup6BlockIntroKey = "popup6_block_intro";
-        [SerializeField] string m_Popup7BreakKey  = "popup7_break";
+        [SerializeField] string m_Popup7BreakKey = "popup7_break";
         [SerializeField] string m_Popup8NextBlockKey = "popup8_next_block";
-        [SerializeField] string m_Popup9OutroKey  = "popup9_outro";
+        [SerializeField] string m_Popup9OutroKey = "popup9_outro";
 
         [Header("Speed grouping (consumed sequentially within each block; cycles if shorter than block)")]
         [Tooltip("Each entry defines one group: how many fast vs slow, and which comes first. Default: 7F3S, 3F7S, 7S3F, 6F4S, then cycle.")]
@@ -93,15 +125,34 @@ namespace HitOrMiss
         public int PracticeTrialCount => m_PracticeTrialCount;
         public float PracticeFeedbackSeconds => m_PracticeFeedbackSeconds;
 
-        public string Popup1IntroKey       => m_Popup1IntroKey;
-        public string Popup2LeftKey        => m_Popup2LeftKey;
-        public string Popup3RightKey       => m_Popup3RightKey;
-        public string Popup4PracticeKey    => m_Popup4PracticeKey;
-        public string Popup5ReadyKey       => m_Popup5ReadyKey;
-        public string Popup6BlockIntroKey  => m_Popup6BlockIntroKey;
-        public string Popup7BreakKey       => m_Popup7BreakKey;
-        public string Popup8NextBlockKey   => m_Popup8NextBlockKey;
-        public string Popup9OutroKey       => m_Popup9OutroKey;
+        public int EasyPracticeClearHits => m_EasyPracticeClearHits;
+        public int EasyPracticeClearMisses => m_EasyPracticeClearMisses;
+        public int EasyPracticeNearHits => m_EasyPracticeNearHits;
+        public int EasyPracticeNearMisses => m_EasyPracticeNearMisses;
+        public int EasyPracticeErrorThreshold => m_EasyPracticeErrorThreshold;
+
+        public int HardPracticeClearHits => m_HardPracticeClearHits;
+        public int HardPracticeClearMisses => m_HardPracticeClearMisses;
+        public int HardPracticeNearHits => m_HardPracticeNearHits;
+        public int HardPracticeNearMisses => m_HardPracticeNearMisses;
+        public int HardPracticeErrorThreshold => m_HardPracticeErrorThreshold;
+
+        // Aliases kept so the controller can use either "Hard" or "Difficult" naming.
+        public int DifficultPracticeClearHits => m_HardPracticeClearHits;
+        public int DifficultPracticeClearMisses => m_HardPracticeClearMisses;
+        public int DifficultPracticeNearHits => m_HardPracticeNearHits;
+        public int DifficultPracticeNearMisses => m_HardPracticeNearMisses;
+        public int DifficultPracticeErrorThreshold => m_HardPracticeErrorThreshold;
+
+        public string Popup1IntroKey => m_Popup1IntroKey;
+        public string Popup2LeftKey => m_Popup2LeftKey;
+        public string Popup3RightKey => m_Popup3RightKey;
+        public string Popup4PracticeKey => m_Popup4PracticeKey;
+        public string Popup5ReadyKey => m_Popup5ReadyKey;
+        public string Popup6BlockIntroKey => m_Popup6BlockIntroKey;
+        public string Popup7BreakKey => m_Popup7BreakKey;
+        public string Popup8NextBlockKey => m_Popup8NextBlockKey;
+        public string Popup9OutroKey => m_Popup9OutroKey;
 
         public float ReferenceShoulderWidthCm => m_ReferenceShoulderWidthCm;
 
@@ -115,9 +166,8 @@ namespace HitOrMiss
         /// <summary>
         /// Builds a per-block trial list scaled to the participant's shoulder
         /// width. Pass 0 (or anything ≤ 0) to skip scaling and use the
-        /// reference geometry. Called from
-        /// <see cref="HitOrMissAppController"/> with the value from
-        /// <see cref="SessionMetadata.shoulderWidthCm"/>.
+        /// reference geometry. Called from HitOrMissAppController with the
+        /// value from SessionMetadata.shoulderWidthCm.
         /// </summary>
         public TrialDefinition[] GenerateBlock(int blockIndex, float participantShoulderWidthCm)
         {
@@ -134,34 +184,49 @@ namespace HitOrMiss
             return TrialGenerator.GeneratePracticeTrials(this, participantShoulderWidthCm);
         }
 
+        public TrialDefinition[] GenerateEasyPracticeTrials(float participantShoulderWidthCm)
+        {
+            return TrialGenerator.GeneratePracticeTrialsWithComposition(
+                this,
+                participantShoulderWidthCm,
+                m_EasyPracticeClearHits,
+                m_EasyPracticeClearMisses,
+                m_EasyPracticeNearHits,
+                m_EasyPracticeNearMisses,
+                "EASY_PRACTICE");
+        }
+
+        public TrialDefinition[] GenerateHardPracticeTrials(float participantShoulderWidthCm)
+        {
+            return TrialGenerator.GeneratePracticeTrialsWithComposition(
+                this,
+                participantShoulderWidthCm,
+                m_HardPracticeClearHits,
+                m_HardPracticeClearMisses,
+                m_HardPracticeNearHits,
+                m_HardPracticeNearMisses,
+                "HARD_PRACTICE");
+        }
+
+        public TrialDefinition[] GenerateDifficultPracticeTrials(float participantShoulderWidthCm)
+        {
+            return GenerateHardPracticeTrials(participantShoulderWidthCm);
+        }
+
         /// <summary>
         /// Returns a runtime-only clone of this asset. Modifications to the
-        /// clone (via <see cref="ApplyTask2SessionOverrides"/> etc.) do not
-        /// touch the on-disk source asset. Used by
-        /// <see cref="HitOrMissAppController"/> at session start to apply
-        /// clinician-form overrides without persisting them.
+        /// clone do not touch the on-disk source asset.
         /// </summary>
         public TrajectoryTaskAsset CreateSessionClone()
         {
-            // Object.Instantiate copies every [SerializeField] member.
             var clone = Instantiate(this);
             clone.name = name + " (Session Clone)";
             return clone;
         }
 
         /// <summary>
-        /// Mutates this asset (intended to be called only on a clone — see
-        /// <see cref="CreateSessionClone"/>) so the values from the clinician
-        /// form's task2_parameters drive the actual run.
-        ///
-        /// Form fields applied:
-        ///   number_of_blocks       → BlockCount
-        ///   trials_per_block       → TrialsPerCategory  (= total / 4)
-        ///   break_duration_seconds → BreakDurationSeconds + RestDuration
-        ///
-        /// Offsets (hit/near_miss/miss) and ball_speeds are not yet mapped —
-        /// the static category-offset bands and FastSpeed/SlowSpeed live on
-        /// the asset directly. Future work: expose those as overridable too.
+        /// Mutates this asset, intended to be called only on a session clone,
+        /// so values from the clinician form's task2_parameters drive the run.
         /// </summary>
         public void ApplyTask2SessionOverrides(SessionMetadata md)
         {
@@ -193,6 +258,25 @@ namespace HitOrMiss
             if (m_BallDiameter <= 0f) m_BallDiameter = 0.1f;
             if (m_ItiMinSeconds < 0f) m_ItiMinSeconds = 0f;
             if (m_ItiMaxSeconds < m_ItiMinSeconds) m_ItiMaxSeconds = m_ItiMinSeconds;
+            if (m_PracticeTrialCount < 1) m_PracticeTrialCount = 1;
+
+            m_EasyPracticeClearHits = Mathf.Max(0, m_EasyPracticeClearHits);
+            m_EasyPracticeClearMisses = Mathf.Max(0, m_EasyPracticeClearMisses);
+            m_EasyPracticeNearHits = Mathf.Max(0, m_EasyPracticeNearHits);
+            m_EasyPracticeNearMisses = Mathf.Max(0, m_EasyPracticeNearMisses);
+            m_EasyPracticeErrorThreshold = Mathf.Max(1, m_EasyPracticeErrorThreshold);
+
+            m_HardPracticeClearHits = Mathf.Max(0, m_HardPracticeClearHits);
+            m_HardPracticeClearMisses = Mathf.Max(0, m_HardPracticeClearMisses);
+            m_HardPracticeNearHits = Mathf.Max(0, m_HardPracticeNearHits);
+            m_HardPracticeNearMisses = Mathf.Max(0, m_HardPracticeNearMisses);
+            m_HardPracticeErrorThreshold = Mathf.Max(1, m_HardPracticeErrorThreshold);
+
+            if (m_EasyPracticeClearHits + m_EasyPracticeClearMisses + m_EasyPracticeNearHits + m_EasyPracticeNearMisses < 1)
+                m_EasyPracticeClearHits = 1;
+
+            if (m_HardPracticeClearHits + m_HardPracticeClearMisses + m_HardPracticeNearHits + m_HardPracticeNearMisses < 1)
+                m_HardPracticeNearHits = 1;
         }
     }
 }

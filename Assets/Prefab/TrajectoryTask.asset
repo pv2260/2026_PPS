@@ -28,6 +28,16 @@ MonoBehaviour:
   m_BreakDurationSeconds: 2
   m_PracticeTrialCount: 2
   m_PracticeFeedbackSeconds: 1
+  m_EasyPracticeClearHits: 1
+  m_EasyPracticeClearMisses: 1
+  m_EasyPracticeNearHits: 0
+  m_EasyPracticeNearMisses: 0
+  m_EasyPracticeErrorThreshold: 2
+  m_HardPracticeClearHits: 1
+  m_HardPracticeClearMisses: 1
+  m_HardPracticeNearHits: 1
+  m_HardPracticeNearMisses: 1
+  m_HardPracticeErrorThreshold: 4
   m_Popup1IntroKey: popup1_intro
   m_Popup2LeftKey: popup2_left
   m_Popup3RightKey: popup3_right
