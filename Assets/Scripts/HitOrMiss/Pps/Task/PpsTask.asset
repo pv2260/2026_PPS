@@ -19,7 +19,7 @@ MonoBehaviour:
   m_PercentV: 0.15
   m_PercentT: 0.15
   m_FastDurationSeconds: 1.5
-  m_SlowDurationSeconds: 3.5
+  m_SlowDurationSeconds: 2.5
   m_ResponseGracePeriodSeconds: 1
   m_ItiMinSeconds: 1.5
   m_ItiMaxSeconds: 2.5
@@ -47,11 +47,13 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  m_CrosshairDistance: 11
+  m_CrosshairHeight: 1.4
   m_DefaultShoulderWidthMeters: 0.5
   m_WideOffsetMeters: 0.6
-  m_LedHeight: 1
-  m_DistanceD4: 6
-  m_DistanceD3: 4
+  m_LedHeight: 1.2
+  m_DistanceD4: 10
+  m_DistanceD3: 8
   m_DistanceD2: 2
   m_DistanceD1: 1
   m_ScaleAtD4: {x: 2, y: 2, z: 2}

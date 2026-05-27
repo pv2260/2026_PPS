@@ -46,6 +46,13 @@ namespace HitOrMiss.Pps
         [SerializeField] AnimationCurve m_MotionCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
 
         [Header("Spatial layout (meters)")]
+        
+        [Tooltip("Distance from body anchor to the fixation crosshair (meters). " +
+                "Typically at or beyond D4 so it remains visible behind the loom.")]
+        [SerializeField] float m_CrosshairDistance = 1.2f;
+
+        [Tooltip("Height of the crosshair (meters). Typically eye level for standing participants.")]
+        [SerializeField] float m_CrosshairHeight = 1.4f;
 
         [Tooltip("Fallback shoulder width in meters, used if no participant-specific value is provided.")]
         [SerializeField] float m_DefaultShoulderWidthMeters = 0.40f;
@@ -110,6 +117,9 @@ namespace HitOrMiss.Pps
 
         public float DefaultShoulderWidthMeters => m_DefaultShoulderWidthMeters;
         public float WideOffsetMeters => m_WideOffsetMeters;
+
+        public float CrosshairDistance => m_CrosshairDistance;
+        public float CrosshairHeight => m_CrosshairHeight;
 
         // Fallback values shown/available for code that does not yet pass a participant-specific width.
         public float NarrowSeparation => m_DefaultShoulderWidthMeters;
@@ -239,6 +249,9 @@ namespace HitOrMiss.Pps
 
             if (m_DefaultShoulderWidthMeters <= 0f)
                 m_DefaultShoulderWidthMeters = 0.40f;
+
+            if (m_CrosshairDistance <= 0f) m_CrosshairDistance = 0.1f;
+            if (m_CrosshairHeight < 0f) m_CrosshairHeight = 0f;
 
             if (m_WideOffsetMeters < 0f)
                 m_WideOffsetMeters = 0f;
