@@ -14,97 +14,86 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_Entries:
   - key: popup1_intro
-    english: 'In this task, a ball will move towards you.  Your task is to decide
-      whether the ball will hit or miss you. Respond as quickly and accurately as
-      possible.   '
-    french: "Dans cette t\xE2che, une balle va se d\xE9placer vers vous. Votre r\xF4le
-      est de d\xE9cider si la balle va vous toucher ou vous \xE9viter (manquer).  "
+    english: 'In this task, a ball will move towards you. \nYour task is to decide
+      whether the ball will hit or miss you. \nRespond as quickly and accurately
+      as possible.   '
+    french: "Dans cette t\xE2che, une balle va se d\xE9placer vers vous. \\nVotre
+      r\xF4le est de d\xE9cider si la balle va vous toucher ou vous \xE9viter (manquer).  "
   - key: popup2_triggercheck
-    english: 'Trigger check. Please confirm that EEG/EMG triggers are being received
-      correctly. '
-    french: "V\xE9rification des triggers. Veuillez confirmer que les triggers EEG/EMG
-      sont correctement re\xE7us."
+    english: 'Please confirm that EEG/EMG triggers are being received correctly. '
+    french: "Veuillez confirmer que les triggers EEG/EMG sont correctement re\xE7us."
   - key: popup3_positioning
-    english: Please stand in front of the cross. Face forward and hold both controllers
+    english: Please stand in front of the cross. \nFace forward and hold both controllers
       comfortably.
-    french: Veuillez vous placer devant la croix. Regardez droit devant vous et tenez
-      les deux manettes confortablement.
+    french: Veuillez vous placer devant la croix. \nRegardez droit devant vous et
+      tenez les deux manettes confortablement.
   - key: popup4_controllerpracticeintro
-    english: "In this task, you will use the controllers to answer. LEFT means YES,
-      the ball will hit me. RIGHT means NO, the ball will miss me. Let\u2019s practice
-      the buttons first."
+    english: "In this task, you will use the controllers to answer. \\nLEFT means
+      YES, the ball will hit me. \\nRIGHT means NO, the ball will miss me. \\nLet\u2019s
+      practice the buttons first."
     french: "Dans cette t\xE2che, vous utiliserez les manettes pour r\xE9pondre.
-      GAUCHE signifie OUI, la balle va me toucher. DROITE signifie NON, la balle
-      va me manquer. Entra\xEEnons-nous d\u2019abord avec les boutons."
+      \\nGAUCHE signifie OUI, la balle va me toucher. \\nDROITE signifie NON, la
+      balle va me manquer. \\nEntra\xEEnons-nous d\u2019abord avec les boutons."
   - key: popup5_leftcontrollerpractice
-    english: 'Press the LEFT controller for YES. YES means: the ball will hit me.'
-    french: 'Appuyez sur la manette GAUCHE pour OUI. OUI signifie : la balle va me
-      toucher.'
+    english: 'Press the LEFT controller for YES. \nYES means: the ball will hit me.'
+    french: 'Appuyez sur la manette GAUCHE pour OUI. \nOUI signifie : la balle va
+      me toucher.'
   - key: popup6_rightcontrollerpractice
-    english: 'Press the RIGHT controller for NO. NO means: the ball will miss me. '
-    french: 'Appuyez sur la manette DROITE pour NON. NON signifie : la balle va me
-      manquer.'
+    english: 'Press the RIGHT controller for NO. \nNO means: the ball will miss me. '
+    french: 'Appuyez sur la manette DROITE pour NON. \nNON signifie : la balle va
+      me manquer.'
   - key: popup7_balldemointro
-    english: During the task, a ball will travel toward you. Your task is to indicate
-      whether the ball will hit you or miss you. If the ball hits you, you will see
-      a splash. If the ball misses you, it will continue moving past you. First,
-      you will watch two examples. You do not need to press anything yet.Just watch
-      what happens.
-    french: "Pendant la t\xE2che, une balle va se d\xE9placer vers vous. Votre t\xE2che
-      consiste \xE0 indiquer si la balle va vous toucher ou vous manquer. Si la balle
-      vous touche, vous verrez une \xE9claboussure. Si la balle vous manque, elle
-      continuera sa trajectoire derri\xE8re vous. Tout d\u2019abord, vous allez regarder
-      deux exemples. Vous n\u2019avez encore besoin d\u2019appuyer sur rien. Regardez
-      simplement ce qu\u2019il se passe. "
+    english: 'A ball will move toward you. \nDecide whether it will hit you or miss
+      you. \nIf it hits, you will see a splash; if it misses, it will pass by. \nFirst,
+      watch TWO EXAMPLES WITHOUT PRESSING ANYTHING. '
+    french: "Une balle se d\xE9placera vers vous. \\nIndiquez si elle va vous toucher
+      ou vous manquer. \\nSi elle vous touche, vous verrez une \xE9claboussure ;
+      si elle vous manque, elle passera \xE0 c\xF4t\xE9. \\nVous allez d\u2019abord
+      regarder DEUX EXEMPLES SANS APPUYER sur quoi que ce soit."
   - key: popup8_easypractice
-    english: 'Now it is your turn. You will first practice with easy examples. After
-      each ball, answer:  Will the ball hit you? LEFT = YES, it will hit me. RIGHT
-      = NO, it will miss me.'
-    french: "Maintenant, c\u2019est \xE0 votre tour. Vous allez d\u2019abord vous
-      entra\xEEner avec des exemples faciles. Apr\xE8s chaque balle, r\xE9pondez
-      : La balle va-t-elle vous toucher ? GAUCHE = OUI, elle va me toucher. DROITE
-      = NON, elle va me manquer."
+    english: "Now it\u2019s your turn. \\nYou will start with easy examples. \\nAfter
+      each ball, answer: will it hit you? \\nLEFT = yes \\nRIGHT = no."
+    french: "\xC0 vous maintenant. \\nVous allez commencer par des exemples faciles.
+      \\nApr\xE8s chaque balle, r\xE9pondez : va-t-elle vous toucher ? \\nGAUCHE
+      = oui \\nDROITE = non."
   - key: popup9_difficult
-    english: Good! Now the task will become slightly harder. Some balls will clearly
-      hit or miss you. Others will pass very close to your body. Keep answering as
-      quickly and accurately as possible.
-    french: "Bien ! Maintenant, la t\xE2che va devenir un peu plus difficile. Certaines
-      balles vont clairement vous toucher ou vous manquer. D\u2019autres passeront
-      tr\xE8s pr\xE8s de votre corps. Continuez \xE0 r\xE9pondre aussi vite et pr\xE9cis\xE9ment
-      que possible."
+    english: Good! Now the task will become slightly harder. \nSome balls will clearly
+      hit or miss you. \nOthers will pass very close to your body. \nLets give it
+      a try!
+    french: "Bien ! La t\xE2che va maintenant devenir un peu plus difficile.\\nCertaines
+      balles vont clairement vous toucher ou vous manquer.\\nD\u2019autres passeront
+      tr\xE8s pr\xE8s de votre corps.\\nEssayons !"
   - key: popup10_practiceretry
-    english: "Let\u2019s try the practice again. Try to respond before the ball reaches
-      you."
-    french: "Recommen\xE7ons l\u2019entra\xEEnement. Essayez de r\xE9pondre avant
+    english: "Let\u2019s try the practice again. \\nTry to respond before the ball
+      reaches you."
+    french: "Recommen\xE7ons l\u2019entra\xEEnement. \\nEssayez de r\xE9pondre avant
       que la balle ne vous atteigne."
   - key: popup11_tooslow
     english: 'Too Slow! '
     french: Trop lent !
   - key: popup12_nofeedback
-    english: Practice is now complete. The real task will now begin. During the real
-      task, you will no longer receive feedback. The screen will not flash green
-      or red, and you will not be told whether your response was correct or incorrect.
-    french: "L\u2019entra\xEEnement est maintenant termin\xE9. La t\xE2che r\xE9elle
-      va commencer. Pendant la t\xE2che r\xE9elle, vous ne recevrez plus de commentaires.
-      L\u2019\xE9cran ne clignotera plus en vert ou en rouge, et on ne vous dira
-      plus si votre r\xE9ponse \xE9tait correcte ou incorrecte."
+    english: Practice is complete.\nThe real task will now begin.\nYou will no longer
+      receive feedback.\nNo colors or correctness messages will be shown.
+    french: "La pratique est termin\xE9e.\\nLa vraie t\xE2che va maintenant commencer.\\nVous
+      ne recevrez plus de retour.\\nAucune couleur ni aucun message de correction
+      ne sera affich\xE9."
   - key: popup13_ready
-    english: Are you ready to begin? Press Start when you are ready.
-    french: "\xCAtes-vous pr\xEAt \xE0 commencer ? Appuyez sur Start quand vous \xEAtes
-      pr\xEAt."
+    english: Are you ready to begin?.\nStart when you are ready.
+    french: "\xCAtes-vous pr\xEAt \xE0 commencer ? .\\nAppuyez sur Start quand vous
+      \xEAtes pr\xEAt."
   - key: popup14_block_intro
-    english: Let's start with Block {block}. Press Begin when you are ready.
-    french: "Commen\xE7ons avec le Bloc {block}. Appuyez sur Commencer quand vous
-      \xEAtes pr\xEAt"
+    english: Let's start with Block {block}. .\nPress Begin when you are ready.
+    french: "Commen\xE7ons avec le Bloc {block}. .\\nAppuyez sur Commencer quand
+      vous \xEAtes pr\xEAt"
   - key: popup15_break
-    english: All done with Block {block}. Take a little break.
-    french: "Bloc {block} termin\xE9. Prenez une petite pause."
+    english: All done with Block {block}. .\nTake a little break.
+    french: "Bloc {block} termin\xE9. .\\nPrenez une petite pause."
   - key: popup16_next_block
-    english: Are you ready to start with Block {block}? Let's go!
-    french: "Pr\xEAt(e) \xE0 commencer le Bloc {block} ? Allons-y !"
+    english: Are you ready to start with Block {block}?.\nLet's go!
+    french: "Pr\xEAt(e) \xE0 commencer le Bloc {block} ? .\\nAllons-y !"
   - key: popup17_outro
-    english: You are all done. Thank you for your participation.
-    french: "C'est termin\xE9. Merci pour votre participation."
+    english: You are all done. .\nThank you for your participation.
+    french: "C'est termin\xE9. .\\nMerci pour votre participation."
   - key: say_hit
     english: HIT
     french: TOUCHE
