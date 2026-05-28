@@ -74,6 +74,11 @@ namespace HitOrMiss
         // the passive overload below; reset to false at the end of every run.
         bool m_PassiveMode;
 
+        // When true, timed-out trials auto-resolve as NoResponse instead of waiting
+        // for a late press. Used by practice so timeouts count as errors and the
+        // block doesn't hang. Main task leaves this false.
+        public bool AutoResolveTimeouts = false;
+
         float m_LastSpawnEndTime;
         IResponseInputSource m_InputSource;
         EegMarkerEmitter m_MarkerEmitter;
@@ -103,6 +108,24 @@ namespace HitOrMiss
         public int TrialsCompletedInBlock { get; private set; }
         public int TotalTrialsInBlock => m_BlockTrials != null ? m_BlockTrials.Length : 0;
         public int NextTrialIndex => m_NextTrialIndex;
+
+        /// <summary>
+        /// Shows or hides the trial crosshair outside of a running block — used by
+        /// the fixation-acknowledgement step so the subject sees the exact cross
+        /// (same position, same billboard) they'll fixate during trials.
+        /// </summary>
+        public void ShowFixationCrosshair(bool visible)
+        {
+            if (visible)
+            {
+                EnsureCrosshair();   // builds + positions at spawn point if needed
+                SetCrosshairActive(true);
+            }
+            else
+            {
+                SetCrosshairActive(false);
+            }
+        }
 
         public void SetInputSource(IResponseInputSource source)
         {
@@ -248,7 +271,7 @@ namespace HitOrMiss
         /// in-flight balls without scoring them (the trial that was interrupted
         /// is treated as never having occurred — clinician will redo it on resume
         /// if needed). Block trial list, completed results, and next-trial cursor
-        /// are preserved so see cref="ResumeBlock"/> can continue from where it left off.
+        /// are preserved so <see cref="ResumeBlock"/> can continue from where it left off.
         /// </summary>
         public void PauseBlock()
         {
@@ -324,9 +347,10 @@ namespace HitOrMiss
                 // Auto-timeout: in auto-advance mode the trial naturally resolves
                 // as NoResponse. In passive (demo) mode we also auto-resolve so
                 // the next demo trial can spawn even though require-response is
-                // on for the main protocol.
+                // on for the main protocol. AutoResolveTimeouts does the same for
+                // practice so timeouts count as errors and the block never hangs.
                 if (!trial.Resolved && trialElapsed >= deadline
-                    && (!m_RequireResponseToAdvance || m_PassiveMode))
+                    && (!m_RequireResponseToAdvance || m_PassiveMode || AutoResolveTimeouts))
                 {
                     ResolveTrial(trial, SemanticCommand.None, TrialResult.NoResponse,
                         m_PassiveMode ? "passive_demo" : "timeout");
@@ -351,7 +375,8 @@ namespace HitOrMiss
                 // and move the trial into m_AwaitingLateResponse so the spawn
                 // gate keeps holding the next trial until they finally pinch.
                 // Also fire TooSlow so the controller can flash a "Too slow"
-                // popup during practice.
+                // popup during practice. (Skipped when AutoResolveTimeouts is on,
+                // because the trial already resolved as NoResponse above.)
                 if (!trial.Resolved && trialElapsed >= deadline && m_RequireResponseToAdvance)
                 {
                     if (trial.ObjectController != null)
@@ -483,6 +508,11 @@ namespace HitOrMiss
             return UnityEngine.Random.Range(min, max);
         }
 
+        static bool IsFiniteVec(Vector3 v) =>
+            !(float.IsNaN(v.x) || float.IsInfinity(v.x) ||
+              float.IsNaN(v.y) || float.IsInfinity(v.y) ||
+              float.IsNaN(v.z) || float.IsInfinity(v.z));
+
         void SpawnTrial(TrialDefinition trial)
         {
             var rt = new RuntimeTrial(trial) { SpawnTime = Time.time };
@@ -508,6 +538,11 @@ namespace HitOrMiss
                 ? Mathf.Max(0f, (Time.time - m_LastSpawnEndTime) * 1000f)
                 : 0f;
             rt.InterTrialIntervalMs = itiMs;
+
+            // DIAGNOSTIC — find NaN/infinite trial positions that cause the
+            // "Invalid worldAABB / transform is corrupt" errors.
+            if (!IsFiniteVec(trial.spawnWorldPosition) || !IsFiniteVec(trial.endWorldPosition))
+                Debug.LogError($"[SPAWN-NAN] trial={trial.trialId} spawn={trial.spawnWorldPosition} end={trial.endWorldPosition} spawnDistance={trial.spawnDistance} lateral={trial.finalLateralOffset} speed={trial.speed}");
 
             if (m_LoomingObjectPrefab != null && m_SpawnOrigin != null)
             {
@@ -549,6 +584,7 @@ namespace HitOrMiss
 
         void OnResponseReceived(ResponseEvent response)
         {
+            Debug.Log($"[RESP] got {response.command} | running={m_Running} paused={m_Paused} passive={m_PassiveMode} active={m_ActiveTrials.Count} late={m_AwaitingLateResponse.Count}");
             if (!m_Running || m_Paused) return;
             if (m_PassiveMode) return; // demo trials ignore input by design
 
@@ -619,11 +655,18 @@ namespace HitOrMiss
             TrialResult result = correct ? TrialResult.Correct : TrialResult.Incorrect;
             float rt = (Time.time - bestTrial.SpawnTime) * 1000f;
 
+            // "Too slow" = responded after the ball passed the halfway point of
+            // its trajectory. It's a flag layered on top of correct/incorrect,
+            // not a separate result. Late responses (in m_AwaitingLateResponse)
+            // are always past halfway, so they're always too slow.
+            float halfwaySeconds = bestTrial.Definition.Duration * 0.5f;
+            bool tooSlow = bestIsLate || (rt / 1000f) >= halfwaySeconds;
+
             Debug.Log($"[Response] {response.command} pressed | Trial {bestTrial.Definition.trialId} " +
                       $"({bestTrial.Definition.category}) | Expected: {bestTrial.Definition.expectedResponse} | " +
-                      $"Result: {(correct ? "CORRECT" : "WRONG")} | RT: {rt:F0}ms");
+                      $"Result: {(correct ? "CORRECT" : "WRONG")}{(tooSlow ? " (TOO SLOW)" : "")} | RT: {rt:F0}ms");
 
-            ResolveTrial(bestTrial, response.command, result, "");
+            ResolveTrial(bestTrial, response.command, result, "", tooSlow);
             ResponseIndicator?.Invoke(response.command, true);
 
             // If we matched against a late-response trial, drop it from that list
@@ -654,7 +697,7 @@ namespace HitOrMiss
             return SpeedLevel.Medium;
         }
 
-        void ResolveTrial(RuntimeTrial trial, SemanticCommand received, TrialResult result, string failureReason)
+       void ResolveTrial(RuntimeTrial trial, SemanticCommand received, TrialResult result, string failureReason, bool wasTooSlow = false)
         {
             if (trial.Resolved) return;
             trial.Resolved = true;
@@ -730,7 +773,8 @@ namespace HitOrMiss
                 trialTriggerCode = trial.TrialTriggerCode,
                 triggerTimestamp = trial.TriggerTimestamp,
                 responseTriggerCode = TriggerEncoder.EncodeResponse(received),
-                trialInterrupted = (failureReason == "block_stopped"),
+              trialInterrupted = (failureReason == "block_stopped"),
+                wasTooSlow = wasTooSlow,
             };
 
             m_AllResults.Add(judgement);

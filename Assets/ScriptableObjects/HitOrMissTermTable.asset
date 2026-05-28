@@ -27,6 +27,9 @@ MonoBehaviour:
       comfortably.
     french: Veuillez vous placer devant la croix. \nRegardez droit devant vous et
       tenez les deux manettes confortablement.
+  - key: popup3a_positioningak
+    english: 'Press the trigger when you have positioned yourself. '
+    french: "Appuyez sur la g\xE2chette lorsque vous \xEAtes bien positionn\xE9(e)."
   - key: popup4_controllerpracticeintro
     english: "In this task, you will use the controllers to answer. \\nLEFT means
       YES, the ball will hit me. \\nRIGHT means NO, the ball will miss me. \\nLet\u2019s

@@ -19,6 +19,7 @@ namespace HitOrMiss
         public SemanticCommand received;
         public TrialResult result;
         public bool isCorrect;
+        public bool wasTooSlow; 
 
         // ---- Run / speed-grouping snapshot (copied off TrialDefinition at score time) ----
         public int trialNumberInBlock;    // 1-based

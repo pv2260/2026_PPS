@@ -48,16 +48,6 @@ namespace HitOrMiss
     {
         // ---- Practice block configuration (hardcoded constants) ----
         const int kBallDemoTrialCount              = 2;
-        const int kEasyClearHits                   = 2;
-        const int kEasyClearMisses                 = 2;
-        const int kEasyNearHits                    = 0;
-        const int kEasyNearMisses                  = 0;
-        const int kEasyPracticeErrorThreshold      = 2;   // ≥ → repeat easy silently
-        const int kDifficultClearHits              = 2;
-        const int kDifficultClearMisses            = 2;
-        const int kDifficultNearHits               = 3;
-        const int kDifficultNearMisses             = 3;
-        const int kDifficultPracticeErrorThreshold = 4;   // ≥ → show retry panel and repeat
         const float kTooSlowDisplaySeconds         = 1.0f;
 
         [Header("Task")]
@@ -78,11 +68,20 @@ namespace HitOrMiss
         [SerializeField] LocalizedTermTable m_TermTable;
         [SerializeField] LocalizedUITextBinder[] m_UITextBinders;
 
+
         // ---- Pre-practice ----
         [Header("Pre-practice popups (Welcome → TriggerCheck → Positioning, etc.)")]
         [SerializeField] TaskPopupPanel[] m_PrePracticePopups;
         [Tooltip("Index into m_PrePracticePopups[] of the positioning popup. -1 = no positioning step. The standing cross is visible only while that popup is up.")]
         [SerializeField] int m_PositioningPopupIndex = -1;
+
+        
+        // ---- Positioning ----
+        [Header("Fixation acknowledgement (shown after positioning)")]
+        [Tooltip("Shown after positioning. Displays the fixation cross and waits for a trigger press to confirm the subject sees it.")]
+        [SerializeField] TaskPopupPanel m_FixationAckPanel;
+
+      
 
         // ---- Controller practice ----
         [Header("Controller practice (forced-response sequence)")]
@@ -207,6 +206,7 @@ namespace HitOrMiss
             foreach (var binder in m_UITextBinders)
                 if (binder != null) binder.Language = language;
         }
+        
 
         public void StartSession()
         {
@@ -316,6 +316,8 @@ namespace HitOrMiss
             m_EegMarkerEmitter?.Emit("phase_intro");
             yield return RunPrePracticeSequence();
 
+            yield return RunFixationAcknowledgement();  
+
             SetPhase(TaskPhase.Practice);
             m_EegMarkerEmitter?.Emit("phase_controller_practice");
             yield return RunControllerPractice();
@@ -328,11 +330,19 @@ namespace HitOrMiss
 
             m_EegMarkerEmitter?.Emit("phase_difficult_practice");
             yield return RunDifficultPractice();
+            Debug.Log("[SESSION] difficult done, showing NoFeedback");
+
 
             SetPhase(TaskPhase.Ready);
             yield return RunOnePopup(m_NoFeedbackPanel);
+            Debug.Log("[SESSION] NoFeedback done, showing ReadyToStart");
+
             yield return RunOnePopup(m_ReadyToStartPanel);
+            Debug.Log("[SESSION] ReadyToStart done, entering blocks");
+
             yield return RunPopupSequence(m_ExtraPostPracticePopups);
+            Debug.Log($"[SESSION] blockCount={blockCount}, starting block loop");
+
 
             for (int b = 0; b < blockCount; b++)
             {
@@ -401,14 +411,15 @@ namespace HitOrMiss
             {
                 int errors = 0;
                 yield return RunFeedbackPracticeBlock(
-                    composition: (kEasyClearHits, kEasyClearMisses, kEasyNearHits, kEasyNearMisses),
+                    composition: (Asset.EasyPracticeClearHits, Asset.EasyPracticeClearMisses,
+                                Asset.EasyPracticeNearHits,  Asset.EasyPracticeNearMisses),
                     onErrorCount: e => errors = e);
 
-                if (errors < kEasyPracticeErrorThreshold)
+                if (errors < Asset.EasyPracticeErrorThreshold)
                     break;
 
                 Debug.Log($"[HitOrMissAppController] Easy practice failed " +
-                          $"({errors} errors ≥ {kEasyPracticeErrorThreshold}). Repeating silently.");
+                        $"({errors} errors ≥ {Asset.EasyPracticeErrorThreshold}). Repeating silently.");
             }
         }
 
@@ -420,14 +431,17 @@ namespace HitOrMiss
             {
                 int errors = 0;
                 yield return RunFeedbackPracticeBlock(
-                    composition: (kDifficultClearHits, kDifficultClearMisses, kDifficultNearHits, kDifficultNearMisses),
+                    composition: (Asset.DifficultPracticeClearHits, Asset.DifficultPracticeClearMisses,
+                                Asset.DifficultPracticeNearHits,  Asset.DifficultPracticeNearMisses),
                     onErrorCount: e => errors = e);
 
-                if (errors < kDifficultPracticeErrorThreshold)
+                if (errors < Asset.DifficultPracticeErrorThreshold)
+                {
+                    Debug.Log($"[HitOrMissAppController] Difficult PASSED — {errors} errors.");
                     break;
+                }
 
-                Debug.Log($"[HitOrMissAppController] Difficult practice failed " +
-                          $"({errors} errors ≥ {kDifficultPracticeErrorThreshold}). Showing retry panel.");
+                Debug.Log($"[HitOrMissAppController] Difficult FAILED — {errors} errors. Showing retry.");
                 yield return RunOnePopup(m_PracticeRetryPanel);
             }
         }
@@ -452,19 +466,23 @@ namespace HitOrMiss
 
             bool? lastCorrect = null;
             void OnTrialJudged(TrialJudgement j)
-            {
-                lastCorrect = j.result == TrialResult.Correct;
+                        {
+                            lastCorrect = j.result == TrialResult.Correct;
 
-                // Fullscreen green/red flash. NoResponse counts as incorrect
-                // (the participant was too slow → red).
-                if (m_FullScreenFlash != null)
-                {
-                    if (j.result == TrialResult.Correct)
-                        m_FullScreenFlash.FlashCorrect();
-                    else
-                        m_FullScreenFlash.FlashIncorrect();
-                }
-            }
+                            // Green/red flash based on correctness (unchanged).
+                            if (m_FullScreenFlash != null)
+                            {
+                                if (j.result == TrialResult.Correct)
+                                    m_FullScreenFlash.FlashCorrect();
+                                else
+                                    m_FullScreenFlash.FlashIncorrect();
+                            }
+
+                            // ALSO show the Too Slow panel if the response was past halfway.
+                            // (A no-response timeout already fires the TooSlow event separately.)
+                            if (j.wasTooSlow && j.result != TrialResult.NoResponse)
+                                StartCoroutine(FlashTooSlowPanel());
+                        }
             m_TaskManager.TrialJudged += OnTrialJudged;
 
             void OnResponseIndicator(SemanticCommand cmd, bool matched)
@@ -482,7 +500,10 @@ namespace HitOrMiss
             void TallyErrors(TrialJudgement j)
             {
                 if (j.result == TrialResult.Incorrect || j.result == TrialResult.NoResponse)
+                {
                     errors++;
+                    Debug.Log($"[TALLY] error #{errors} — result={j.result} trial={j.trialId}");
+                }
             }
             m_TaskManager.TrialJudged += TallyErrors;
 
@@ -490,12 +511,16 @@ namespace HitOrMiss
                 Asset, m_SessionMetadata.shoulderWidthCm,
                 composition.clearHits, composition.clearMisses,
                 composition.nearHits,  composition.nearMisses);
-
+                
+            m_TaskManager.AutoResolveTimeouts = true;   // practice: timeouts = errors, no waiting
             if (m_FixationCross != null) m_FixationCross.Show();
             m_TaskManager.StartTrialList(-1, trials);
+
+
             while (m_TaskManager.IsRunning) yield return null;
             if (m_FixationCross != null) m_FixationCross.Hide();
-
+            
+            m_TaskManager.AutoResolveTimeouts = false;   // restore for main task
             m_TaskManager.TrialJudged -= TallyErrors;
             m_TaskManager.TrialJudged -= OnTrialJudged;
             m_TaskManager.ResponseIndicator -= OnResponseIndicator;
@@ -581,6 +606,40 @@ namespace HitOrMiss
             return null;
         }
 
+        IEnumerator RunFixationAcknowledgement()
+        {
+            if (m_FixationAckPanel == null)
+            {
+                Debug.LogWarning("[HitOrMissAppController] Fixation acknowledgement panel not assigned. Skipping.");
+                yield break;
+            }
+            if (m_InputSource == null)
+            {
+                Debug.LogError("[HitOrMissAppController] No input source for fixation acknowledgement.");
+                yield break;
+            }
+
+            // Show the exact trial crosshair, at its real spawn-point position.
+            if (m_TaskManager != null) m_TaskManager.ShowFixationCrosshair(true);
+
+            var ctx = BuildPopupContext();
+            m_FixationAckPanel.SetText(ctx.ResolveText(m_FixationAckPanel));
+            m_FixationAckPanel.Show();
+
+            // Any controller trigger (left or right) confirms.
+            bool acknowledged = false;
+            void Handler(ResponseEvent ev) => acknowledged = true;
+            m_InputSource.ResponseReceived += Handler;
+            m_InputSource.Enable();
+
+            while (!acknowledged) yield return null;
+
+            m_InputSource.ResponseReceived -= Handler;
+
+            m_FixationAckPanel.Hide();
+            if (m_TaskManager != null) m_TaskManager.ShowFixationCrosshair(false);
+        }
+
         // ====================================================================
         // Popup sequencing helpers
         // ====================================================================
@@ -660,6 +719,7 @@ namespace HitOrMiss
         {
             HideArray(m_PrePracticePopups);
             HideArray(m_ExtraPostPracticePopups);
+            if (m_FixationAckPanel != null) m_FixationAckPanel.Hide();
             if (m_ControllerPracticeIntroPanel  != null) m_ControllerPracticeIntroPanel.Hide();
             if (m_LeftControllerPracticePanel   != null) m_LeftControllerPracticePanel.Hide();
             if (m_RightControllerPracticePanel  != null) m_RightControllerPracticePanel.Hide();
