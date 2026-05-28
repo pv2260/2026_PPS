@@ -1,66 +1,94 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace HitOrMiss.Pps
 {
-    /// <summary>
-    /// Plays response feedback. During practice, also shows the
-    /// PracticeFeedbackPanel briefly ("Felt it!").
-    /// Call OnResponseSubmitted(trial) whenever a response is registered.
-    /// </summary>
     public class PpsFeedback : MonoBehaviour
     {
         [Header("Audio")]
         [SerializeField] AudioSource m_AudioSource;
-        [Tooltip("Played on every response (practice and main trials).")]
+
+        [Tooltip("Played on every accepted response, practice and main trials.")]
         [SerializeField] AudioClip m_ResponseSound;
 
-        [Header("Practice feedback panel")]
-        [Tooltip("Reference to PracticeFeedbackPanel in the scene. Toggled on/off.")]
+        [Header("Practice feedback flash")]
+        [Tooltip("Panel used for green/red practice feedback.")]
         [SerializeField] GameObject m_PracticeFeedbackPanel;
 
-        [Tooltip("How long the 'Felt it!' panel stays visible after a response.")]
-        [SerializeField] float m_PanelDurationSeconds = 0.8f;
+        [Tooltip("Image component on the practice feedback panel.")]
+        [SerializeField] Image m_PracticeFeedbackImage;
 
-        Coroutine m_HideRoutine;
+        [SerializeField] float m_FlashDurationSeconds = 0.35f;
+
+        [SerializeField, Range(0f, 1f)]
+        float m_FlashAlpha = 0.75f;
+
+        Coroutine m_FlashRoutine;
 
         void Awake()
         {
-            // Make sure the panel starts hidden
             if (m_PracticeFeedbackPanel != null)
                 m_PracticeFeedbackPanel.SetActive(false);
+
+            if (m_PracticeFeedbackImage == null && m_PracticeFeedbackPanel != null)
+                m_PracticeFeedbackImage = m_PracticeFeedbackPanel.GetComponent<Image>();
         }
 
         /// <summary>
-        /// Call this whenever a response (button press) is registered during a trial.
+        /// Call immediately when a valid response is registered.
+        /// This only plays the small confirmation sound.
         /// </summary>
-        public void OnResponseSubmitted(PpsTrialDefinition trial)
+        public void OnResponseSubmitted()
         {
-            // Always: play the response sound
             if (m_AudioSource != null && m_ResponseSound != null)
                 m_AudioSource.PlayOneShot(m_ResponseSound);
-
-            // Practice-only: also show the "Felt it!" panel
-            if (trial.isPractice)
-                ShowPracticePanel();
         }
 
-        void ShowPracticePanel()
+        /// <summary>
+        /// Green feedback for correct vibration detection.
+        /// </summary>
+        public void FlashGreen()
         {
-            if (m_PracticeFeedbackPanel == null) return;
+            Flash(Color.green);
+        }
 
+        /// <summary>
+        /// Red feedback for missed vibration or false alarm.
+        /// </summary>
+        public void FlashRed()
+        {
+            Flash(Color.red);
+        }
+
+        void Flash(Color color)
+        {
+            if (m_PracticeFeedbackPanel == null)
+                return;
+
+            if (m_FlashRoutine != null)
+                StopCoroutine(m_FlashRoutine);
+
+            m_FlashRoutine = StartCoroutine(FlashRoutine(color));
+        }
+
+        IEnumerator FlashRoutine(Color color)
+        {
             m_PracticeFeedbackPanel.SetActive(true);
 
-            if (m_HideRoutine != null) StopCoroutine(m_HideRoutine);
-            m_HideRoutine = StartCoroutine(HideAfterDelay());
-        }
+            if (m_PracticeFeedbackImage != null)
+            {
+                color.a = m_FlashAlpha;
+                m_PracticeFeedbackImage.color = color;
+            }
 
-        IEnumerator HideAfterDelay()
-        {
-            yield return new WaitForSeconds(m_PanelDurationSeconds);
+            yield return new WaitForSeconds(m_FlashDurationSeconds);
+
             if (m_PracticeFeedbackPanel != null)
                 m_PracticeFeedbackPanel.SetActive(false);
-            m_HideRoutine = null;
+
+            m_FlashRoutine = null;
         }
     }
 }
+

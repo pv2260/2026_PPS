@@ -34,6 +34,11 @@ namespace HitOrMiss.Pps
         [Tooltip("Participant shoulder width in meters. Narrow PPS width uses this value. Wide PPS width adds the asset's wide offset.")]
         [SerializeField] private float m_ParticipantShoulderWidthMeters = 0.42f;
 
+        [Header("Response Feedback Audio")]
+        [SerializeField] private AudioSource m_ResponseAudioSource;
+        [SerializeField] private AudioClip m_ResponseRegisteredClip;
+        [SerializeField, Range(0f, 1f)] private float m_ResponseRegisteredVolume = 0.35f;
+
         public float ParticipantShoulderWidthMeters
         {
             get => m_ParticipantShoulderWidthMeters;
@@ -52,6 +57,8 @@ namespace HitOrMiss.Pps
 
         [Header("Practice Feedback")]
         [SerializeField] private SessionFlowPanels m_Ui;
+
+        [SerializeField] private PpsFeedback m_Feedback;
 
         // Tracks whether the currently running trial is a practice trial.
         // Used only to decide whether feedback should be shown.
@@ -171,6 +178,17 @@ namespace HitOrMiss.Pps
             // Subscribe to the new input source.
             if (m_InputSource != null)
                 m_InputSource.ResponseReceived += OnResponseReceived;
+        }
+
+        private void PlayResponseRegisteredSound()
+        {
+            if (m_ResponseAudioSource == null || m_ResponseRegisteredClip == null)
+                return;
+
+            m_ResponseAudioSource.PlayOneShot(
+                m_ResponseRegisteredClip,
+                m_ResponseRegisteredVolume
+            );
         }
 
         /// <summary>
@@ -415,6 +433,52 @@ namespace HitOrMiss.Pps
                 m_Responded && !double.IsNaN(m_VibrationFiredTime)
                     ? (float)((m_FirstResponseTime - m_VibrationFiredTime) * 1000.0)
                     : float.NaN;
+            // Practice correctness feedback.
+            // Hit: vibration trial + response after vibration.
+            // Miss: vibration trial + no response.
+            // False alarm: no-vibration trial + response.
+            // Correct rejection: no-vibration trial + no response.
+            if (trial.isPractice && m_Feedback != null)
+            {
+                bool vibrationTrial = trial.RequiresResponse;
+
+                bool respondedAfterVibration =
+                    m_Responded &&
+                    !double.IsNaN(m_VibrationFiredTime) &&
+                    m_FirstResponseTime >= m_VibrationFiredTime;
+
+                bool respondedBeforeVibration =
+                    m_Responded &&
+                    (
+                        double.IsNaN(m_VibrationFiredTime) ||
+                        m_FirstResponseTime < m_VibrationFiredTime
+                    );
+
+                bool hit =
+                    vibrationTrial &&
+                    respondedAfterVibration;
+
+                bool miss =
+                    vibrationTrial &&
+                    !m_Responded;
+
+                bool falseAlarm =
+                    (!vibrationTrial && m_Responded) ||
+                    (vibrationTrial && respondedBeforeVibration);
+
+                if (hit)
+                {
+                    m_Feedback.FlashGreen();
+                }
+                else if (miss || falseAlarm)
+                {
+                    m_Feedback.FlashRed();
+                }
+            }
+
+
+
+
 
             Debug.Log(
                 $"[PPS TRIAL END] " +
@@ -499,35 +563,31 @@ namespace HitOrMiss.Pps
         /// </summary>
         private void OnResponseReceived(ResponseEvent ev)
         {
-            // Ignore responses outside the active response window,
-            // or ignore additional responses after the first one.
             if (!m_CaptureResponses || m_Responded)
                 return;
 
             m_Responded = true;
             m_FirstResponseTime = ev.timestamp;
 
+            m_Feedback?.OnResponseSubmitted();
+
             if (m_VibrationHasFired)
             {
                 Debug.Log("[PPS RESPONSE] Felt vibration response accepted.");
-
-                // Show feedback only during practice trials.
-                if (m_CurrentTrialIsPractice && m_Ui != null)
-                    StartCoroutine(m_Ui.ShowPracticeFeedback("Felt it"));
             }
             else
             {
                 Debug.Log("[PPS RESPONSE] Response before vibration / false alarm.");
-
-                // Show early-response feedback only during practice trials.
-                if (m_CurrentTrialIsPractice && m_Ui != null)
-                    StartCoroutine(m_Ui.ShowPracticeFeedback("Too early"));
             }
 
             m_MarkerEmitter?.Emit("pps_response", extra: ev.rawSource);
         }
 
-        /// <summary>
+
+
+
+
+                /// <summary>
         /// Writes one trial result to the CSV file.
         /// </summary>
         private void WriteCsvRow(PpsTrialResult result)
