@@ -422,8 +422,59 @@ namespace HitOrMiss.Pps
                     elapsed += Time.deltaTime;
                     yield return null;
                 }
+
+                if (!m_Responded)
+                {
+                    Debug.Log($"[PPS NO RESPONSE] trial={trial.trialId} | showing reminder");
+                    m_CaptureResponses = true;
+                    m_Feedback?.ShowNoResponseMessage();
+
+                    while (!m_Responded)
+                        yield return null;
+
+                    Debug.Log($"[PPS NO RESPONSE] trial={trial.trialId} | response received, hiding reminder");
+                    m_Feedback?.HideNoResponseMessage();
+                }
             }
 
+                        // Finalize response timing and reaction-time data.
+            result.vibrationFiredTime = m_VibrationFiredTime;
+            result.responseTime = m_FirstResponseTime;
+            result.responded = m_Responded;
+
+            result.reactionTimeMs =
+                m_Responded && !double.IsNaN(m_VibrationFiredTime)
+                    ? (float)((m_FirstResponseTime - m_VibrationFiredTime) * 1000.0)
+                    : float.NaN;
+
+            // Practice feedback — runs AFTER the no-response wait,
+            // so a late response after the reminder still gets green/red.
+            if (trial.isPractice && m_Feedback != null)
+            {
+                bool vibrationTrial = trial.RequiresResponse;
+
+                bool respondedAfterVibration =
+                    m_Responded &&
+                    !double.IsNaN(m_VibrationFiredTime) &&
+                    m_FirstResponseTime >= m_VibrationFiredTime;
+
+                bool respondedBeforeVibration =
+                    m_Responded &&
+                    (
+                        double.IsNaN(m_VibrationFiredTime) ||
+                        m_FirstResponseTime < m_VibrationFiredTime
+                    );
+
+                bool hit  = vibrationTrial && respondedAfterVibration;
+                bool miss = vibrationTrial && !m_Responded;  // will always be false here now
+                bool falseAlarm = (!vibrationTrial && m_Responded) ||
+                                (vibrationTrial && respondedBeforeVibration);
+
+                if (hit)
+                    m_Feedback.FlashGreen();
+                else if (miss || falseAlarm)
+                    m_Feedback.FlashRed();
+            }
             // Finalize response timing and reaction-time data.
             result.vibrationFiredTime = m_VibrationFiredTime;
             result.responseTime = m_FirstResponseTime;
@@ -563,6 +614,9 @@ namespace HitOrMiss.Pps
         /// </summary>
         private void OnResponseReceived(ResponseEvent ev)
         {
+            // Sound fires on every single press — practice, main task, false alarms, all of it.
+            m_Feedback?.OnResponseSubmitted();
+
             if (!m_CaptureResponses || m_Responded)
                 return;
 
@@ -572,17 +626,12 @@ namespace HitOrMiss.Pps
             m_Feedback?.OnResponseSubmitted();
 
             if (m_VibrationHasFired)
-            {
                 Debug.Log("[PPS RESPONSE] Felt vibration response accepted.");
-            }
             else
-            {
                 Debug.Log("[PPS RESPONSE] Response before vibration / false alarm.");
-            }
 
             m_MarkerEmitter?.Emit("pps_response", extra: ev.rawSource);
         }
-
 
 
 

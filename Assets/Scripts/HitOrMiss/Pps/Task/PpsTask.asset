@@ -49,9 +49,9 @@ MonoBehaviour:
     m_RotationOrder: 4
   m_CrosshairDistance: 11
   m_CrosshairHeight: 1.4
-  m_DefaultShoulderWidthMeters: 0.5
+  m_DefaultShoulderWidthMeters: 0.42
   m_WideOffsetMeters: 0.6
-  m_LedHeight: 1.2
+  m_LedHeight: 0
   m_DistanceD4: 10
   m_DistanceD3: 8
   m_DistanceD2: 2

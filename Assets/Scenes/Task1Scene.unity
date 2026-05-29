@@ -2486,17 +2486,17 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 93650241}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 2}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2056623887}
   m_Father: {fileID: 323310602}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 1000, y: 700}
+  m_AnchorMin: {x: 0.5, y: 0}
+  m_AnchorMax: {x: 0.5, y: 0}
+  m_AnchoredPosition: {x: 30, y: 300}
+  m_SizeDelta: {x: 2000, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &93650244
 MonoBehaviour:
@@ -5940,17 +5940,17 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 277381992}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 2}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 1201675480}
+  - {fileID: 1676206102}
   m_Father: {fileID: 323310602}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 1000, y: 700}
+  m_AnchorMin: {x: 0.5, y: 0}
+  m_AnchorMax: {x: 0.5, y: 0}
+  m_AnchoredPosition: {x: 30, y: 300}
+  m_SizeDelta: {x: 2000, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &277381997
 MonoBehaviour:
@@ -6600,8 +6600,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'The task has been pause. \nPress Resume to start a new trial, or restart
-    the block. '
+  m_text: 
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -9303,8 +9302,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Practice is now complete. \nThe real task will now begin. \nYou will no
-    longer receive feedback
+  m_text: 
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -10711,7 +10709,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Are you ready to begin?  \nPress Start when you are ready.
+  m_text: 
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -11512,7 +11510,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Block X / Total Blocks. \nPress Begin when you are ready.
+  m_text: 
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -15777,7 +15775,7 @@ MonoBehaviour:
   m_Feedback: {fileID: 987324706}
   m_VibrotactileOutputBehaviour: {fileID: 440917402}
   m_MarkerEmitter: {fileID: 624187188}
-  m_InputSourceBehaviour: {fileID: 0}
+  m_InputSourceBehaviour: {fileID: 7659978567479148310}
 --- !u!82 &867388213
 AudioSource:
   m_ObjectHideFlags: 0
@@ -15932,9 +15930,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Lights may move toward you.\nYou may also feel a chest vibration.\nRespond
-    ONLY to the vibration.\nDo NOT respond to lights alone.\nRespond quickly and
-    accurately.\nPress Start Practice when ready.
+  m_text: 
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -16756,7 +16752,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
   m_AnchoredPosition: {x: 30, y: 320}
-  m_SizeDelta: {x: 1000, y: 50}
+  m_SizeDelta: {x: 1200, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!222 &912753166
 CanvasRenderer:
@@ -16786,7 +16782,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Please confirm that triggers are being received correctly.
+  m_text: 
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -17370,8 +17366,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: You will also see lights moving toward you.\nRespond ONLY when you feel
-    a vibration.\nPress as quickly as possible.
+  m_text: 
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -17526,6 +17521,11 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 933754192}
   m_CullTransparentMesh: 1
+--- !u!4 &939463899 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 6484816944661230505, guid: 86a5bf68cb51f4e44bd3893bd22a2ba7, type: 3}
+  m_PrefabInstance: {fileID: 3001774293689589082}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &940394639
 GameObject:
   m_ObjectHideFlags: 0
@@ -17780,6 +17780,143 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 948378570}
   m_CullTransparentMesh: 1
+--- !u!1 &955692050
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 955692053}
+  - component: {fileID: 955692052}
+  - component: {fileID: 955692051}
+  m_Layer: 5
+  m_Name: Feedbackpanel_tryagain
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &955692051
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 955692050}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
+  m_Material: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_RaycastTarget: 1
+  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
+  m_Maskable: 1
+  m_OnCullStateChanged:
+    m_PersistentCalls:
+      m_Calls: []
+  m_text: 
+  m_isRightToLeft: 0
+  m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
+  m_fontSharedMaterials: []
+  m_fontMaterial: {fileID: 0}
+  m_fontMaterials: []
+  m_fontColor32:
+    serializedVersion: 2
+    rgba: 4294967295
+  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
+  m_enableVertexGradient: 0
+  m_colorMode: 3
+  m_fontColorGradient:
+    topLeft: {r: 1, g: 1, b: 1, a: 1}
+    topRight: {r: 1, g: 1, b: 1, a: 1}
+    bottomLeft: {r: 1, g: 1, b: 1, a: 1}
+    bottomRight: {r: 1, g: 1, b: 1, a: 1}
+  m_fontColorGradientPreset: {fileID: 0}
+  m_spriteAsset: {fileID: 0}
+  m_tintAllSprites: 0
+  m_StyleSheet: {fileID: 0}
+  m_TextStyleHashCode: 0
+  m_overrideHtmlColors: 0
+  m_faceColor:
+    serializedVersion: 2
+    rgba: 4294967295
+  m_fontSize: 36
+  m_fontSizeBase: 36
+  m_fontWeight: 400
+  m_enableAutoSizing: 0
+  m_fontSizeMin: 18
+  m_fontSizeMax: 72
+  m_fontStyle: 0
+  m_HorizontalAlignment: 2
+  m_VerticalAlignment: 512
+  m_textAlignment: 65535
+  m_characterSpacing: 0
+  m_characterHorizontalScale: 1
+  m_wordSpacing: 0
+  m_lineSpacing: 0
+  m_lineSpacingMax: 0
+  m_paragraphSpacing: 0
+  m_charWidthMaxAdj: 0
+  m_TextWrappingMode: 1
+  m_wordWrappingRatios: 0.4
+  m_overflowMode: 0
+  m_linkedTextComponent: {fileID: 0}
+  parentLinkedComponent: {fileID: 0}
+  m_enableKerning: 0
+  m_ActiveFontFeatures: 6e72656b
+  m_enableExtraPadding: 0
+  checkPaddingRequired: 0
+  m_isRichText: 1
+  m_EmojiFallbackSupport: 1
+  m_parseCtrlCharacters: 1
+  m_isOrthographic: 1
+  m_isCullingEnabled: 0
+  m_horizontalMapping: 0
+  m_verticalMapping: 0
+  m_uvLineOffset: 0
+  m_geometrySortingOrder: 0
+  m_IsTextObjectScaleStatic: 0
+  m_VertexBufferAutoSizeReduction: 0
+  m_useMaxVisibleDescender: 1
+  m_pageToDisplay: 1
+  m_margin: {x: 0, y: 0, z: 0, w: 0}
+  m_isUsingLegacyAnimationComponent: 0
+  m_isVolumetricText: 0
+  m_hasFontAssetChanged: 0
+  m_baseMaterial: {fileID: 0}
+  m_maskOffset: {x: 0, y: 0, z: 0, w: 0}
+--- !u!222 &955692052
+CanvasRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 955692050}
+  m_CullTransparentMesh: 1
+--- !u!224 &955692053
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 955692050}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 2}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1676206102}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0}
+  m_AnchorMax: {x: 0.5, y: 0}
+  m_AnchoredPosition: {x: 30, y: 300}
+  m_SizeDelta: {x: 1000, y: 22.90805}
+  m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &957191893
 GameObject:
   m_ObjectHideFlags: 0
@@ -18438,9 +18575,13 @@ MonoBehaviour:
   m_AudioSource: {fileID: 987324705}
   m_ResponseSound: {fileID: 8300000, guid: 9a6d738025ed59f4fb946bb59c20e774, type: 3}
   m_PracticeFeedbackPanel: {fileID: 277381992}
-  m_PracticeFeedbackImage: {fileID: 1201675481}
   m_FlashDurationSeconds: 0.35
   m_FlashAlpha: 0.75
+  m_NoResponseLabel: {fileID: 955692051}
+  m_NoResponseText: 'You did not respond.
+
+    Please press the button when you feel
+    the vibration.'
 --- !u!1 &994149399
 GameObject:
   m_ObjectHideFlags: 0
@@ -21279,81 +21420,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1201136265}
   m_CullTransparentMesh: 1
---- !u!1 &1201675479
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1201675480}
-  - component: {fileID: 1201675482}
-  - component: {fileID: 1201675481}
-  m_Layer: 5
-  m_Name: Practice Feedback Image
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!224 &1201675480
-RectTransform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1201675479}
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 277381996}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0.5, y: 0.5}
-  m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 404.25, y: 393.75}
-  m_SizeDelta: {x: 100, y: 100}
-  m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1201675481
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1201675479}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
-  m_Material: {fileID: 0}
-  m_Color: {r: 0.31763056, g: 0.6084906, b: 0.14638215, a: 1}
-  m_RaycastTarget: 1
-  m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
-  m_Maskable: 1
-  m_OnCullStateChanged:
-    m_PersistentCalls:
-      m_Calls: []
-  m_Sprite: {fileID: 0}
-  m_Type: 0
-  m_PreserveAspect: 0
-  m_FillCenter: 1
-  m_FillMethod: 4
-  m_FillAmount: 1
-  m_FillClockwise: 1
-  m_FillOrigin: 0
-  m_UseSpriteMesh: 0
-  m_PixelsPerUnitMultiplier: 1
---- !u!222 &1201675482
-CanvasRenderer:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1201675479}
-  m_CullTransparentMesh: 1
 --- !u!1 &1209090775
 GameObject:
   m_ObjectHideFlags: 0
@@ -22470,8 +22536,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Please stand on the X marker and face forward facing the cross.\nRemain
-    as still as possible.\nPress Continue when ready.
+  m_text: 
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -23856,8 +23921,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "You may feel a vibration on your chest.\\nPress the controller as quickly
-    as possible when you feel it.\\nLet\u2019s try it!"
+  m_text: 
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -27502,7 +27566,7 @@ MonoBehaviour:
   m_TriggerCheckText: {fileID: 912753167}
   m_BlockCounterText: {fileID: 623462703}
   m_BreakText: {fileID: 1910229895}
-  m_PracticeFeedbackText: {fileID: 0}
+  m_PracticeFeedbackText: {fileID: 955692051}
   m_EndText: {fileID: 2143914962}
   m_StandingCross: {fileID: 2068488786}
   m_PracticeFeedbackSeconds: 1
@@ -27530,109 +27594,82 @@ MonoBehaviour:
     english: Back
     french: Avant
   - textTarget: {fileID: 869205363}
-    english: 'During this task, lights may appear moving toward you.
-
-
-
-      Sometimes
-      you will also feel a vibration on your chest.
-
-
-
-      Respond ONLY when you
-      feel the vibration.
-
-
-
-      Do not respond to lights alone.
-
-
-
-      Please
-      respond as quickly and accurately as possible.
-
-
-
-      Press Start Practice
-      when you are ready.'
+    english: In this task, lights may move toward you.\nYou may also feel a chest
+      vibration.\nRespond ONLY to the vibration.\nDo NOT respond to lights alone.\nRespond
+      quickly and accurately.\nPress Start Practice when ready.
     french: "Pendant cette t\xE2che, des lumi\xE8res peuvent appara\xEEtre et se
-      d\xE9placer vers vous.\r\n\r\nParfois, vous ressentirez \xE9galement une vibration
-      sur votre poitrine.\r\n\r\nR\xE9pondez UNIQUEMENT lorsque vous ressentez la
-      vibration.\r\n\r\nNe r\xE9pondez pas aux lumi\xE8res seules.\r\n\r\nVeuillez
-      r\xE9pondre aussi rapidement et pr\xE9cis\xE9ment que possible.\r\n\r\nAppuyez
-      sur D\xE9marrer l\u2019entra\xEEnement lorsque vous \xEAtes pr\xEAt."
+      d\xE9placer vers vous.\\nParfois, vous ressentirez \xE9galement une vibration
+      sur votre poitrine.\\nR\xE9pondez UNIQUEMENT lorsque vous ressentez la vibration.\\nNe
+      r\xE9pondez pas aux lumi\xE8res seules.\\nVeuillez r\xE9pondre aussi rapidement
+      et pr\xE9cis\xE9ment que possible.\\nAppuyez sur D\xE9marrer l\u2019entra\xEEnement
+      lorsque vous \xEAtes pr\xEAt."
   - textTarget: {fileID: 1270008075}
-    english: 'To start, please stand on the X marker on the floor.
-
-
-
-      Face
-      forward toward the cross.
-
-
-
-      Remain as still as possible during the task.
-
-
-
-      Press
-      Start Practice when you are ready.'
-    french: "Pour commencer, veuillez vous tenir debout sur le rep\xE8re X au sol.\r\n\r\nRegardez
-      droit devant vous, en direction de la croix.\r\n\r\nRestez aussi immobile que
-      possible pendant la t\xE2che.\r\n\r\nAppuyez sur Demarrer Essai lorsque vous
+    english: Please stand on the X marker and face forward facing the cross.\nRemain
+      as still as possible.\nPress Start Practice when ready.
+    french: "Pour commencer, veuillez vous tenir debout sur le rep\xE8re X au sol.\\nRegardez
+      droit devant vous, en direction de la croix.\\nRestez aussi immobile que possible
+      pendant la t\xE2che.\\nAppuyez sur Demarrer l'entra\xEEnement  lorsque vous
       \xEAtes pr\xEAt."
   - textTarget: {fileID: 1345587028}
-    english: During the task, you will experience some vibration on your chest.Press
-      the controller as quickly as possible whenever you feel the vibration. Lets
-      give it a try!
-    french: "Pendant la t\xE2che, vous ressentirez des vibrations sur votre poitrine.\r\n\r\nAppuyez
-      sur le contr\xF4leur aussi rapidement que possible chaque fois que vous ressentez
-      la vibration.\r\n\r\nEssayons maintenant !"
+    english: "Before we start the main task, let's practice one important part. \\nYou
+      might feel a vibration on your chest from time to time.\\nWhenever you feel
+      that vibration, press your controller as fast as you can.\\nLet\u2019s give
+      it a try!"
+    french: "Avant de commencer la t\xE2che principale, entra\xEEnons-nous sur un
+      \xE9l\xE9ment important.\\nVous pourriez ressentir une vibration dans la poitrine
+      de temps \xE0 autre.\\nD\xE8s que vous ressentez cette vibration, appuyez sur
+      votre manette le plus rapidement possible.\\nC'est parti, essayons !"
   - textTarget: {fileID: 929655511}
-    english: You will also see lights moving toward you during the task. Continue
-      responding ONLY when you feel a vibration. Press the controller button as quickly
-      as possible whenever you feel the vibration.
-    french: "Vous verrez \xE9galement des lumi\xE8res se d\xE9placer vers vous pendant
-      la t\xE2che.\r\n\r\nContinuez \xE0 r\xE9pondre UNIQUEMENT lorsque vous ressentez
-      une vibration.\r\n\r\nAppuyez sur le bouton du contr\xF4leur aussi rapidement
-      que possible chaque fois que vous ressentez la vibration."
-  - textTarget: {fileID: 580178337}
-    english: "Are you ready to begin?  \n\nPress Start when you are ready."
-    french: "\xCAtes-vous pr\xEAt \xE0 commencer ?\r\n\r\nAppuyez sur D\xE9marrer
-      lorsque vous \xEAtes pr\xEAt."
+    english: Now, let's add the next part. \nYou will also see lights moving toward
+      you.\nRemember, respond ONLY when you feel a vibration.\nPress the controller
+      as quickly as possible.
+    french: "\xC0 pr\xE9sent, passons \xE0 l'\xE9tape suivante.\\nVous verrez \xE9galement
+      des lumi\xE8res se d\xE9placer vers vous.\\nRappelez-vous, r\xE9pondez UNIQUEMENT
+      lorsque vous ressentez une vibration.\\nAppuyez sur la manette le plus rapidement
+      possible."
   - textTarget: {fileID: 518538310}
-    english: "Practice is now complete. \n\nThe real task will now begin. \n\nYou
-      will no longer receive feedback"
-    french: "L\u2019entra\xEEnement est maintenant termin\xE9.\r\n\r\nLa t\xE2che
-      r\xE9elle va maintenant commencer.\r\n\r\nVous ne recevrez plus de retour."
+    english: Practice is now complete. \nThe real task will now begin. \nYou will
+      no longer receive feedback.\nAre you ready?
+    french: "L'entra\xEEnement est maintenant termin\xE9.\\nLa t\xE2che r\xE9elle
+      va maintenant commencer.\\nVous ne recevrez plus de commentaires.\\n\xCAtes-vous
+      pr\xEAt ?"
+  - textTarget: {fileID: 580178337}
+    english: The task consists of {blocksCount} blocks. There will be breaks in between,
+      and we will be right here to assist you if you need anything.\n\nAre you ready
+      to start?
+    french: "La t\xE2che est divis\xE9e en {blocksCount} blocs. Des temps de pause
+      sont pr\xE9vus, et nous serons \xE0 vos c\xF4t\xE9s pour vous aider si vous
+      en avez besoin.\\n\\n\xCAtes-vous pr\xEAt \xE0 commencer ?"
   - textTarget: {fileID: 623462703}
-    english: "Block X / Total Blocks. \n\nPress Begin when you are ready."
-    french: "Bloc X / Nombre total de blocs.\r\n\r\nAppuyez sur Commencer lorsque
-      vous \xEAtes pr\xEAt."
+    english: Block {currentBlock} / {totalBlocks}
+    french: Bloc {currentBlock} / {totalBlocks}
   - textTarget: {fileID: 1532550668}
     english: Begin Block
-    french: Commencer le Block
+    french: Commencer le Bloc
+  - textTarget: {fileID: 1910229895}
+    english: It is now time for a {breakTime} break. You can sit comfortably in the
+      chair provided next to you during this time.
+    french: "C'est le moment de faire une pause de {breakTime}. Vous pouvez vous
+      installer confortablement sur la chaise mise \xE0 votre disposition pendant
+      ce temps."
   - textTarget: {fileID: 124875369}
     english: Extend Break!
     french: Prolonguez le break!
-  - textTarget: {fileID: 1910229895}
-    english: 'Take a short break! '
-    french: Prennez un petit break!
   - textTarget: {fileID: 323607683}
-    english: 'The task is paused. Press on Resume to begin a new trial, or restart,
-      to restart the block. '
-    french: "La t\xE2che a \xE9t\xE9 mise en pause.\r\n\r\nAppuyez sur Reprendre
-      pour commencer un nouvel essai, ou red\xE9marrer le bloc."
+    english: 'The task has been paused.\nPress Resume to start a new trial, or restart
+      the whole block. '
+    french: "\"La t\xE2che a \xE9t\xE9 mise en pause.\\nAppuyez sur Reprendre pour
+      commencer un nouvel essai, ou recommencez tout le bloc."
   - textTarget: {fileID: 2123794633}
     english: Resume next trial
-    french: Reprendre
+    french: Commencer un nouvel essai
   - textTarget: {fileID: 877618364}
     english: 'Restart Current Blcok '
-    french: Redemarrer le bloc
+    french: Recommencez le bloc.
   - textTarget: {fileID: 2143914962}
-    english: "This is the end of the task. \n\nPlease wait for the experimenter's
-      instructions. "
-    french: "C\u2019est la fin de la t\xE2che.\r\n\r\nVeuillez attendre les instructions
+    english: 'This is the end of the task. \n Please wait for the experimenter''s
+      instructions. '
+    french: "C\u2019est la fin de la t\xE2che.\\nVeuillez attendre les instructions
       de l\u2019exp\xE9rimentateur."
   - textTarget: {fileID: 1907096238}
     english: Return to clinician menu
@@ -28030,6 +28067,108 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1661973258}
   m_CullTransparentMesh: 1
+--- !u!1 &1676206101
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1676206102}
+  - component: {fileID: 1676206105}
+  - component: {fileID: 1676206104}
+  - component: {fileID: 1676206103}
+  m_Layer: 5
+  m_Name: Canvas
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!224 &1676206102
+RectTransform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1676206101}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 1.5}
+  m_LocalScale: {x: 0.002, y: 0.002, z: 0.002}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 955692053}
+  m_Father: {fileID: 277381996}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_AnchorMin: {x: 0.5, y: 0.5}
+  m_AnchorMax: {x: 0.5, y: 0.5}
+  m_AnchoredPosition: {x: 0, y: 1.4}
+  m_SizeDelta: {x: 800, y: 600}
+  m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &1676206103
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1676206101}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dc42784cf147c0c48a680349fa168899, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.GraphicRaycaster
+  m_IgnoreReversedGraphics: 1
+  m_BlockingObjects: 0
+  m_BlockingMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+--- !u!114 &1676206104
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1676206101}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0cd44c1031e13a943bb63640046fad76, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.CanvasScaler
+  m_UiScaleMode: 0
+  m_ReferencePixelsPerUnit: 100
+  m_ScaleFactor: 1
+  m_ReferenceResolution: {x: 800, y: 600}
+  m_ScreenMatchMode: 0
+  m_MatchWidthOrHeight: 0
+  m_PhysicalUnit: 3
+  m_FallbackScreenDPI: 96
+  m_DefaultSpriteDPI: 96
+  m_DynamicPixelsPerUnit: 1
+  m_PresetInfoIsWorld: 1
+--- !u!223 &1676206105
+Canvas:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1676206101}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_RenderMode: 2
+  m_Camera: {fileID: 382856814}
+  m_PlaneDistance: 100
+  m_PixelPerfect: 0
+  m_ReceivesEvents: 1
+  m_OverrideSorting: 0
+  m_OverridePixelPerfect: 0
+  m_SortingBucketNormalizedSize: 0
+  m_VertexColorAlwaysGammaSpace: 0
+  m_AdditionalShaderChannelsFlag: 0
+  m_UpdateRectTransformForStandalone: 0
+  m_SortingLayerID: 0
+  m_SortingOrder: 0
+  m_TargetDisplay: 0
 --- !u!1 &1685783453
 GameObject:
   m_ObjectHideFlags: 0
@@ -31277,7 +31416,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'Take a short break! '
+  m_text: 
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -35399,6 +35538,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: CrosshairPrefab
       objectReference: {fileID: 0}
+    - target: {fileID: 7624707078319775907, guid: 39bc76c4199c8f442896b8071c99d5c5, type: 3}
+      propertyPath: m_Camera
+      value: 
+      objectReference: {fileID: 939463899}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -37020,7 +37163,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'This is the end of the task. \nPlease wait for the experimenter''s instructions. '
+  m_text: 
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -37368,6 +37511,10 @@ PrefabInstance:
     - target: {fileID: 1495362519402411200, guid: 86a5bf68cb51f4e44bd3893bd22a2ba7, type: 3}
       propertyPath: m_PositionStabilization
       value: 0.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1685617216254120849, guid: 86a5bf68cb51f4e44bd3893bd22a2ba7, type: 3}
+      propertyPath: m_SmoothMotionEnabled
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1909793087215654123, guid: 86a5bf68cb51f4e44bd3893bd22a2ba7, type: 3}
       propertyPath: m_InteractionManager
@@ -38161,13 +38308,13 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 867388211}
   - {fileID: 4719210530456875036}
   - {fileID: 3972558028441760682}
   - {fileID: 7130775027214725095}
   - {fileID: 4562710425731183032}
   - {fileID: 440917403}
   - {fileID: 624187189}
-  - {fileID: 867388211}
   - {fileID: 987324704}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -38200,6 +38347,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HitOrMiss.Pps.PPSAppController
   m_KeyboardInput: {fileID: 251103580821447724}
+  m_ControllerInputBehaviour: {fileID: 7659978567479148310}
   m_Ui: {fileID: 1643808109}
   m_TaskManager: {fileID: 867388212}
   m_TaskAsset: {fileID: 11400000, guid: b6a0232453b4a5f4182f868a7d2920f0, type: 2}
