@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic; 
 using UnityEngine;
 using TMPro;
 
@@ -8,7 +9,6 @@ namespace HitOrMiss.Pps
     {
         [Header("Task 1 Panels")]
         [SerializeField] GameObject m_WelcomePanel;
-        [SerializeField] GameObject m_TriggerCheckPanel;
         [SerializeField] GameObject m_InstructionsPanel;
         [SerializeField] GameObject m_PositioningPanel;
         [SerializeField] GameObject m_PracticeIntroVTOnlyPanel;
@@ -22,7 +22,6 @@ namespace HitOrMiss.Pps
         [SerializeField] GameObject m_EndPanel;
 
         [Header("Optional Dynamic Text")]
-        [SerializeField] TMP_Text m_TriggerCheckText;
         [SerializeField] TMP_Text m_BlockCounterText;
         [SerializeField] TMP_Text m_BreakText;
         [Tooltip("Optional dedicated countdown label inside the break panel. If wired, the remaining seconds are written here (big number, separate from m_BreakText's body copy).")]
@@ -35,6 +34,56 @@ namespace HitOrMiss.Pps
 
         [Header("Feedback Timing")]
         [SerializeField] float m_PracticeFeedbackSeconds = 1f;
+
+        private readonly Stack<GameObject> m_PanelHistory = new Stack<GameObject>();
+
+        private int m_TokenBlocksCount;
+        private int m_TokenCurrentBlock;
+        private int m_TokenTotalBlocks;
+        private float m_TokenBreakSeconds;
+
+        public void SetTokens(int blocksCount, int currentBlock, int totalBlocks, float breakSeconds)
+        {
+            m_TokenBlocksCount  = blocksCount;
+            m_TokenCurrentBlock = currentBlock;
+            m_TokenTotalBlocks  = totalBlocks;
+            m_TokenBreakSeconds = breakSeconds;
+        }
+
+        private void ResolveTokens()
+        {
+            if (m_LocalizedTexts == null) return;
+
+            string breakTimeStr = m_TokenBreakSeconds >= 60f
+                ? (m_CurrentLanguage == UiLanguage.English
+                    ? $"{Mathf.RoundToInt(m_TokenBreakSeconds / 60f)}-minute"
+                    : $"{Mathf.RoundToInt(m_TokenBreakSeconds / 60f)} minutes")
+                : (m_CurrentLanguage == UiLanguage.English
+                    ? $"{Mathf.RoundToInt(m_TokenBreakSeconds)}-second"
+                    : $"{Mathf.RoundToInt(m_TokenBreakSeconds)} secondes");
+
+            foreach (var entry in m_LocalizedTexts)
+            {
+                if (entry == null || entry.textTarget == null) continue;
+
+                entry.textTarget.text = entry.textTarget.text
+                    .Replace("{blocksCount}",  m_TokenBlocksCount.ToString())
+                    .Replace("{currentBlock}", m_TokenCurrentBlock.ToString())
+                    .Replace("{totalBlocks}",  m_TokenTotalBlocks.ToString())
+                    .Replace("{breakTime}",    breakTimeStr);
+            }
+        }
+
+        private IEnumerable<GameObject> GetAllPanels()
+        {
+            return new[]
+            {
+                m_WelcomePanel, m_InstructionsPanel,
+                m_PositioningPanel, m_PracticeIntroVTOnlyPanel, m_PracticeIntroVTVisualPanel,
+                m_PracticeFeedbackPanel, m_NoFeedbackPanel, m_ReadyToStartPanel,
+                m_BlockCounterPanel, m_BreakPanel, m_PausePanel, m_EndPanel
+            };
+        }
 
         bool m_WaitingForContinue;
 
@@ -71,7 +120,6 @@ namespace HitOrMiss.Pps
         public void HideAll()
         {
             SetActive(m_WelcomePanel, false);
-            SetActive(m_TriggerCheckPanel, false);
             SetActive(m_InstructionsPanel, false);
             SetActive(m_PositioningPanel, false);
             SetActive(m_PracticeIntroVTOnlyPanel, false);
@@ -89,16 +137,6 @@ namespace HitOrMiss.Pps
         {
             Debug.Log("[UI FLOW] ShowWelcomeAndWait called");
             yield return ShowAndWait(m_WelcomePanel);
-        }
-
-        public IEnumerator ShowTriggerCheckAndWait(string text = null)
-        {
-            Debug.Log("[UI FLOW] ShowTriggerCheckAndWait called");
-
-            if (m_TriggerCheckText != null && text != null)
-                m_TriggerCheckText.text = text;
-
-            yield return ShowAndWait(m_TriggerCheckPanel);
         }
 
         public IEnumerator ShowInstructionsAndWait()
@@ -208,6 +246,25 @@ namespace HitOrMiss.Pps
             SetActive(m_PracticeFeedbackPanel, false);
         }
 
+        public void OnBack()
+        {
+            Debug.Log("[UI FLOW] OnBack pressed");
+
+            if (m_PanelHistory.Count == 0)
+            {
+                Debug.LogWarning("[UI FLOW] No panel history to go back to.");
+                return;
+            }
+
+            HideAll();
+            m_WaitingForContinue = false; // unblock any running coroutine
+
+            GameObject previous = m_PanelHistory.Pop();
+            previous.SetActive(true);
+            RefreshLanguage();
+
+            m_WaitingForContinue = true; // re-arm so the panel waits again
+        }
         public IEnumerator ShowBreakAndWait(float seconds)
         {
             HideAll();
@@ -269,6 +326,16 @@ namespace HitOrMiss.Pps
 
         private IEnumerator ShowAndWait(GameObject panel, bool allowStopToClose)
         {
+            // Push the currently active panel to history before hiding everything
+            foreach (var p in GetAllPanels())
+            {
+                if (p != null && p.activeSelf)
+                {
+                    m_PanelHistory.Push(p);
+                    break;
+                }
+            }
+
             HideAll();
 
             if (panel == null)
@@ -347,6 +414,7 @@ namespace HitOrMiss.Pps
                         ? entry.english
                         : entry.french;
             }
+            ResolveTokens();
         }
 
         static void SetActive(GameObject go, bool on)

@@ -7,9 +7,8 @@ namespace HitOrMiss.Pps
     {
         [Header("Input")]
         [SerializeField] private KeyboardCommandInput m_KeyboardInput;
-        [SerializeField] private MonoBehaviour m_ControllerInputBehaviour; // drag ControllerInput here
+        [SerializeField] private MonoBehaviour m_ControllerInputBehaviour;
 
-        // Resolved at runtime
         private IResponseInputSource m_ControllerInput;
 
         [SerializeField] private SessionFlowPanels m_Ui;
@@ -22,30 +21,12 @@ namespace HitOrMiss.Pps
         private bool m_Running;
         private bool m_StopRequested;
 
-        // ---- Minimal public surface used by HitMissNetworkServer when it
-        // is wired to a Task 1 (PPS) scene. Task 1 auto-starts in Start();
-        // network clients can only observe state and request a stop. ----
-
-        /// <summary>True while RunTask1 is executing.</summary>
         public bool IsRunning => m_Running;
-
-        /// <summary>Returns the subject id used for this session.</summary>
         public string ParticipantId => m_SubjectIdFallback;
 
-        /// <summary>Fired once when the task coroutine begins (after input wiring).</summary>
         public event System.Action SessionStarted;
-
-        /// <summary>
-        /// Fired once when the task coroutine winds down — both on natural
-        /// completion (end-of-blocks) and on stop-requested early exit.
-        /// </summary>
         public event System.Action SessionEnded;
 
-        /// <summary>
-        /// Asks the running task to wind down at the next opportunity.
-        /// The active coroutine polls StopWasRequested() between steps and
-        /// transitions to StopExperiment when the flag flips on.
-        /// </summary>
         public void RequestStop()
         {
             m_StopRequested = true;
@@ -79,7 +60,6 @@ namespace HitOrMiss.Pps
             if (m_Running)
                 yield break;
 
-            // Resolve controller input from the inspector reference.
             if (m_ControllerInputBehaviour != null)
             {
                 m_ControllerInput = m_ControllerInputBehaviour as IResponseInputSource;
@@ -87,7 +67,6 @@ namespace HitOrMiss.Pps
                     Debug.LogError("[PPSAppController] m_ControllerInputBehaviour does not implement IResponseInputSource.");
             }
 
-            // Wire controller as primary, keyboard as fallback.
             if (m_ControllerInput != null)
             {
                 m_TaskManager.SetInputSource(m_ControllerInput);
@@ -105,19 +84,23 @@ namespace HitOrMiss.Pps
 
             yield return RunTask1();
 
-            // Single point where the session ends — covers both natural
-            // completion and stop-requested early exit. RunTask1 / StopExperiment
-            // no longer touch m_Running so this stays the only source of truth.
             m_Running = false;
             SessionEnded?.Invoke();
         }
 
         private IEnumerator RunTask1()
         {
-            yield return m_Ui.ShowWelcomeAndWait();
-            if (StopWasRequested()) { yield return StopExperiment(); yield break; }
+            // Set tokens once up front so any panel that references
+            // {blocksCount}, {currentBlock}, {totalBlocks}, or {breakTime}
+            // resolves correctly from the first screen onward.
+            m_Ui.SetTokens(
+                blocksCount:   m_TaskAsset.BlockCount,
+                currentBlock:  0,
+                totalBlocks:   m_TaskAsset.BlockCount,
+                breakSeconds:  m_TaskAsset.RestDurationSeconds
+            );
 
-            yield return m_Ui.ShowTriggerCheckAndWait();
+            yield return m_Ui.ShowWelcomeAndWait();
             if (StopWasRequested()) { yield return StopExperiment(); yield break; }
 
             yield return m_Ui.ShowInstructionsAndWait();
@@ -150,11 +133,19 @@ namespace HitOrMiss.Pps
             yield return m_Ui.ShowReadyToStartAndWait();
             if (StopWasRequested()) { yield return StopExperiment(); yield break; }
 
-            // Start logging only for the main task, not practice.
             m_TaskManager.BeginLogging(m_SubjectIdFallback);
 
             for (int blockIndex = 0; blockIndex < m_TaskAsset.BlockCount; blockIndex++)
             {
+                // Update currentBlock so {currentBlock} resolves correctly
+                // in the block counter and break panels for this iteration.
+                m_Ui.SetTokens(
+                    blocksCount:  m_TaskAsset.BlockCount,
+                    currentBlock: blockIndex + 1,
+                    totalBlocks:  m_TaskAsset.BlockCount,
+                    breakSeconds: m_TaskAsset.RestDurationSeconds
+                );
+
                 yield return m_Ui.ShowBlockCounterAndWait(blockIndex, m_TaskAsset.BlockCount);
                 if (StopWasRequested()) { yield return StopExperiment(); yield break; }
 
@@ -177,9 +168,6 @@ namespace HitOrMiss.Pps
             m_Ui.HideStandingCross();
 
             yield return m_Ui.ShowEndAndWait("Task 1 complete.\n\nThank you.");
-
-            // m_Running and SessionEnded are set by Start() after RunTask1 returns,
-            // so the natural-completion and stop-requested paths converge.
         }
 
         private bool StopWasRequested()
@@ -203,8 +191,6 @@ namespace HitOrMiss.Pps
                 m_Ui.HideStandingCross();
                 yield return m_Ui.ShowEndAndWait("Task stopped.\n\nThank you.");
             }
-
-            // m_Running and SessionEnded are set by Start() after RunTask1 returns.
         }
     }
 }

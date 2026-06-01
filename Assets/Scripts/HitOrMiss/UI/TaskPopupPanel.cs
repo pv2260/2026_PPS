@@ -78,16 +78,20 @@ namespace HitOrMiss
             if (m_Initialized) return;
             m_Initialized = true;
             if (m_Root == null) m_Root = gameObject;
-            if (m_ContinueButton != null)
-                m_ContinueButton.onClick.AddListener(OnContinue);
         }
 
-        void Awake() => EnsureInit();
-
-        void OnDestroy()
+        void Awake()
         {
+            EnsureInit();
+            // Register listener here unconditionally, regardless of whether
+            // the GameObject was active at scene load. Awake fires on inactive
+            // objects when explicitly called, but more importantly this separates
+            // the listener registration from the lazy-init guard so it can't be skipped.
             if (m_ContinueButton != null)
-                m_ContinueButton.onClick.RemoveListener(OnContinue);
+            {
+                m_ContinueButton.onClick.RemoveListener(OnContinue); 
+                m_ContinueButton.onClick.AddListener(OnContinue);
+            }
         }
 
         // ---- Display ----

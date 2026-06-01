@@ -99,7 +99,10 @@ namespace HitOrMiss
             // Start point and the point where the ball nominally reaches the
             // participant's lateral plane.
             m_StartPos       = playerPosition + forward * trial.spawnDistance;
-            m_BodyImpactPos  = playerPosition + right   * trial.finalLateralOffset;
+            //m_BodyImpactPos  = playerPosition + right   * trial.finalLateralOffset;
+            m_BodyImpactPos = playerPosition
+                + right * trial.finalLateralOffset
+                + Vector3.up * (m_StartPos.y - playerPosition.y);
 
             // Every ball overshoots the impact point by m_OverreachMeters in
             // the trajectory direction. This is the actual endpoint of motion.

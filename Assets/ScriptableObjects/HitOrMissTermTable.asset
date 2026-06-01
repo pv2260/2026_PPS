@@ -81,7 +81,7 @@ MonoBehaviour:
       ne recevrez plus de retour.\\nAucune couleur ni aucun message de correction
       ne sera affich\xE9."
   - key: popup13_ready
-    english: Are you ready to begin?.\nStart when you are ready.
+    english: Are you ready to begin?.\nPress start when you are ready.
     french: "\xCAtes-vous pr\xEAt \xE0 commencer ? .\\nAppuyez sur Start quand vous
       \xEAtes pr\xEAt."
   - key: popup14_block_intro
