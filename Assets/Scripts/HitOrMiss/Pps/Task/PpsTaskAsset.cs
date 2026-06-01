@@ -174,15 +174,26 @@ namespace HitOrMiss.Pps
         ///
         /// If participantShoulderWidthMeters is not valid, falls back to DefaultShoulderWidthMeters.
         /// </summary>
+        /// <summary>
+        /// Narrow separation is floored at the asset's default shoulder width
+        /// (m_DefaultShoulderWidthMeters) so a participant with smaller-than-
+        /// default shoulders never gets LEDs closer together than the lights
+        /// "should" be in the protocol. Wide is always narrow + wide offset.
+        /// </summary>
         public float SeparationFor(PpsWidth width, float participantShoulderWidthMeters)
         {
             float shoulder = participantShoulderWidthMeters > 0f
                 ? participantShoulderWidthMeters
                 : m_DefaultShoulderWidthMeters;
 
+            // Floor the narrow condition at the configured default shoulder
+            // width so a smaller-than-default participant doesn't end up with
+            // an unintentionally tight LED spacing.
+            float narrow = Mathf.Max(shoulder, m_DefaultShoulderWidthMeters) + 1.50f;
+
             return width == PpsWidth.Wide
-                ? shoulder + m_WideOffsetMeters
-                : shoulder;
+                ? narrow + m_WideOffsetMeters
+                : narrow;
         }
 
         public PpsTrialDefinition[] GenerateBlock(int blockIndex)

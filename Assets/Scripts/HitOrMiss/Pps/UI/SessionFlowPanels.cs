@@ -25,6 +25,8 @@ namespace HitOrMiss.Pps
         [SerializeField] TMP_Text m_TriggerCheckText;
         [SerializeField] TMP_Text m_BlockCounterText;
         [SerializeField] TMP_Text m_BreakText;
+        [Tooltip("Optional dedicated countdown label inside the break panel. If wired, the remaining seconds are written here (big number, separate from m_BreakText's body copy).")]
+        [SerializeField] TMP_Text m_BreakCountdownText;
         [SerializeField] TMP_Text m_PracticeFeedbackText;
         [SerializeField] TMP_Text m_EndText;
 
@@ -129,6 +131,26 @@ namespace HitOrMiss.Pps
 
         public IEnumerator ShowBlockCounterAndWait(int blockIndex, int totalBlocks)
         {
+            // Inline the show/wait logic instead of calling ShowAndWait. The
+            // shared helper runs RefreshLanguage AFTER SetActive, which would
+            // overwrite the dynamic "Block N / M" text with the static
+            // localized string and leave the block counter stuck on whatever
+            // the template authored. By writing the block-counter text AFTER
+            // RefreshLanguage, each block gets the correct number.
+
+            HideAll();
+
+            if (m_BlockCounterPanel == null)
+            {
+                Debug.LogError("[UI FLOW] BlockCounterPanel reference is NULL.");
+                yield break;
+            }
+
+            Debug.Log($"[UI FLOW] Showing block counter: {blockIndex + 1} / {totalBlocks}");
+
+            m_BlockCounterPanel.SetActive(true);
+            RefreshLanguage();
+
             if (m_BlockCounterText != null)
             {
                 if (m_CurrentLanguage == UiLanguage.English)
@@ -142,8 +164,17 @@ namespace HitOrMiss.Pps
                         $"Bloc {blockIndex + 1} / {totalBlocks}\n\nAppuyez sur Démarrer lorsque vous êtes prêt.";
                 }
             }
+            else
+            {
+                Debug.LogWarning("[UI FLOW] m_BlockCounterText is not wired — block counter text won't update.");
+            }
 
-            yield return ShowAndWait(m_BlockCounterPanel);
+            m_WaitingForContinue = true;
+            while (m_WaitingForContinue && !StopRequested)
+                yield return null;
+
+            m_BlockCounterPanel.SetActive(false);
+            m_WaitingForContinue = false;
         }
 
         public IEnumerator ShowPauseAndWait()
@@ -189,28 +220,43 @@ namespace HitOrMiss.Pps
 
             SetActive(m_BreakPanel, true);
 
+            // Warn loudly if the break countdown has nowhere to display so
+            // the scene-wiring fix is obvious.
+            if (m_BreakText == null && m_BreakCountdownText == null)
+                Debug.LogWarning("[UI FLOW] ShowBreakAndWait: both m_BreakText and m_BreakCountdownText are NULL — break countdown will not be visible. Wire at least one on SessionFlowPanels.");
+
             m_WaitingForContinue = true;
             float remaining = seconds;
+            int lastWholeSecond = -1;
 
             while (remaining > 0f && m_WaitingForContinue && !StopRequested)
             {
-                if (m_BreakText != null)
+                int secondsLeft = Mathf.CeilToInt(remaining);
+
+                // Update once per whole second to avoid re-laying out TMP each
+                // frame. Dramatically cheaper on the headset and looks the
+                // same to the participant.
+                if (secondsLeft != lastWholeSecond)
                 {
-                    if (m_CurrentLanguage == UiLanguage.English)
+                    lastWholeSecond = secondsLeft;
+
+                    if (m_BreakText != null)
                     {
-                        m_BreakText.text =
-                            $"Break\n\n{Mathf.CeilToInt(remaining)} seconds remaining.\n\nPress Continue when ready.";
+                        m_BreakText.text = m_CurrentLanguage == UiLanguage.English
+                            ? $"Break\n\n{secondsLeft} seconds remaining.\n\nPress Continue when ready."
+                            : $"Pause\n\nIl reste {secondsLeft} secondes.\n\nAppuyez sur Continuer lorsque vous êtes prêt.";
                     }
-                    else
-                    {
-                        m_BreakText.text =
-                            $"Pause\n\nIl reste {Mathf.CeilToInt(remaining)} secondes.\n\nAppuyez sur Continuer lorsque vous êtes prêt.";
-                    }
+
+                    if (m_BreakCountdownText != null)
+                        m_BreakCountdownText.text = secondsLeft.ToString();
                 }
 
                 remaining -= Time.deltaTime;
                 yield return null;
             }
+
+            // Clear the countdown so it doesn't flash "0" at the end.
+            if (m_BreakCountdownText != null) m_BreakCountdownText.text = string.Empty;
 
             SetActive(m_BreakPanel, false);
             m_WaitingForContinue = false;

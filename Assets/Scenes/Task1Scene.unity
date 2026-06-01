@@ -18582,6 +18582,9 @@ MonoBehaviour:
 
     Please press the button when you feel
     the vibration.'
+  m_NoResponseFadeInSeconds: 0.6
+  m_NoResponseFadeOutSeconds: 0.6
+  m_NoResponseTargetAlpha: 0.55
 --- !u!1 &994149399
 GameObject:
   m_ObjectHideFlags: 0
@@ -27566,6 +27569,7 @@ MonoBehaviour:
   m_TriggerCheckText: {fileID: 912753167}
   m_BlockCounterText: {fileID: 623462703}
   m_BreakText: {fileID: 1910229895}
+  m_BreakCountdownText: {fileID: 0}
   m_PracticeFeedbackText: {fileID: 955692051}
   m_EndText: {fileID: 2143914962}
   m_StandingCross: {fileID: 2068488786}
@@ -38334,6 +38338,8 @@ MonoBehaviour:
   m_BindToAllInterfaces: 1
   m_AppController: {fileID: 0}
   m_TaskManager: {fileID: 0}
+  m_PpsAppController: {fileID: 8848404438533868171}
+  m_PpsTaskManager: {fileID: 867388212}
 --- !u!114 &8848404438533868171
 MonoBehaviour:
   m_ObjectHideFlags: 0

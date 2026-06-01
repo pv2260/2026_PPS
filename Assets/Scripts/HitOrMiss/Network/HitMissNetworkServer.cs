@@ -49,9 +49,19 @@ namespace HitOrMiss.Network
         [Tooltip("If true, listen on 0.0.0.0:port so other devices on the LAN can connect. TcpListener doesn't need urlacl on Windows.")]
         [SerializeField] bool m_BindToAllInterfaces = true;
 
-        [Header("References")]
+        [Header("References / Task 2 (HitOrMiss)")]
+        [Tooltip("Wire this when the server lives in Task2Scene. Leave empty when running Task 1.")]
         [SerializeField] HitOrMissAppController m_AppController;
+        [Tooltip("Wire this when the server lives in Task2Scene. Leave empty when running Task 1.")]
         [SerializeField] TrajectoryTaskManager m_TaskManager;
+
+        [Header("References / Task 1 (PPS)")]
+        [Tooltip("Wire this when the server lives in Task1Scene. Leave empty when running Task 2.")]
+        [SerializeField] HitOrMiss.Pps.PPSAppController m_PpsAppController;
+        [Tooltip("Wire this when the server lives in Task1Scene. Leave empty when running Task 2.")]
+        [SerializeField] HitOrMiss.Pps.PpsTaskManager m_PpsTaskManager;
+
+        bool IsPpsMode => m_PpsAppController != null;
 
         MiniHttpServer m_Server;
         string m_ClinicianRoot;
@@ -173,7 +183,7 @@ namespace HitOrMiss.Network
                     await HandleSimple(resp, c => c.ResumeSession());
                     break;
                 case "POST /api/session/stop":
-                    await HandleSimple(resp, c => c.StopSession());
+                    await HandleSimple(resp, c => c.StopSession(), p => p.RequestStop());
                     break;
                 default:
                     resp.StatusCode = 404;
@@ -184,6 +194,17 @@ namespace HitOrMiss.Network
 
         async Task HandleStart(MiniHttpRequest req, MiniHttpResponse resp)
         {
+            // Task 1 (PPS) auto-starts on Unity Start(); the network start
+            // endpoint applies only to Task 2.
+            if (IsPpsMode)
+            {
+                var ackPps = AckResponse.Fail("not_supported_in_pps_mode",
+                    "Task 1 auto-starts in Start(). Use /api/session/stop to wind it down.");
+                resp.StatusCode = 409;
+                resp.SetJson(JsonUtility.ToJson(ackPps));
+                return;
+            }
+
             StartSessionRequest startReq;
             try { startReq = JsonUtility.FromJson<StartSessionRequest>(req.Body); }
             catch (Exception e)
@@ -205,10 +226,19 @@ namespace HitOrMiss.Network
             resp.SetJson(JsonUtility.ToJson(ack));
         }
 
-        async Task HandleSimple(MiniHttpResponse resp, Action<HitOrMissAppController> action)
+        async Task HandleSimple(MiniHttpResponse resp, Action<HitOrMissAppController> action,
+                                Action<HitOrMiss.Pps.PPSAppController> ppsAction = null)
         {
             var ack = await RunOnMainThread(() =>
             {
+                if (IsPpsMode)
+                {
+                    if (ppsAction == null)
+                        return AckResponse.Fail("not_supported_in_pps_mode",
+                            "Task 1 doesn't support this command (pause/resume not implemented).");
+                    ppsAction(m_PpsAppController);
+                    return AckResponse.Ok();
+                }
                 if (m_AppController == null) return AckResponse.Fail("no_app_controller");
                 action(m_AppController);
                 return AckResponse.Ok();
@@ -223,6 +253,21 @@ namespace HitOrMiss.Network
         {
             return RunOnMainThread(() =>
             {
+                if (IsPpsMode)
+                {
+                    return new ServerStatusEvent
+                    {
+                        protocolVersion     = Protocol.Version,
+                        phase               = m_PpsAppController.IsRunning ? "PpsRunning" : "Idle",
+                        participantId       = m_PpsAppController.ParticipantId,
+                        currentBlockIndex   = m_PpsTaskManager != null ? m_PpsTaskManager.CurrentBlockIndex : -1,
+                        isRunning           = m_PpsAppController.IsRunning,
+                        isPaused            = false,
+                        trialsCompletedInBlock = m_PpsTaskManager != null ? m_PpsTaskManager.TrialsCompletedInBlock : 0,
+                        totalTrialsInBlock     = m_PpsTaskManager != null ? m_PpsTaskManager.TotalTrialsInBlock     : 0,
+                    };
+                }
+
                 var s = new ServerStatusEvent
                 {
                     protocolVersion = Protocol.Version,
@@ -465,6 +510,16 @@ namespace HitOrMiss.Network
                 m_TaskManager.BlockStarted += OnBlockStarted;
                 m_TaskManager.BlockEnded += OnBlockEnded;
             }
+            if (m_PpsTaskManager != null)
+            {
+                m_PpsTaskManager.TrialStarted   += OnPpsTrialStarted;
+                m_PpsTaskManager.TrialCompleted += OnPpsTrialCompleted;
+            }
+            if (m_PpsAppController != null)
+            {
+                m_PpsAppController.SessionStarted += OnSessionStarted;
+                m_PpsAppController.SessionEnded   += OnSessionEnded;
+            }
         }
 
         void UnsubscribeFromAppEvents()
@@ -484,6 +539,54 @@ namespace HitOrMiss.Network
                 m_TaskManager.BlockStarted -= OnBlockStarted;
                 m_TaskManager.BlockEnded -= OnBlockEnded;
             }
+            if (m_PpsTaskManager != null)
+            {
+                m_PpsTaskManager.TrialStarted   -= OnPpsTrialStarted;
+                m_PpsTaskManager.TrialCompleted -= OnPpsTrialCompleted;
+            }
+            if (m_PpsAppController != null)
+            {
+                m_PpsAppController.SessionStarted -= OnSessionStarted;
+                m_PpsAppController.SessionEnded   -= OnSessionEnded;
+            }
+        }
+
+        // ---- PPS event handlers ----
+        // Map PPS trial events onto the same wire types used by Task 2 so a
+        // browser client doesn't need to know which task is running. Fields
+        // that have no PPS analogue (category, speedMps as m/s, isSwitch)
+        // are left at their defaults.
+
+        void OnPpsTrialStarted(HitOrMiss.Pps.PpsTrialDefinition trial)
+        {
+            Broadcast("trial_started", new TrialStartedEvent
+            {
+                trialId            = trial.trialId,
+                blockIndex         = trial.blockIndex,
+                trialNumberInBlock = 0,
+                category           = trial.modality.ToString(),
+                trajectoryId       = trial.vibrationStage.ToString(),
+                speedMps           = 0f,
+                isSwitchTrial      = false,
+            });
+        }
+
+        void OnPpsTrialCompleted(HitOrMiss.Pps.PpsTrialResult result)
+        {
+            Broadcast("trial_completed", new TrialCompletedEvent
+            {
+                trialId            = result.definition.trialId,
+                blockIndex         = result.definition.blockIndex,
+                trialNumberInBlock = 0,
+                category           = result.definition.modality.ToString(),
+                expected           = "",
+                received           = "",
+                result             = result.responded ? "Correct" : "NoResponse",
+                isCorrect          = result.responded,
+                reactionTimeMs     = result.reactionTimeMs,
+                speedMps           = 0f,
+                isSwitchTrial      = false,
+            });
         }
 
         void OnPhaseChanged(TaskPhase phase)

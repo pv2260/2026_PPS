@@ -20,6 +20,37 @@ namespace HitOrMiss.Pps
         [SerializeField] private string m_SubjectIdFallback = "P000";
 
         private bool m_Running;
+        private bool m_StopRequested;
+
+        // ---- Minimal public surface used by HitMissNetworkServer when it
+        // is wired to a Task 1 (PPS) scene. Task 1 auto-starts in Start();
+        // network clients can only observe state and request a stop. ----
+
+        /// <summary>True while RunTask1 is executing.</summary>
+        public bool IsRunning => m_Running;
+
+        /// <summary>Returns the subject id used for this session.</summary>
+        public string ParticipantId => m_SubjectIdFallback;
+
+        /// <summary>Fired once when the task coroutine begins (after input wiring).</summary>
+        public event System.Action SessionStarted;
+
+        /// <summary>
+        /// Fired once when the task coroutine winds down — both on natural
+        /// completion (end-of-blocks) and on stop-requested early exit.
+        /// </summary>
+        public event System.Action SessionEnded;
+
+        /// <summary>
+        /// Asks the running task to wind down at the next opportunity.
+        /// The active coroutine polls StopWasRequested() between steps and
+        /// transitions to StopExperiment when the flag flips on.
+        /// </summary>
+        public void RequestStop()
+        {
+            m_StopRequested = true;
+            Debug.Log("[PPSAppController] RequestStop() — task will end at the next checkpoint.");
+        }
 
         private IEnumerator Start()
         {
@@ -70,8 +101,15 @@ namespace HitOrMiss.Pps
             m_KeyboardInput?.Enable();
 
             m_Running = true;
+            SessionStarted?.Invoke();
 
             yield return RunTask1();
+
+            // Single point where the session ends — covers both natural
+            // completion and stop-requested early exit. RunTask1 / StopExperiment
+            // no longer touch m_Running so this stays the only source of truth.
+            m_Running = false;
+            SessionEnded?.Invoke();
         }
 
         private IEnumerator RunTask1()
@@ -121,7 +159,7 @@ namespace HitOrMiss.Pps
                 if (StopWasRequested()) { yield return StopExperiment(); yield break; }
 
                 PpsTrialDefinition[] trials = m_TaskAsset.GenerateBlock(blockIndex);
-                yield return m_TaskManager.RunTrials(trials);
+                yield return m_TaskManager.RunTrials(trials, blockIndex);
                 if (StopWasRequested()) { yield return StopExperiment(); yield break; }
 
                 if (blockIndex < m_TaskAsset.BlockCount - 1)
@@ -140,11 +178,13 @@ namespace HitOrMiss.Pps
 
             yield return m_Ui.ShowEndAndWait("Task 1 complete.\n\nThank you.");
 
-            m_Running = false;
+            // m_Running and SessionEnded are set by Start() after RunTask1 returns,
+            // so the natural-completion and stop-requested paths converge.
         }
 
         private bool StopWasRequested()
         {
+            if (m_StopRequested) return true;
             return m_Ui != null && m_Ui.StopRequested;
         }
 
@@ -164,7 +204,7 @@ namespace HitOrMiss.Pps
                 yield return m_Ui.ShowEndAndWait("Task stopped.\n\nThank you.");
             }
 
-            m_Running = false;
+            // m_Running and SessionEnded are set by Start() after RunTask1 returns.
         }
     }
 }

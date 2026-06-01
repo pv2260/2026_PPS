@@ -28,10 +28,21 @@ namespace HitOrMiss.Pps
 
         [SerializeField] string m_NoResponseText = "You did not respond.\nPress the button when you feel the vibration.";
 
+        [Tooltip("Seconds the reminder takes to fade in from 0 → m_NoResponseTargetAlpha.")]
+        [SerializeField] float m_NoResponseFadeInSeconds = 0.6f;
+        [Tooltip("Seconds the reminder takes to fade out before being hidden.")]
+        [SerializeField] float m_NoResponseFadeOutSeconds = 0.6f;
+        [Range(0f, 1f)]
+        [Tooltip("Peak alpha of the reminder (kept subtle by default).")]
+        [SerializeField] float m_NoResponseTargetAlpha = 0.55f;
+
         // The Image on the panel itself, grabbed automatically in Awake.
         Image m_PanelImage;
+        // CanvasGroup used to drive the no-response fade. Created if missing.
+        CanvasGroup m_NoResponseCanvasGroup;
 
         Coroutine m_FlashRoutine;
+        Coroutine m_NoResponseFadeRoutine;
 
         void Awake()
         {
@@ -41,6 +52,14 @@ namespace HitOrMiss.Pps
 
                 // Grab the Image on the panel itself rather than a separate field.
                 m_PanelImage = m_PracticeFeedbackPanel.GetComponent<Image>();
+
+                // Ensure a CanvasGroup exists so we can fade alpha cleanly
+                // without touching the Image's color alpha directly (which the
+                // flash routine controls separately).
+                m_NoResponseCanvasGroup = m_PracticeFeedbackPanel.GetComponent<CanvasGroup>();
+                if (m_NoResponseCanvasGroup == null)
+                    m_NoResponseCanvasGroup = m_PracticeFeedbackPanel.AddComponent<CanvasGroup>();
+                m_NoResponseCanvasGroup.alpha = 0f;
             }
 
             if (m_NoResponseLabel != null)
@@ -67,8 +86,10 @@ namespace HitOrMiss.Pps
         public void FlashRed() => Flash(Color.red);
 
         /// <summary>
-        /// Shows the no-response reminder on the same panel, in neutral white.
-        /// Stays visible until HideNoResponseMessage is called.
+        /// Shows the no-response reminder on the same panel, in neutral white,
+        /// fading the CanvasGroup alpha from 0 up to m_NoResponseTargetAlpha so
+        /// the message appears subtly rather than popping in. Stays visible
+        /// until HideNoResponseMessage is called.
         /// </summary>
         public void ShowNoResponseMessage()
         {
@@ -87,18 +108,57 @@ namespace HitOrMiss.Pps
 
             SetPanelColor(Color.white);
             m_PracticeFeedbackPanel.SetActive(true);
+
+            if (m_NoResponseFadeRoutine != null)
+                StopCoroutine(m_NoResponseFadeRoutine);
+            m_NoResponseFadeRoutine = StartCoroutine(
+                FadeNoResponse(m_NoResponseTargetAlpha, m_NoResponseFadeInSeconds, hideOnEnd: false));
         }
 
         /// <summary>
-        /// Hides the no-response reminder.
+        /// Hides the no-response reminder by fading the CanvasGroup alpha back
+        /// to 0 and then disabling the panel. Safe to call even when no fade
+        /// is currently running.
         /// </summary>
         public void HideNoResponseMessage()
         {
-            if (m_PracticeFeedbackPanel != null)
-                m_PracticeFeedbackPanel.SetActive(false);
+            if (m_PracticeFeedbackPanel == null) return;
 
-            if (m_NoResponseLabel != null)
-                m_NoResponseLabel.text = string.Empty;
+            if (m_NoResponseFadeRoutine != null)
+                StopCoroutine(m_NoResponseFadeRoutine);
+            m_NoResponseFadeRoutine = StartCoroutine(
+                FadeNoResponse(0f, m_NoResponseFadeOutSeconds, hideOnEnd: true));
+        }
+
+        IEnumerator FadeNoResponse(float targetAlpha, float duration, bool hideOnEnd)
+        {
+            if (m_NoResponseCanvasGroup == null)
+            {
+                // Fallback: no CanvasGroup available, just hard toggle.
+                if (hideOnEnd) m_PracticeFeedbackPanel.SetActive(false);
+                if (m_NoResponseLabel != null && hideOnEnd) m_NoResponseLabel.text = string.Empty;
+                yield break;
+            }
+
+            float start = m_NoResponseCanvasGroup.alpha;
+            float t = 0f;
+            float safeDuration = Mathf.Max(duration, 0.0001f);
+
+            while (t < safeDuration)
+            {
+                t += Time.deltaTime;
+                m_NoResponseCanvasGroup.alpha =
+                    Mathf.Lerp(start, targetAlpha, Mathf.SmoothStep(0f, 1f, t / safeDuration));
+                yield return null;
+            }
+            m_NoResponseCanvasGroup.alpha = targetAlpha;
+
+            if (hideOnEnd)
+            {
+                m_PracticeFeedbackPanel.SetActive(false);
+                if (m_NoResponseLabel != null) m_NoResponseLabel.text = string.Empty;
+            }
+            m_NoResponseFadeRoutine = null;
         }
 
         void Flash(Color color)
@@ -117,6 +177,12 @@ namespace HitOrMiss.Pps
             // Clear any leftover no-response text before showing hit/miss color.
             if (m_NoResponseLabel != null)
                 m_NoResponseLabel.text = string.Empty;
+
+            // Restore CanvasGroup alpha so the flash isn't faded out from a
+            // prior no-response cycle. The Image's alpha is what controls the
+            // flash color intensity via SetPanelColor.
+            if (m_NoResponseCanvasGroup != null)
+                m_NoResponseCanvasGroup.alpha = 1f;
 
             SetPanelColor(color);
             m_PracticeFeedbackPanel.SetActive(true);

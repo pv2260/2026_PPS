@@ -18,7 +18,7 @@ MonoBehaviour:
   m_IntroDuration: 3
   m_RestDuration: 3
   m_OutroDuration: 3
-  m_SpawnDistance: 10
+  m_SpawnDistance: 15
   m_BallDiameter: 0.175
   m_ReferenceShoulderWidthCm: 42
   m_FastSpeed: 6.5

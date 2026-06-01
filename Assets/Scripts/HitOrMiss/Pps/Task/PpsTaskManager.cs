@@ -100,6 +100,25 @@ namespace HitOrMiss.Pps
         public event Action<PpsTrialDefinition> TrialStarted;
         public event Action<PpsTrialResult> TrialCompleted;
 
+        // ---- Block tracking (consumed by HitMissNetworkServer status feed) ----
+        // PpsTaskManager doesn't own block scheduling — PPSAppController does —
+        // so each RunTrials call is treated as one logical "block" of trials.
+        // These counters are updated as trials advance and reset at RunTrials
+        // entry so /api/status reflects whichever phase is currently active.
+
+        int m_CurrentBlockIndex;
+        int m_TrialsCompletedInBlock;
+        int m_TotalTrialsInBlock;
+
+        /// <summary>0-based index of the block currently being run.</summary>
+        public int CurrentBlockIndex => m_CurrentBlockIndex;
+
+        /// <summary>Number of trials finished so far within the current RunTrials call.</summary>
+        public int TrialsCompletedInBlock => m_TrialsCompletedInBlock;
+
+        /// <summary>Total trials in the current RunTrials call.</summary>
+        public int TotalTrialsInBlock => m_TotalTrialsInBlock;
+
         public PpsTaskAsset TaskAsset
         {
             get => m_TaskAsset;
@@ -244,6 +263,15 @@ namespace HitOrMiss.Pps
         /// as part of the higher-level experiment flow.
         /// </summary>
         public IEnumerator RunTrials(PpsTrialDefinition[] trials)
+            => RunTrials(trials, blockIndex: -1);
+
+        /// <summary>
+        /// Runs a sequence of trials and exposes per-block progress through
+        /// <see cref="CurrentBlockIndex"/>, <see cref="TrialsCompletedInBlock"/>,
+        /// and <see cref="TotalTrialsInBlock"/>. Use blockIndex = -1 for
+        /// practice or non-block trial lists.
+        /// </summary>
+        public IEnumerator RunTrials(PpsTrialDefinition[] trials, int blockIndex)
         {
             if (m_TaskAsset == null)
             {
@@ -262,9 +290,16 @@ namespace HitOrMiss.Pps
             if (trials == null)
                 yield break;
 
+            // Reset block-progress counters so external clients (e.g. the
+            // network server's /api/status endpoint) see fresh totals.
+            m_CurrentBlockIndex      = blockIndex;
+            m_TrialsCompletedInBlock = 0;
+            m_TotalTrialsInBlock     = trials.Length;
+
             foreach (var trial in trials)
             {
                 yield return RunOneTrial(trial);
+                m_TrialsCompletedInBlock++;
 
                 // Wait a randomized inter-trial interval before the next trial.
                 float iti = NextItiSeconds();
