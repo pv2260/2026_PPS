@@ -15,8 +15,25 @@ namespace HitOrMiss.Pps
         [SerializeField] private PpsTaskManager m_TaskManager;
         [SerializeField] private PpsTaskAsset m_TaskAsset;
 
+        // FLORE TRIGGERS *****************
+        [Header("Logging")]
+        [SerializeField] TaskLogger m_TaskLogger;
+        [SerializeField] EegMarkerEmitter m_EegMarkerEmitter;
+
+        // ---- Visuals + Clinician ----
+        [Header("Visuals")]
+        [SerializeField] FixationCrossController m_FixationCross;
+        [SerializeField] StandingCross m_StandingCross;
+
+        [Header("Clinician")]
+        [SerializeField] ClinicianControlPanel m_ClinicianPanel;
+        //*********************************
+
         [Header("Session")]
         [SerializeField] private string m_SubjectIdFallback = "P000";
+
+        //FLORE
+        SessionMetadata m_SessionMetadata;
 
         private bool m_Running;
         private bool m_StopRequested;
@@ -30,6 +47,7 @@ namespace HitOrMiss.Pps
         public void RequestStop()
         {
             m_StopRequested = true;
+
             Debug.Log("[PPSAppController] RequestStop() — task will end at the next checkpoint.");
         }
 
@@ -50,6 +68,51 @@ namespace HitOrMiss.Pps
                 Debug.LogError("[PPSAppController] TaskManager is not assigned.");
                 yield break;
             }
+
+        
+
+            // FLORE TRIGGERS *****************
+            if (m_EegMarkerEmitter == null)
+            {
+                m_EegMarkerEmitter = FindAnyObjectByType<EegMarkerEmitter>();
+                if (m_EegMarkerEmitter == null)
+                {
+                    Debug.LogWarning("[PPSAppController] No EegMarkerEmitter found in the scene. EEG markers will be disabled.");
+                }
+                else
+                {
+                    Debug.Log("[PPSAppController] Found EegMarkerEmitter automatically.");
+                }
+            }
+            if (m_EegMarkerEmitter != null)
+            {
+                string sessionId = System.DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                m_EegMarkerEmitter.BeginSession(sessionId);
+                m_TaskManager.SetMarkerEmitter(m_EegMarkerEmitter);
+            }
+            if (m_TaskLogger == null)
+            {
+                m_TaskLogger = FindAnyObjectByType<TaskLogger>();
+
+                if (m_TaskLogger == null)
+                {
+                    Debug.LogWarning("[PPSAppController] No TaskLogger found in the scene. TaskLogger logging will be disabled.");
+                }
+                else
+                {
+                    Debug.Log("[PPSAppController] Found TaskLogger automatically.");
+                }
+            }
+            if (m_TaskLogger != null)
+            {
+                m_TaskLogger.ParticipantId = ParticipantId;
+                m_TaskLogger.SetMetadata(m_SessionMetadata);
+                m_TaskLogger.BeginSession(m_TaskAsset != null ? m_TaskAsset.TaskName : "PPSTask");
+            }
+
+            if (m_ClinicianPanel != null)
+                m_ClinicianPanel.EnterTaskMode();
+            //*********************************
 
             if (m_TaskAsset == null)
             {
@@ -161,6 +224,13 @@ namespace HitOrMiss.Pps
             }
 
             m_TaskManager.EndLogging();
+
+            // FLORE
+            if (m_ClinicianPanel != null) m_ClinicianPanel.ExitTaskMode();
+            if (m_TaskLogger != null)
+            {
+                m_TaskLogger.EndSession();
+            }
 
             m_ControllerInput?.Disable();
             m_KeyboardInput?.Disable();

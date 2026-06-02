@@ -29,40 +29,67 @@ namespace HitOrMiss
     public static class TriggerEncoder
     {
         // ---- Response codes (shared) ----
-        public const int ResponseHit       = 90;
-        public const int ResponseMiss      = 91;
+        // FLORE TRIGGER could be commented not used
+        public const int ResponseHit        = 90;
+        public const int ResponseMiss       = 91;
         public const int ResponseNoResponse = 99;
-        public const int TestTrigger       = 95;
+        //
+        public const int TestTrigger        = 190;
 
         // ====================================================================
         // Task 1 — PPS / vibrotactile
         // ====================================================================
-
-        public enum Task1TrialType
+         public enum Task1TrialType
         {
-            VisualOnly         = 1,
-            VibrotactileOnly   = 2,
-            VisualAndVibrotactile = 3,
+            VisualOnly              = 0,
+            VibrotactileOnly        = 1,
+            VisualAndVibrotactile   = 2,
         }
 
-        public enum Task1Width
+        public enum TactilePosition
         {
-            Narrow = 1,
-            Wide   = 2,
+            None = 0,
+            D1   = 1,
+            D2   = 2,
+            D3   = 3,
+            D4   = 4,
         }
 
         public enum Task1Speed
         {
-            Slow = 1,
-            Fast = 2,
+            Slow = 0,
+            Fast = 1,
+        }
+
+        public enum Task1Width
+        {
+            Narrow = 0,
+            Wide   = 1,
         }
 
         /// <summary>
         /// Builds a Task 1 trial trigger code: BCD as a 3-digit integer.
         /// Example: <c>EncodeTask1(VisualAndVibrotactile, Narrow, Slow) = 311</c>.
         /// </summary>
-        public static int EncodeTask1(Task1TrialType type, Task1Width width, Task1Speed speed)
-            => (int)type * 100 + (int)width * 10 + (int)speed;
+        public static int EncodeTask1(
+                    Task1TrialType sensoryCondition,
+                    TactilePosition position,
+                    Task1Speed speed,
+                    Task1Width width
+                )
+                {
+                    int sensoryIndex = (int)sensoryCondition; // 0..2
+                    int positionIndex = (int)position;        // 0..4
+                    int speedIndex = (int)speed;              // 0..1
+                    int widthIndex = (int)width;              // 0..1
+
+                    return 1
+                        + sensoryIndex * 20
+                        + positionIndex * 4
+                        + speedIndex * 2
+                        + widthIndex;
+                }
+
 
         // ====================================================================
         // Task 2 — Hit-or-Miss
@@ -76,10 +103,26 @@ namespace HitOrMiss
         /// </summary>
         public static int EncodeTask2(TrialCategory trajectory, SpeedLevel speed, TransitionStatus transition)
         {
-            int b = trajectory.ToTriggerDigit();      // 1..4
-            int c = speed.ToTriggerDigit();           // 1=slow, 2=fast
-            int d = transition.ToTriggerDigit();      // 0=start, 1=repetition, 2=transition
-            return b * 100 + c * 10 + d;
+            // int b = trajectory.ToTriggerDigit();      // 1..4
+            // int c = speed.ToTriggerDigit();           // 1=slow, 2=fast
+            // int d = transition.ToTriggerDigit();      // 0=start, 1=repetition, 2=transition
+            // return b * 100 + c * 10 + d;
+
+            // int trajectoryIndex = trajectory.ToTriggerDigit() - 1;
+            // // 100, 120, 140, 160
+            // int baseCode = 100 + trajectoryIndex * 20;
+            // int speedDigit = speed.ToTriggerDigit();         // 1 or 2
+            // int transitionDigit = transition.ToTriggerDigit(); // 0,1,2
+            // return baseCode + speedDigit * 10 + transitionDigit;
+
+            
+            int trajectoryIndex = trajectory.ToTriggerDigit() - 1; // 0..3
+            int speedIndex = speed.ToTriggerDigit() - 1;           // 0..1
+            int transitionIndex = transition.ToTriggerDigit();     // 0..2
+
+            // Encoding range: 0..23
+            return 1 + trajectoryIndex * 6 + speedIndex * 3 + transitionIndex;
+
         }
 
         // ====================================================================

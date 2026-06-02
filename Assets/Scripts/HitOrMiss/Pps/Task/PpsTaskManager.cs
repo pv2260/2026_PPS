@@ -172,6 +172,9 @@ namespace HitOrMiss.Pps
         public void Initialize()
         {
             // Provide the looming controller with the spatial distance layout.
+            Debug.Log("LAYOUT");
+            Debug.Log(m_Layout);
+            
             if (m_Loom != null && m_Layout != null)
                 m_Loom.Layout = m_Layout;
 
@@ -238,7 +241,9 @@ namespace HitOrMiss.Pps
             m_CsvWriter.Flush();
 
             // Emit session-start marker and enable input capture.
-            m_MarkerEmitter?.Emit("pps_session_start", extra: subjectId);
+            // FLORE TRIGGERS MODIFS
+            //m_MarkerEmitter?.Emit("pps_session_start", extra: subjectId);
+            m_MarkerEmitter?.Emit("pps_session_start");
             m_InputSource?.Enable();
 
             Debug.Log($"[PpsTaskManager] CSV: {m_CsvPath}");
@@ -255,6 +260,13 @@ namespace HitOrMiss.Pps
             m_CsvWriter?.Dispose();
             m_CsvWriter = null;
         }
+
+        // FLORE TRIGGER
+        public void SetMarkerEmitter(EegMarkerEmitter emitter)
+        {
+            m_MarkerEmitter = emitter;
+        }
+        //
 
         /// <summary>
         /// Runs a sequence of trials with an inter-trial interval after each trial.
@@ -355,13 +367,6 @@ namespace HitOrMiss.Pps
             );
             TrialStarted?.Invoke(trial);
 
-            // Emit trial-start marker for EEG/event synchronization.
-            m_MarkerEmitter?.Emit(
-                "pps_trial_start",
-                trial.trialId,
-                trial.modality.ToString(),
-                extra: trial.vibrationStage.ToString()
-            );
 
             // Reset all trial-specific response and timing state.
             m_CurrentTrialIsPractice = trial.isPractice;
@@ -405,7 +410,16 @@ namespace HitOrMiss.Pps
             {
                 // Visual-only and visuotactile trials both run the looming stimulus.
                 result.loomOnsetTime = Time.timeAsDouble;
-                m_MarkerEmitter?.Emit("pps_loom_onset", trial.trialId);
+                // FLORE TRIGGERS
+                // m_MarkerEmitter?.Emit("pps_loom_onset", trial.trialId);
+                // Emit trial-start marker for EEG/event synchronization.
+                int triggerCode = TriggerEncoder.EncodeTask1(
+                    ToTask1TrialType(trial.modality),
+                    ToTactilePosition(trial.modality, trial.vibrationStage),
+                    ToTask1Speed(trial.speed),
+                    ToTask1Width(trial.width)
+                );
+                m_MarkerEmitter?.Emit("pps_loom_onset",  extra: triggerCode.ToString());
 
                 bool vibFired = false;
 
@@ -428,7 +442,8 @@ namespace HitOrMiss.Pps
                     );
 
                     // Emit stage-entry marker for EEG/event synchronization.
-                    m_MarkerEmitter?.Emit("pps_stage_enter", trial.trialId, extra: stage.ToString());
+                    // FLORE TRIGGERS
+                    // m_MarkerEmitter?.Emit("pps_stage_enter", trial.trialId, extra: stage.ToString());
 
                     // In visuotactile trials, fire vibration when the configured stage is reached.
                     if (fireOnStageMatch && !vibFired && stage == trial.vibrationStage)
@@ -580,11 +595,7 @@ namespace HitOrMiss.Pps
             );
 
             // Emit trial-end marker.
-            m_MarkerEmitter?.Emit(
-                "pps_trial_end",
-                trial.trialId,
-                extra: m_Responded ? result.reactionTimeMs.ToString("F1") : "no_response"
-            );
+            m_MarkerEmitter?.Emit("pps_trial_end", extra: m_Responded ? "10" : "15");
 
             // Stop accepting responses after the trial is finished.
             m_CaptureResponses = false;
@@ -620,7 +631,9 @@ namespace HitOrMiss.Pps
                 $"[PPS VIBRATION] trial={trial.trialId} | modality={trial.modality} | stage={stage} | time={Time.timeAsDouble:F3}"
             );
 
-            m_MarkerEmitter?.Emit("pps_vib_fired", trial.trialId, extra: stage.ToString());
+            // FLORE TRIGGERS
+            // m_MarkerEmitter?.Emit("pps_vib_fired", trial.trialId, extra: stage.ToString());
+            m_MarkerEmitter?.Emit("pps_vib_fired");
         }
 
         /// <summary>
@@ -670,7 +683,6 @@ namespace HitOrMiss.Pps
 
 
 
-
                 /// <summary>
         /// Writes one trial result to the CSV file.
         /// </summary>
@@ -697,6 +709,94 @@ namespace HitOrMiss.Pps
         private static string FormatRt(float value)
         {
             return float.IsNaN(value) ? "NA" : value.ToString("F1");
+        }
+        
+        private static TriggerEncoder.Task1TrialType ToTask1TrialType(PpsModality modality)
+        {
+            switch (modality)
+            {
+                case PpsModality.VisualOnly:
+                    return TriggerEncoder.Task1TrialType.VisualOnly;
+
+                case PpsModality.TactileOnly:
+                    return TriggerEncoder.Task1TrialType.VibrotactileOnly;
+
+                case PpsModality.Both:
+                    return TriggerEncoder.Task1TrialType.VisualAndVibrotactile;
+
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(modality),
+                        modality,
+                        "Unknown PPS modality."
+                    );
+            }
+        }
+
+        private static TriggerEncoder.TactilePosition ToTactilePosition(
+            PpsModality modality,
+            DistanceStage stage
+        )
+        {
+            // Visual-only trials should not have a tactile position.
+            if (modality == PpsModality.VisualOnly)
+                return TriggerEncoder.TactilePosition.None;
+
+            switch (stage)
+            {
+                case DistanceStage.D1:
+                    return TriggerEncoder.TactilePosition.D1;
+
+                case DistanceStage.D2:
+                    return TriggerEncoder.TactilePosition.D2;
+
+                case DistanceStage.D3:
+                    return TriggerEncoder.TactilePosition.D3;
+
+                case DistanceStage.D4:
+                    return TriggerEncoder.TactilePosition.D4;
+
+                default:
+                    return TriggerEncoder.TactilePosition.None;
+            }
+        }
+
+        private static TriggerEncoder.Task1Speed ToTask1Speed(PpsSpeed speed)
+        {
+            switch (speed)
+            {
+                case PpsSpeed.Slow:
+                    return TriggerEncoder.Task1Speed.Slow;
+
+                case PpsSpeed.Fast:
+                    return TriggerEncoder.Task1Speed.Fast;
+
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(speed),
+                        speed,
+                        "Unknown PPS speed."
+                    );
+            }
+        }
+
+        private static TriggerEncoder.Task1Width ToTask1Width(PpsWidth width)
+        {
+            switch (width)
+            {
+                case PpsWidth.Narrow:
+                    return TriggerEncoder.Task1Width.Narrow;
+
+                case PpsWidth.Wide:
+                    return TriggerEncoder.Task1Width.Wide;
+
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(width),
+                        width,
+                        "Unknown PPS width."
+                    );
+            }
         }
     }
 }

@@ -198,7 +198,7 @@ namespace HitOrMiss
             EnsureCrosshair();
             SetCrosshairActive(true);
 
-            m_MarkerEmitter?.Emit("block_start", "", blockIndex.ToString());
+            m_MarkerEmitter?.Emit("block_start");
             BlockStarted?.Invoke(blockIndex);
 
             Debug.Log($"[TrajectoryTaskManager] Block {blockIndex + 1} started with {trials.Length} trials. " +
@@ -234,7 +234,7 @@ namespace HitOrMiss
             m_InputSource?.Enable();
             SetCrosshairActive(true);
 
-            m_MarkerEmitter?.Emit("block_restart", "", m_CurrentBlock.ToString());
+            m_MarkerEmitter?.Emit("block_restart");
             Debug.Log($"[TrajectoryTaskManager] Block {m_CurrentBlock + 1} restarted ({m_BlockTrials.Length} trials).");
         }
 
@@ -262,7 +262,7 @@ namespace HitOrMiss
             m_AwaitingLateResponse.Clear();
 
             DespawnAll();
-            m_MarkerEmitter?.Emit("block_end", "", m_CurrentBlock.ToString());
+            m_MarkerEmitter?.Emit("block_end");
             BlockEnded?.Invoke(m_CurrentBlock);
         }
 
@@ -285,7 +285,7 @@ namespace HitOrMiss
             // Same for trials sitting in the late-response queue.
             m_AwaitingLateResponse.Clear();
 
-            m_MarkerEmitter?.Emit("block_paused", "", m_CurrentBlock.ToString());
+            m_MarkerEmitter?.Emit("block_paused");
         }
 
         /// <summary>
@@ -299,7 +299,7 @@ namespace HitOrMiss
             m_Paused = false;
             if (!m_PassiveMode) m_InputSource?.Enable();
             m_NextSpawnEarliest = Time.time + NextItiSeconds();
-            m_MarkerEmitter?.Emit("block_resumed", "", m_CurrentBlock.ToString());
+            m_MarkerEmitter?.Emit("block_resumed");
         }
 
         void Update()
@@ -356,8 +356,7 @@ namespace HitOrMiss
                         m_PassiveMode ? "passive_demo" : "timeout");
                     if (!m_PassiveMode)
                     {
-                        m_MarkerEmitter?.Emit("trial_timeout", trial.Definition.trialId,
-                            trial.Definition.category.ToString());
+                        m_MarkerEmitter?.Emit("trial_timeout");
                     }
                 }
 
@@ -385,8 +384,7 @@ namespace HitOrMiss
                     m_ActiveTrials.RemoveAt(i);
                     if (!m_PassiveMode)
                     {
-                        m_MarkerEmitter?.Emit("trial_too_slow", trial.Definition.trialId,
-                            trial.Definition.category.ToString());
+                        m_MarkerEmitter?.Emit("trial_too_slow");
                         TooSlow?.Invoke(trial.Definition);
                     }
                 }
@@ -403,7 +401,7 @@ namespace HitOrMiss
                 m_PassiveMode = false;
                 m_InputSource?.Disable();
                 SetCrosshairActive(false);
-                m_MarkerEmitter?.Emit("block_end", "", m_CurrentBlock.ToString());
+                m_MarkerEmitter?.Emit("block_end");
                 BlockEnded?.Invoke(m_CurrentBlock);
             }
         }
@@ -576,9 +574,7 @@ namespace HitOrMiss
 
             // Human-readable string marker for Console / log files; numeric
             // BCD as the "extra" payload field for the parallel-port / LSL.
-            m_MarkerEmitter?.Emit("trial_spawn", trial.trialId,
-                trial.category.ToCode(), trial.expectedResponse.ToString(),
-                extra: triggerCode.ToString());
+            m_MarkerEmitter?.Emit("trial_spawn", extra: triggerCode.ToString());
             TrialSpawned?.Invoke(trial.trialId, trial);
         }
 
@@ -597,9 +593,7 @@ namespace HitOrMiss
             m_LastResponseTime = Time.time;
             m_LastResponseCommand = response.command;
 
-            m_MarkerEmitter?.Emit(
-                response.command == SemanticCommand.Hit ? "response_hit" : "response_miss",
-                "", "", "", response.rawSource);
+            m_MarkerEmitter?.Emit(response.rawSource);
 
             // Find the most recent unresolved trial that can accept this response.
             // Two sources, in priority order:
@@ -780,11 +774,17 @@ namespace HitOrMiss
             m_AllResults.Add(judgement);
 
             string markerCode = judgement.isCorrect ? "trial_resolved_correct" : "trial_resolved_incorrect";
-            if (result == TrialResult.NoResponse) markerCode = "trial_no_response";
-            m_MarkerEmitter?.Emit(markerCode, trial.Definition.trialId,
-                trial.Definition.category.ToString(),
-                trial.Definition.expectedResponse.ToString(),
-                received.ToString());
+            if (result == TrialResult.NoResponse){
+                m_MarkerEmitter?.Emit("trial_no_response");}
+            //if (result == TrialResult.NoResponse) markerCode = "trial_no_response";
+            
+            //     trial.Definition.category.ToString(),
+            //     trial.Definition.expectedResponse.ToString(),
+            //     received.ToString());
+            // m_MarkerEmitter?.Emit(markerCode, trial.Definition.trialId,
+            //     trial.Definition.category.ToString(),
+            //     trial.Definition.expectedResponse.ToString(),
+            //     received.ToString());
 
             // No feedback to participant - this is intentional per protocol
             TrialJudged?.Invoke(judgement);

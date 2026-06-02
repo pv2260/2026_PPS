@@ -28,6 +28,8 @@ namespace HitOrMiss.Pps
         {
             if (m_Asset != null)
                 ConfigureFromAsset(m_Asset);
+
+            DebugDistanceLayout();
         }
 
         /// <summary>
@@ -81,6 +83,64 @@ namespace HitOrMiss.Pps
         {
             if (!Application.isPlaying && m_Asset != null && m_D4 != null)
                 ConfigureFromAsset(m_Asset);
+        }
+
+
+
+        [ContextMenu("Debug Distance Layout")]
+        public void DebugDistanceLayout()
+        {
+            Debug.Log("========== DISTANCE LAYOUT DEBUG ==========");
+
+            Debug.Log(
+                $"[DistanceLayout] name={name} | " +
+                $"localPosition={transform.localPosition} | " +
+                $"worldPosition={transform.position} | " +
+                $"localScale={transform.localScale} | " +
+                $"lossyScale={transform.lossyScale} | " +
+                $"rotation={transform.rotation.eulerAngles}"
+            );
+
+            DebugStage("D4", m_D4);
+            DebugStage("D3", m_D3);
+            DebugStage("D2", m_D2);
+            DebugStage("D1", m_D1);
+
+            Debug.Log("========== PARENT CHAIN ==========");
+            Transform p = transform.parent;
+            while (p != null)
+            {
+                Debug.Log(
+                    $"parent={p.name} | " +
+                    $"localPosition={p.localPosition} | " +
+                    $"worldPosition={p.position} | " +
+                    $"localScale={p.localScale} | " +
+                    $"lossyScale={p.lossyScale} | " +
+                    $"rotation={p.rotation.eulerAngles}"
+                );
+
+                p = p.parent;
+            }
+        }
+
+        private void DebugStage(string label, Transform stage)
+        {
+            if (stage == null)
+            {
+                Debug.LogWarning($"[{label}] is null");
+                return;
+            }
+
+            float worldDistanceFromLayout =
+                Vector3.Distance(transform.position, stage.position);
+
+            Debug.Log(
+                $"[{label}] " +
+                $"localPosition={stage.localPosition} | " +
+                $"worldPosition={stage.position} | " +
+                $"worldDistanceFromLayout={worldDistanceFromLayout:F3} | " +
+                $"lossyScale={stage.lossyScale}"
+            );
         }
     }
 }

@@ -286,7 +286,7 @@ namespace HitOrMiss
             if (m_TaskManager == null || !m_TaskManager.IsRunning || m_TaskManager.IsPaused) return;
 
             m_TaskManager.PauseBlock();
-            m_EegMarkerEmitter?.Emit("session_paused", "", CurrentBlockIndex.ToString());
+            m_EegMarkerEmitter?.Emit("session_paused");
             if (m_TaskLogger != null)
                 m_TaskLogger.Flush(CurrentBlockIndex, m_TaskManager.NextTrialIndex);
             if (m_ClinicianPanel != null) m_ClinicianPanel.EnterPausedMode();
@@ -297,7 +297,7 @@ namespace HitOrMiss
         {
             if (m_TaskManager == null || !m_TaskManager.IsPaused) return;
             m_TaskManager.ResumeBlock();
-            m_EegMarkerEmitter?.Emit("session_resumed", "", CurrentBlockIndex.ToString());
+            m_EegMarkerEmitter?.Emit("session_resumed");
             if (m_ClinicianPanel != null) m_ClinicianPanel.ExitPausedMode();
             SessionResumed?.Invoke();
         }
@@ -352,7 +352,7 @@ namespace HitOrMiss
                 yield return RunOnePopup(m_BlockIntroPopup);
 
                 SetPhase(TaskPhase.Block);
-                m_EegMarkerEmitter?.Emit("phase_block", "", b.ToString());
+                m_EegMarkerEmitter?.Emit("phase_block");
                 if (m_FixationCross != null) m_FixationCross.Show();
 
                 var blockTrials = Asset.GenerateBlock(b, m_SessionMetadata.shoulderWidthCm);
