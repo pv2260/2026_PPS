@@ -171,10 +171,7 @@ namespace HitOrMiss.Pps
         /// </summary>
         public void Initialize()
         {
-            // Provide the looming controller with the spatial distance layout.
-            Debug.Log("LAYOUT");
-            Debug.Log(m_Layout);
-            
+            // Provide the looming controller with the spatial distance layout.         
             if (m_Loom != null && m_Layout != null)
                 m_Loom.Layout = m_Layout;
 
@@ -595,7 +592,7 @@ namespace HitOrMiss.Pps
             );
 
             // Emit trial-end marker.
-            m_MarkerEmitter?.Emit("pps_trial_end", extra: m_Responded ? "10" : "15");
+            m_MarkerEmitter?.Emit("pps_trial_end", extra: m_Responded ? "62" : "63");
 
             // Stop accepting responses after the trial is finished.
             m_CaptureResponses = false;
@@ -678,7 +675,7 @@ namespace HitOrMiss.Pps
             else
                 Debug.Log("[PPS RESPONSE] Response before vibration / false alarm.");
 
-            m_MarkerEmitter?.Emit("pps_response", extra: ev.rawSource);
+            m_MarkerEmitter?.Emit("pps_response");
         }
 
 

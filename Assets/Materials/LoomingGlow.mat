@@ -91,7 +91,7 @@ Material:
     - _BumpScale: 1
     - _ClearCoatMask: 0
     - _ClearCoatSmoothness: 0
-    - _CoreSharpness: 3.8
+    - _CoreSharpness: 3.03
     - _Cull: 2
     - _Cutoff: 0.5
     - _DetailAlbedoMapScale: 1
@@ -102,7 +102,7 @@ Material:
     - _GlossMapScale: 0
     - _Glossiness: 0
     - _GlossyReflections: 0
-    - _HeadSize: 0.189
+    - _HeadSize: 0.413
     - _Intensity: 11.8
     - _Loop: 1
     - _LoopGapSeconds: 0.5
@@ -120,8 +120,8 @@ Material:
     - _StartTime: 0
     - _Surface: 0
     - _TailFalloff: 6.81
-    - _TailLength: 3.82
-    - _TailWidth: 0.61
+    - _TailLength: 5.24
+    - _TailWidth: 0
     - _TravelDistance: 2.4
     - _WorkflowMode: 1
     - _XRMotionVectorsPass: 1

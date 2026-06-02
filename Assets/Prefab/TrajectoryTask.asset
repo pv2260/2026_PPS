@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: TrajectoryTask
   m_EditorClassIdentifier: 
   m_TaskName: Hit Or Miss Task
-  m_BlockCount: 3
-  m_TrialsPerCategory: 4
+  m_BlockCount: 2
+  m_TrialsPerCategory: 2
   m_IntroDuration: 3
   m_RestDuration: 3
   m_OutroDuration: 3
