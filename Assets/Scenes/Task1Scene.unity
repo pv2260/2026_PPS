@@ -3038,6 +3038,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 4276623248792366368, guid: 97c4e40b856a4fe4f8c6e3191d6b0430, type: 3}
       insertIndex: -1
       addedObject: {fileID: 940394640}
+    - targetCorrespondingSourceObject: {fileID: 4276623248792366368, guid: 97c4e40b856a4fe4f8c6e3191d6b0430, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 884112230}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 4614628877062732605, guid: 97c4e40b856a4fe4f8c6e3191d6b0430, type: 3}
       insertIndex: -1
@@ -15422,6 +15425,104 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 877618362}
   m_CullTransparentMesh: 1
+--- !u!1001 &884112229
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 323310602}
+    m_Modifications:
+    - target: {fileID: 5152781267701990436, guid: 21d922242fbc7814981102fc73b359aa, type: 3}
+      propertyPath: m_Name
+      value: StopPanel Variant
+      objectReference: {fileID: 0}
+    - target: {fileID: 5152781267701990437, guid: 21d922242fbc7814981102fc73b359aa, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0.944
+      objectReference: {fileID: 0}
+    - target: {fileID: 5152781267701990437, guid: 21d922242fbc7814981102fc73b359aa, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 1.11
+      objectReference: {fileID: 0}
+    - target: {fileID: 5152781267701990437, guid: 21d922242fbc7814981102fc73b359aa, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -1.033
+      objectReference: {fileID: 0}
+    - target: {fileID: 5152781267701990437, guid: 21d922242fbc7814981102fc73b359aa, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.723097
+      objectReference: {fileID: 0}
+    - target: {fileID: 5152781267701990437, guid: 21d922242fbc7814981102fc73b359aa, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5152781267701990437, guid: 21d922242fbc7814981102fc73b359aa, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0.6907465
+      objectReference: {fileID: 0}
+    - target: {fileID: 5152781267701990437, guid: 21d922242fbc7814981102fc73b359aa, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5152781267701990437, guid: 21d922242fbc7814981102fc73b359aa, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5152781267701990437, guid: 21d922242fbc7814981102fc73b359aa, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 87.378
+      objectReference: {fileID: 0}
+    - target: {fileID: 5152781267701990437, guid: 21d922242fbc7814981102fc73b359aa, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 5152781267701990436, guid: 21d922242fbc7814981102fc73b359aa, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 884112233}
+  m_SourcePrefab: {fileID: 100100000, guid: 21d922242fbc7814981102fc73b359aa, type: 3}
+--- !u!4 &884112230 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 5152781267701990437, guid: 21d922242fbc7814981102fc73b359aa, type: 3}
+  m_PrefabInstance: {fileID: 884112229}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &884112231 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 5152781267636389768, guid: 21d922242fbc7814981102fc73b359aa, type: 3}
+  m_PrefabInstance: {fileID: 884112229}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!1 &884112232 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 5152781267701990436, guid: 21d922242fbc7814981102fc73b359aa, type: 3}
+  m_PrefabInstance: {fileID: 884112229}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &884112233
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 884112232}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aa0b58c1495d27a4490effecb041e84a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HitOrMiss.Pps.PpsParticipantPausePanel
+  m_AppController: {fileID: 8848404438533868171}
+  m_Root: {fileID: 0}
+  m_ResumeButton: {fileID: 0}
+  m_StopButton: {fileID: 884112231}
+  m_StatusText: {fileID: 0}
 --- !u!1 &885081164
 GameObject:
   m_ObjectHideFlags: 0
@@ -38686,9 +38787,12 @@ MonoBehaviour:
   m_Ui: {fileID: 1643808109}
   m_TaskManager: {fileID: 867388212}
   m_TaskAsset: {fileID: 11400000, guid: b6a0232453b4a5f4182f868a7d2920f0, type: 2}
-  m_TaskLogger: {fileID: 0}
   m_EegMarkerEmitter: {fileID: 0}
+  m_FixationCross: {fileID: 0}
+  m_StandingCross: {fileID: 0}
+  m_ClinicianPanel: {fileID: 0}
   m_SubjectIdFallback: P000
+  m_AutoStartOnPlay: 0
 --- !u!1 &9041478014344155232
 GameObject:
   m_ObjectHideFlags: 0

@@ -177,10 +177,10 @@ namespace HitOrMiss.Network
                     await HandleStart(req, resp);
                     break;
                 case "POST /api/session/pause":
-                    await HandleSimple(resp, c => c.PauseSession());
+                    await HandleSimple(resp, c => c.PauseSession(), p => p.PauseSession());
                     break;
                 case "POST /api/session/resume":
-                    await HandleSimple(resp, c => c.ResumeSession());
+                    await HandleSimple(resp, c => c.ResumeSession(), p => p.ResumeSession());
                     break;
                 case "POST /api/session/stop":
                     await HandleSimple(resp, c => c.StopSession(), p => p.RequestStop());
@@ -194,17 +194,6 @@ namespace HitOrMiss.Network
 
         async Task HandleStart(MiniHttpRequest req, MiniHttpResponse resp)
         {
-            // Task 1 (PPS) auto-starts on Unity Start(); the network start
-            // endpoint applies only to Task 2.
-            if (IsPpsMode)
-            {
-                var ackPps = AckResponse.Fail("not_supported_in_pps_mode",
-                    "Task 1 auto-starts in Start(). Use /api/session/stop to wind it down.");
-                resp.StatusCode = 409;
-                resp.SetJson(JsonUtility.ToJson(ackPps));
-                return;
-            }
-
             StartSessionRequest startReq;
             try { startReq = JsonUtility.FromJson<StartSessionRequest>(req.Body); }
             catch (Exception e)
@@ -216,6 +205,14 @@ namespace HitOrMiss.Network
 
             var ack = await RunOnMainThread(() =>
             {
+                if (IsPpsMode)
+                {
+                    if (m_PpsAppController.IsRunning)
+                        return AckResponse.Fail("session_already_running");
+                    m_PpsAppController.StartSession(startReq.metadata);
+                    return AckResponse.Ok();
+                }
+
                 if (m_AppController == null) return AckResponse.Fail("no_app_controller");
                 if (m_AppController.CurrentPhase != TaskPhase.Idle) return AckResponse.Fail("session_already_running");
                 m_AppController.SetSessionMetadata(startReq.metadata);
@@ -235,7 +232,7 @@ namespace HitOrMiss.Network
                 {
                     if (ppsAction == null)
                         return AckResponse.Fail("not_supported_in_pps_mode",
-                            "Task 1 doesn't support this command (pause/resume not implemented).");
+                            "Task 1 doesn't support this command.");
                     ppsAction(m_PpsAppController);
                     return AckResponse.Ok();
                 }
@@ -255,14 +252,17 @@ namespace HitOrMiss.Network
             {
                 if (IsPpsMode)
                 {
+                    string ppsPhase = !m_PpsAppController.IsRunning
+                        ? "Idle"
+                        : (m_PpsAppController.IsPaused ? "PpsPaused" : "PpsRunning");
                     return new ServerStatusEvent
                     {
                         protocolVersion     = Protocol.Version,
-                        phase               = m_PpsAppController.IsRunning ? "PpsRunning" : "Idle",
+                        phase               = ppsPhase,
                         participantId       = m_PpsAppController.ParticipantId,
                         currentBlockIndex   = m_PpsTaskManager != null ? m_PpsTaskManager.CurrentBlockIndex : -1,
                         isRunning           = m_PpsAppController.IsRunning,
-                        isPaused            = false,
+                        isPaused            = m_PpsAppController.IsPaused,
                         trialsCompletedInBlock = m_PpsTaskManager != null ? m_PpsTaskManager.TrialsCompletedInBlock : 0,
                         totalTrialsInBlock     = m_PpsTaskManager != null ? m_PpsTaskManager.TotalTrialsInBlock     : 0,
                     };
@@ -519,6 +519,8 @@ namespace HitOrMiss.Network
             {
                 m_PpsAppController.SessionStarted += OnSessionStarted;
                 m_PpsAppController.SessionEnded   += OnSessionEnded;
+                m_PpsAppController.SessionPaused  += OnSessionPaused;
+                m_PpsAppController.SessionResumed += OnSessionResumed;
             }
         }
 
@@ -548,6 +550,8 @@ namespace HitOrMiss.Network
             {
                 m_PpsAppController.SessionStarted -= OnSessionStarted;
                 m_PpsAppController.SessionEnded   -= OnSessionEnded;
+                m_PpsAppController.SessionPaused  -= OnSessionPaused;
+                m_PpsAppController.SessionResumed -= OnSessionResumed;
             }
         }
 

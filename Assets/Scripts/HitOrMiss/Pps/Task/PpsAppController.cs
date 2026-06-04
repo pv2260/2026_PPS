@@ -15,46 +15,131 @@ namespace HitOrMiss.Pps
         [SerializeField] private PpsTaskManager m_TaskManager;
         [SerializeField] private PpsTaskAsset m_TaskAsset;
 
-        // FLORE TRIGGERS *****************
         [Header("Logging")]
-        [SerializeField] TaskLogger m_TaskLogger;
         [SerializeField] EegMarkerEmitter m_EegMarkerEmitter;
 
-        // ---- Visuals + Clinician ----
         [Header("Visuals")]
         [SerializeField] FixationCrossController m_FixationCross;
         [SerializeField] StandingCross m_StandingCross;
 
         [Header("Clinician")]
         [SerializeField] ClinicianControlPanel m_ClinicianPanel;
-        //*********************************
 
         [Header("Session")]
         [SerializeField] private string m_SubjectIdFallback = "P000";
 
-        //FLORE
-        SessionMetadata m_SessionMetadata;
+        [Header("Start mode")]
+        [Tooltip("If true, the task begins automatically when the scene loads (legacy / dev shortcut). " +
+                 "If false, waits for StartSession() to be called by the clinician panel or the HTTP server. " +
+                 "Set to false for the clinician-driven flow that matches Task 2.")]
+        [SerializeField] bool m_AutoStartOnPlay = false;
 
+        SessionMetadata m_SessionMetadata;
+        bool m_SessionMetadataSet;
+
+        Coroutine m_SessionCoroutine;
         private bool m_Running;
         private bool m_StopRequested;
 
         public bool IsRunning => m_Running;
-        public string ParticipantId => m_SubjectIdFallback;
+
+        public bool IsPaused => m_TaskManager != null && m_TaskManager.IsPaused;
+
+        public string ParticipantId =>
+            m_SessionMetadataSet && !string.IsNullOrEmpty(m_SessionMetadata.participantId)
+                ? m_SessionMetadata.participantId
+                : m_SubjectIdFallback;
 
         public event System.Action SessionStarted;
         public event System.Action SessionEnded;
+        public event System.Action SessionPaused;
+        public event System.Action SessionResumed;
 
+        /// <summary>
+        /// Asks the running task to wind down at the next checkpoint.
+        /// The task coroutine polls StopWasRequested() between steps.
+        /// </summary>
         public void RequestStop()
         {
             m_StopRequested = true;
-
             Debug.Log("[PPSAppController] RequestStop() — task will end at the next checkpoint.");
+        }
+
+        /// <summary>
+        /// Applies session metadata before StartSession (or via StartSession overload).
+        /// Subject id and shoulder width are propagated to the task manager so the
+        /// LED separation and log filename reflect the participant on record.
+        /// </summary>
+        public void SetSessionMetadata(SessionMetadata metadata)
+        {
+            m_SessionMetadata = metadata;
+            m_SessionMetadataSet = true;
+
+            if (m_TaskManager != null && metadata.shoulderWidthCm > 0f)
+                m_TaskManager.SetParticipantShoulderWidthCm(metadata.shoulderWidthCm);
+
+            Debug.Log($"[PPSAppController] Metadata applied. participantId={metadata.participantId}, shoulderWidthCm={metadata.shoulderWidthCm}");
+        }
+
+        public void StartSession(SessionMetadata metadata)
+        {
+            SetSessionMetadata(metadata);
+            StartSession();
+        }
+
+        public void StartSession()
+        {
+            if (m_Running)
+            {
+                Debug.LogWarning("[PPSAppController] StartSession ignored — session already running.");
+                return;
+            }
+            if (m_SessionCoroutine != null)
+            {
+                Debug.LogWarning("[PPSAppController] StartSession ignored — session coroutine already pending.");
+                return;
+            }
+
+            if (!m_SessionMetadataSet)
+            {
+                m_SessionMetadata = SessionMetadata.CreateDefault(m_SubjectIdFallback);
+                m_SessionMetadata.PopulateFromPpsTaskAsset(m_TaskAsset);
+                m_SessionMetadataSet = true;
+                Debug.Log("[PPSAppController] No metadata set; using defaults derived from the task asset.");
+            }
+            else
+            {
+                m_SessionMetadata.PopulateFromPpsTaskAsset(m_TaskAsset);
+            }
+
+            m_StopRequested = false;
+            m_SessionCoroutine = StartCoroutine(RunSessionInternal());
+        }
+
+        public void PauseSession()
+        {
+            if (!m_Running || m_TaskManager == null || m_TaskManager.IsPaused) return;
+
+            m_TaskManager.PauseBlock();
+            m_TaskManager.FlushProgress();
+            m_EegMarkerEmitter?.Emit("pps_session_paused");
+            SessionPaused?.Invoke();
+            Debug.Log("[PPSAppController] Session paused.");
+        }
+
+        public void ResumeSession()
+        {
+            if (m_TaskManager == null || !m_TaskManager.IsPaused) return;
+
+            m_TaskManager.ResumeBlock();
+            m_EegMarkerEmitter?.Emit("pps_session_resumed");
+            SessionResumed?.Invoke();
+            Debug.Log("[PPSAppController] Session resumed.");
         }
 
         private IEnumerator Start()
         {
             Debug.Log("[PPSAppController] Start called.");
-
             yield return null;
 
             if (m_Ui == null)
@@ -62,67 +147,58 @@ namespace HitOrMiss.Pps
                 Debug.LogError("[PPSAppController] UI is not assigned.");
                 yield break;
             }
-
             if (m_TaskManager == null)
             {
                 Debug.LogError("[PPSAppController] TaskManager is not assigned.");
                 yield break;
             }
-
-        
-
-            // FLORE TRIGGERS *****************
-            if (m_EegMarkerEmitter == null)
-            {
-                m_EegMarkerEmitter = FindAnyObjectByType<EegMarkerEmitter>();
-                if (m_EegMarkerEmitter == null)
-                {
-                    Debug.LogWarning("[PPSAppController] No EegMarkerEmitter found in the scene. EEG markers will be disabled.");
-                }
-                else
-                {
-                    Debug.Log("[PPSAppController] Found EegMarkerEmitter automatically.");
-                }
-            }
-            if (m_EegMarkerEmitter != null)
-            {
-                string sessionId = System.DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                m_EegMarkerEmitter.BeginSession(sessionId);
-                m_TaskManager.SetMarkerEmitter(m_EegMarkerEmitter);
-            }
-            if (m_TaskLogger == null)
-            {
-                m_TaskLogger = FindAnyObjectByType<TaskLogger>();
-
-                if (m_TaskLogger == null)
-                {
-                    Debug.LogWarning("[PPSAppController] No TaskLogger found in the scene. TaskLogger logging will be disabled.");
-                }
-                else
-                {
-                    Debug.Log("[PPSAppController] Found TaskLogger automatically.");
-                }
-            }
-            if (m_TaskLogger != null)
-            {
-                m_TaskLogger.ParticipantId = ParticipantId;
-                m_TaskLogger.SetMetadata(m_SessionMetadata);
-                m_TaskLogger.BeginSession(m_TaskAsset != null ? m_TaskAsset.TaskName : "PPSTask");
-            }
-
-            if (m_ClinicianPanel != null)
-                m_ClinicianPanel.EnterTaskMode();
-            //*********************************
-
             if (m_TaskAsset == null)
             {
                 Debug.LogError("[PPSAppController] TaskAsset is not assigned.");
                 yield break;
             }
 
-            if (m_Running)
-                yield break;
+            AutoWireOptionalReferences();
 
+            if (m_AutoStartOnPlay)
+            {
+                Debug.Log("[PPSAppController] AutoStartOnPlay=true — starting session immediately.");
+                StartSession();
+            }
+            else
+            {
+                Debug.Log("[PPSAppController] AutoStartOnPlay=false — waiting for clinician StartSession() (panel or network).");
+            }
+        }
+
+        void AutoWireOptionalReferences()
+        {
+            if (m_EegMarkerEmitter == null)
+            {
+                m_EegMarkerEmitter = FindAnyObjectByType<EegMarkerEmitter>();
+                if (m_EegMarkerEmitter == null)
+                    Debug.LogWarning("[PPSAppController] No EegMarkerEmitter in scene. EEG markers disabled.");
+                else
+                    Debug.Log("[PPSAppController] EegMarkerEmitter auto-wired.");
+            }
+        }
+
+        private IEnumerator RunSessionInternal()
+        {
+            // EEG marker session
+            if (m_EegMarkerEmitter != null)
+            {
+                string sessionId = !string.IsNullOrEmpty(m_SessionMetadata.sessionId)
+                    ? m_SessionMetadata.sessionId
+                    : System.DateTime.Now.ToString("yyyyMMdd_HHmmss");
+                m_EegMarkerEmitter.BeginSession(sessionId);
+                m_TaskManager.SetMarkerEmitter(m_EegMarkerEmitter);
+            }
+
+            if (m_ClinicianPanel != null)
+                m_ClinicianPanel.EnterTaskMode();
+
+            // Resolve controller input
             if (m_ControllerInputBehaviour != null)
             {
                 m_ControllerInput = m_ControllerInputBehaviour as IResponseInputSource;
@@ -139,7 +215,6 @@ namespace HitOrMiss.Pps
             {
                 m_TaskManager.SetInputSource(m_KeyboardInput);
             }
-
             m_KeyboardInput?.Enable();
 
             m_Running = true;
@@ -148,6 +223,7 @@ namespace HitOrMiss.Pps
             yield return RunTask1();
 
             m_Running = false;
+            m_SessionCoroutine = null;
             SessionEnded?.Invoke();
         }
 
@@ -196,12 +272,10 @@ namespace HitOrMiss.Pps
             yield return m_Ui.ShowReadyToStartAndWait();
             if (StopWasRequested()) { yield return StopExperiment(); yield break; }
 
-            m_TaskManager.BeginLogging(m_SubjectIdFallback);
+            m_TaskManager.BeginLogging(ParticipantId, m_SessionMetadata);
 
             for (int blockIndex = 0; blockIndex < m_TaskAsset.BlockCount; blockIndex++)
             {
-                // Update currentBlock so {currentBlock} resolves correctly
-                // in the block counter and break panels for this iteration.
                 m_Ui.SetTokens(
                     blocksCount:  m_TaskAsset.BlockCount,
                     currentBlock: blockIndex + 1,
@@ -225,12 +299,7 @@ namespace HitOrMiss.Pps
 
             m_TaskManager.EndLogging();
 
-            // FLORE
             if (m_ClinicianPanel != null) m_ClinicianPanel.ExitTaskMode();
-            if (m_TaskLogger != null)
-            {
-                m_TaskLogger.EndSession();
-            }
 
             m_ControllerInput?.Disable();
             m_KeyboardInput?.Disable();
@@ -252,6 +321,8 @@ namespace HitOrMiss.Pps
 
             if (m_TaskManager != null)
                 m_TaskManager.EndLogging();
+
+            if (m_ClinicianPanel != null) m_ClinicianPanel.ExitTaskMode();
 
             m_ControllerInput?.Disable();
             m_KeyboardInput?.Disable();

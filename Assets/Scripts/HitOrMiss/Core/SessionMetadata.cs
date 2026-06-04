@@ -128,6 +128,26 @@ namespace HitOrMiss
         }
 
         /// <summary>
+        /// Copy Task 1 (PPS) config fields off the supplied asset, so
+        /// setup.json reflects the actual block count, ITI, speeds, and
+        /// LED separation that ran during the session.
+        /// </summary>
+        public void PopulateFromPpsTaskAsset(HitOrMiss.Pps.PpsTaskAsset asset)
+        {
+            if (asset == null) return;
+            task1NumberOfBlocks = asset.BlockCount;
+            task1TrialsPerBlock = asset.TrialsPerBlock;
+            task1BreakDurationSeconds = asset.RestDurationSeconds;
+            // Narrow = shoulder width itself (0 cm offset from shoulder).
+            // Wide   = shoulder width + WideOffsetMeters (cm).
+            task1NarrowOffsetCm = 0f;
+            task1WideOffsetCm = asset.WideOffsetMeters * 100f;
+            task1LoomingSpeeds = new[] { "slow", "fast" };
+            task1PracticeVtOnlyTrials = 2;
+            task1PracticeVtVisualTrials = 4;
+        }
+
+        /// <summary>
         /// CSV's <c>session_type</c> code: med_high / med_low / healthy_s1 / healthy_s2.
         /// </summary>
         public string SessionTypeCode => sessionType switch

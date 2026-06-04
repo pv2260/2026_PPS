@@ -92,13 +92,62 @@ namespace HitOrMiss.Pps
         // Random number generator used for inter-trial intervals.
         private System.Random m_ItiRng;
 
-        // CSV logging state.
+        // CSV logging state. Layout mirrors Task 2's TaskLogger:
+        // one folder per session with metadata.json, setup.json,
+        // sub-{id}_session-{n}_task1_trials.csv, plus progress.json on pause
+        // and sub-{id}_session-{n}_task1_session.json on EndLogging.
         private StreamWriter m_CsvWriter;
         private string m_CsvPath;
+        private string m_SessionDir;
+        private string m_SetupJsonPath;
+        private string m_MetadataJsonPath;
+        private string m_FinalJsonPath;
+        private string m_LoggingSubjectId;
+        private SessionMetadata m_LoggingMetadata;
+        private int m_TrialsLoggedThisSession;
+        public string SessionDirectory => m_SessionDir;
 
         // External systems can subscribe to these events to react to trial start/end.
         public event Action<PpsTrialDefinition> TrialStarted;
         public event Action<PpsTrialResult> TrialCompleted;
+
+        // ---- Pause/Resume ----
+        // Pause is taken at trial boundaries and during the ITI sleep. The
+        // active trial finishes first so we never freeze in the middle of a
+        // looming animation; participants wait at most one trial after the
+        // clinician hits pause.
+        bool m_Paused;
+
+        /// <summary>True if the session was paused via PauseBlock and has
+        /// not yet been resumed.</summary>
+        public bool IsPaused => m_Paused;
+
+        public event Action BlockPaused;
+        public event Action BlockResumed;
+
+        /// <summary>Pauses the trial loop. Input is disabled immediately; the
+        /// trial in flight finishes before the loop yields.</summary>
+        public void PauseBlock()
+        {
+            if (m_Paused) return;
+            m_Paused = true;
+            m_InputSource?.Disable();
+            m_MarkerEmitter?.Emit("pps_block_paused");
+            BlockPaused?.Invoke();
+            Debug.Log("[PpsTaskManager] Paused.");
+        }
+
+        /// <summary>Resumes from a paused trial loop. Input is re-enabled and
+        /// the next trial begins after the remaining ITI elapses.</summary>
+        public void ResumeBlock()
+        {
+            if (!m_Paused) return;
+            m_Paused = false;
+            m_InputSource?.Enable();
+            m_MarkerEmitter?.Emit("pps_block_resumed");
+            BlockResumed?.Invoke();
+            Debug.Log("[PpsTaskManager] Resumed.");
+        }
 
         // ---- Block tracking (consumed by HitMissNetworkServer status feed) ----
         // PpsTaskManager doesn't own block scheduling — PPSAppController does —
@@ -213,7 +262,21 @@ namespace HitOrMiss.Pps
         /// <summary>
         /// Starts CSV logging and enables participant input.
         /// </summary>
+        /// <summary>
+        /// Back-compat overload. Builds default metadata for the subject id
+        /// and delegates to the metadata-aware BeginLogging.
+        /// </summary>
         public void BeginLogging(string subjectId)
+            => BeginLogging(subjectId, SessionMetadata.CreateDefault(subjectId));
+
+        /// <summary>
+        /// Opens a per-session folder under Application.persistentDataPath/Logs,
+        /// writes metadata.json + setup.json, and starts streaming trial rows to
+        /// sub-{id}_session-{n}_task1_trials.csv. Layout matches what Task 2's
+        /// TaskLogger produces so the browser SPA's session list and the analysis
+        /// pipeline can treat both tasks the same way.
+        /// </summary>
+        public void BeginLogging(string subjectId, SessionMetadata metadata)
         {
             if (m_TaskAsset == null)
             {
@@ -221,41 +284,125 @@ namespace HitOrMiss.Pps
                 return;
             }
 
-            // Use a fallback subject ID if none was provided.
             if (string.IsNullOrWhiteSpace(subjectId))
                 subjectId = "P000";
 
-            // Create a persistent Logs folder.
-            var dir = Path.Combine(Application.persistentDataPath, "Logs");
-            Directory.CreateDirectory(dir);
+            // Stamp authoritative ids onto the metadata snapshot so the
+            // setup.json and trial rows agree with the folder name.
+            if (string.IsNullOrEmpty(metadata.participantId))
+                metadata.participantId = subjectId;
+            if (string.IsNullOrEmpty(metadata.sessionId))
+                metadata.sessionId = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            if (string.IsNullOrEmpty(metadata.sessionDate))
+                metadata.sessionDate = DateTime.Now.ToString("yyyy-MM-dd");
 
-            // Create a unique CSV file for this session.
-            var sessionId = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-            m_CsvPath = Path.Combine(dir, $"{subjectId}_{sessionId}_{m_TaskAsset.TaskName}.csv");
+            // Capture Task 1 asset parameters in the snapshot so analysts can
+            // tell exactly which protocol ran.
+            metadata.PopulateFromPpsTaskAsset(m_TaskAsset);
+
+            m_LoggingSubjectId = subjectId;
+            m_LoggingMetadata = metadata;
+            m_TrialsLoggedThisSession = 0;
+
+            var root = Path.Combine(Application.persistentDataPath, "Logs");
+            m_SessionDir = Path.Combine(root, $"{subjectId}_{metadata.sessionId}");
+            Directory.CreateDirectory(m_SessionDir);
+
+            string idSlug = subjectId.Replace(" ", "_");
+            int sn = metadata.sessionNumber > 0 ? metadata.sessionNumber : 1;
+            m_CsvPath          = Path.Combine(m_SessionDir, $"sub-{idSlug}_session-{sn}_task1_trials.csv");
+            m_SetupJsonPath    = Path.Combine(m_SessionDir, $"sub-{idSlug}_session-{sn}_setup.json");
+            m_FinalJsonPath    = Path.Combine(m_SessionDir, $"sub-{idSlug}_session-{sn}_task1_session.json");
+            m_MetadataJsonPath = Path.Combine(m_SessionDir, "metadata.json");
+
+            File.WriteAllText(m_SetupJsonPath, metadata.ToSetupJson(), Encoding.UTF8);
+            File.WriteAllText(m_MetadataJsonPath, JsonUtility.ToJson(metadata, true), Encoding.UTF8);
 
             m_CsvWriter = new StreamWriter(m_CsvPath, false, Encoding.UTF8);
             m_CsvWriter.WriteLine(PpsTrialResult.CsvHeader);
             m_CsvWriter.Flush();
 
-            // Emit session-start marker and enable input capture.
-            // FLORE TRIGGERS MODIFS
-            //m_MarkerEmitter?.Emit("pps_session_start", extra: subjectId);
             m_MarkerEmitter?.Emit("pps_session_start");
             m_InputSource?.Enable();
 
-            Debug.Log($"[PpsTaskManager] CSV: {m_CsvPath}");
+            Debug.Log($"[PpsTaskManager] Session folder: {m_SessionDir}");
+            Debug.Log($"[PpsTaskManager] Trials CSV:     {m_CsvPath}");
         }
 
         /// <summary>
-        /// Ends logging, disables input, and closes the CSV file.
+        /// Writes a progress snapshot to <c>progress.json</c> in the active
+        /// session folder. Called by PPSAppController.PauseSession so an
+        /// interrupted session can be inspected or resumed later.
+        /// </summary>
+        public void FlushProgress()
+        {
+            if (string.IsNullOrEmpty(m_SessionDir)) return;
+
+            m_CsvWriter?.Flush();
+
+            string progressPath = Path.Combine(m_SessionDir, "progress.json");
+            string json = JsonUtility.ToJson(new PpsProgressSnapshot
+            {
+                participantId      = m_LoggingSubjectId,
+                sessionId          = m_LoggingMetadata.sessionId,
+                timestamp          = DateTime.Now.ToString("o"),
+                currentBlockIndex  = m_CurrentBlockIndex,
+                nextTrialIndex     = m_TrialsCompletedInBlock,
+                trialsLogged       = m_TrialsLoggedThisSession,
+            }, true);
+            File.WriteAllText(progressPath, json, Encoding.UTF8);
+
+            Debug.Log($"[PpsTaskManager] Progress snapshot: {progressPath}");
+        }
+
+        /// <summary>
+        /// Closes the trials CSV and writes the consolidated session.json.
         /// </summary>
         public void EndLogging()
         {
             m_MarkerEmitter?.Emit("pps_session_end");
             m_InputSource?.Disable();
 
-            m_CsvWriter?.Dispose();
-            m_CsvWriter = null;
+            if (m_CsvWriter != null)
+            {
+                m_CsvWriter.Dispose();
+                m_CsvWriter = null;
+            }
+
+            if (!string.IsNullOrEmpty(m_FinalJsonPath))
+            {
+                string json = JsonUtility.ToJson(new PpsSessionLog
+                {
+                    metadata    = m_LoggingMetadata,
+                    timestamp   = DateTime.Now.ToString("o"),
+                    totalTrials = m_TrialsLoggedThisSession,
+                    trialsCsv   = Path.GetFileName(m_CsvPath ?? ""),
+                }, true);
+                File.WriteAllText(m_FinalJsonPath, json, Encoding.UTF8);
+            }
+
+            m_SessionDir = null;
+            m_FinalJsonPath = null;
+        }
+
+        [Serializable]
+        struct PpsProgressSnapshot
+        {
+            public string participantId;
+            public string sessionId;
+            public string timestamp;
+            public int currentBlockIndex;
+            public int nextTrialIndex;
+            public int trialsLogged;
+        }
+
+        [Serializable]
+        struct PpsSessionLog
+        {
+            public SessionMetadata metadata;
+            public string timestamp;
+            public int totalTrials;
+            public string trialsCsv;
         }
 
         // FLORE TRIGGER
@@ -307,13 +454,28 @@ namespace HitOrMiss.Pps
 
             foreach (var trial in trials)
             {
+                // Pause checkpoint between trials. PauseBlock disabled input
+                // already; here we just hold the loop until ResumeBlock flips
+                // m_Paused back off.
+                while (m_Paused) yield return null;
+
                 yield return RunOneTrial(trial);
                 m_TrialsCompletedInBlock++;
 
                 // Wait a randomized inter-trial interval before the next trial.
+                // Frame-by-frame loop instead of WaitForSeconds so a pause hit
+                // during the ITI freezes the ITI clock and survives a resume.
                 float iti = NextItiSeconds();
-                if (iti > 0f)
-                    yield return new WaitForSeconds(iti);
+                float elapsedIti = 0f;
+                while (elapsedIti < iti)
+                {
+                    if (m_Paused)
+                    {
+                        while (m_Paused) yield return null;
+                    }
+                    elapsedIti += Time.deltaTime;
+                    yield return null;
+                }
             }
         }
 
@@ -680,16 +842,22 @@ namespace HitOrMiss.Pps
 
 
 
-                /// <summary>
-        /// Writes one trial result to the CSV file.
+        /// <summary>
+        /// Writes one trial result to the CSV file. Practice trials
+        /// (isPractice == true or blockIndex &lt; 0) are skipped so the
+        /// main-task CSV matches the analysis pipeline's expectations.
         /// </summary>
         private void WriteCsvRow(PpsTrialResult result)
         {
             if (m_CsvWriter == null)
                 return;
 
+            if (result.definition.isPractice || result.definition.blockIndex < 0)
+                return;
+
             m_CsvWriter.WriteLine(result.ToCsvRow());
             m_CsvWriter.Flush();
+            m_TrialsLoggedThisSession++;
         }
 
         /// <summary>

@@ -45,31 +45,34 @@ namespace HitOrMiss.Pps
         [Tooltip("Normalized loom progress t ∈ [0,1] → curved progress. Stage thresholds are 0.25/0.5/0.75 on the curved axis.")]
         [SerializeField] AnimationCurve m_MotionCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
 
-        [Header("Spatial layout (meters)")]
-        
-        [Tooltip("Distance from body anchor to the fixation crosshair (meters). " +
+        [Header("Spatial layout (all values in METERS, measured from the body anchor)")]
+
+        [Tooltip("Distance forward from the body anchor to the fixation crosshair (meters). " +
                 "Typically at or beyond D4 so it remains visible behind the loom.")]
         [SerializeField] float m_CrosshairDistance = 1.2f;
 
-        [Tooltip("Height of the crosshair (meters). Typically eye level for standing participants.")]
+        [Tooltip("Vertical offset of the crosshair above the body anchor (meters). Typically eye level (~1.4 m for a standing adult).")]
         [SerializeField] float m_CrosshairHeight = 1.4f;
 
-        [Tooltip("Fallback shoulder width in meters, used if no participant-specific value is provided.")]
+        [Tooltip("Fallback shoulder width in meters. Used as the narrow LED separation when no participant-specific value is provided. Default 0.40 m.")]
         [SerializeField] float m_DefaultShoulderWidthMeters = 0.40f;
 
-        [Tooltip("How much wider than shoulder width the wide condition should be, in meters.")]
+        [Tooltip("Extra meters added to the narrow separation for the WIDE condition. wide = narrow + this. Typical 0.20-0.30 m.")]
         [SerializeField] float m_WideOffsetMeters = 0.30f;
 
-        [Tooltip("World Y position of the side LEDs in meters. Default 0 = floor level.")]
+        [Tooltip("Vertical offset of the side LEDs relative to the body anchor (meters). 0 = same height as the body anchor. Negative = below.")]
         [SerializeField] float m_LedHeight = 0f;
 
-        [Tooltip("Distance from body to D4 (far stage / spawn)")]
+        [Tooltip("FORWARD distance from body to D4 (far stage / loom spawn) in meters. Must be the largest of the four. Typical 1.5-2.5 m.")]
         [SerializeField] float m_DistanceD4 = 2.0f;
 
+        [Tooltip("Forward distance to D3 in meters. Must be < D4 and > D2.")]
         [SerializeField] float m_DistanceD3 = 1.5f;
+
+        [Tooltip("Forward distance to D2 in meters. Must be < D3 and > D1.")]
         [SerializeField] float m_DistanceD2 = 1.0f;
 
-        [Tooltip("Distance from body to D1 (near stage / vanish)")]
+        [Tooltip("FORWARD distance from body to D1 (near stage / loom vanish) in meters. Must be the smallest of the four. Typical 0.4-0.8 m.")]
         [SerializeField] float m_DistanceD1 = 0.6f;
 
         [Header("Scale growth (looming cue)")]
@@ -189,7 +192,7 @@ namespace HitOrMiss.Pps
             // Floor the narrow condition at the configured default shoulder
             // width so a smaller-than-default participant doesn't end up with
             // an unintentionally tight LED spacing.
-            float narrow = Mathf.Max(shoulder, m_DefaultShoulderWidthMeters) + 1.50f;
+            float narrow = Mathf.Max(shoulder, m_DefaultShoulderWidthMeters);
 
             return width == PpsWidth.Wide
                 ? narrow + m_WideOffsetMeters
@@ -257,6 +260,18 @@ namespace HitOrMiss.Pps
             if (m_DistanceD2 <= 0f) m_DistanceD2 = 0.01f;
             if (m_DistanceD3 <= 0f) m_DistanceD3 = 0.01f;
             if (m_DistanceD4 <= 0f) m_DistanceD4 = 0.01f;
+
+            // The loom moves D4 -> D1, so they must be strictly ordered
+            // (D4 farthest, D1 nearest). If not, surface a clear warning so
+            // the wiring mistake is obvious in the Inspector.
+            if (!(m_DistanceD4 > m_DistanceD3 && m_DistanceD3 > m_DistanceD2 && m_DistanceD2 > m_DistanceD1))
+            {
+                Debug.LogWarning(
+                    $"[PpsTaskAsset] '{name}' has distances out of order. " +
+                    $"Expected D4 > D3 > D2 > D1 (meters from body). " +
+                    $"Got D4={m_DistanceD4}, D3={m_DistanceD3}, D2={m_DistanceD2}, D1={m_DistanceD1}."
+                );
+            }
 
             if (m_DefaultShoulderWidthMeters <= 0f)
                 m_DefaultShoulderWidthMeters = 0.40f;
