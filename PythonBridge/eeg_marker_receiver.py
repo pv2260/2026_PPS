@@ -3,7 +3,7 @@ import serial
 import time
 
 # ── Configuration ──────────────────────────────────────────────────────────────
-ARDUINO_PORT = "COM7"
+ARDUINO_PORT = "COM8"
 BAUDRATE = 9600
 
 TCP_HOST = "127.0.0.1"

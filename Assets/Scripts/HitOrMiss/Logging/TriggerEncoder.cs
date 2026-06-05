@@ -53,6 +53,9 @@ namespace HitOrMiss
             D2   = 2,
             D3   = 3,
             D4   = 4,
+            D5   = 5,
+            D6   = 6,
+            D7   = 7,
         }
 
         public enum Task1Speed

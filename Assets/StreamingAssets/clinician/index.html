@@ -117,8 +117,17 @@
             <label>Number of blocks
               <input name="task1NumberOfBlocks" type="number" min="1" value="4" />
             </label>
-            <label>Trials per block
-              <input name="task1TrialsPerBlock" type="number" min="1" value="40" />
+            <label>VT trials per block
+              <input name="task1VtTrialsPerBlock" type="number" min="0" value="28" />
+            </label>
+            <label>Visual-only trials per block
+              <input name="task1VisualOnlyTrialsPerBlock" type="number" min="0" value="6" />
+            </label>
+            <label>Tactile-only trials per block
+              <input name="task1TactileOnlyTrialsPerBlock" type="number" min="0" value="6" />
+            </label>
+            <label>Trials per block = VT + V + T
+              <input name="task1TrialsPerBlock" type="number" min="1" value="40" readonly />
             </label>
             <label>Break duration (s)
               <input name="task1BreakDurationSeconds" type="number" min="0" value="30" />

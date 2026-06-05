@@ -35,6 +35,35 @@
   const today = new Date().toISOString().slice(0, 10);
   $('input[name=sessionDate]').value = today;
 
+  // ---- Task 1 trial-count total ----
+  // Trials per block is computed from the three explicit PPS trial counts:
+  // VT + visual-only + tactile-only. The total field is read-only in the form.
+  bindTask1TrialCountTotal();
+
+  function bindTask1TrialCountTotal() {
+    const form = $('#sessionForm');
+    if (!form) return;
+
+    const vt = form.querySelector('[name="task1VtTrialsPerBlock"]');
+    const v  = form.querySelector('[name="task1VisualOnlyTrialsPerBlock"]');
+    const t  = form.querySelector('[name="task1TactileOnlyTrialsPerBlock"]');
+    const total = form.querySelector('[name="task1TrialsPerBlock"]');
+
+    if (!vt || !v || !t || !total) return;
+
+    const toInt = (el) => {
+      const value = parseInt(el.value, 10);
+      return isNaN(value) ? 0 : Math.max(0, value);
+    };
+
+    const update = () => {
+      total.value = toInt(vt) + toInt(v) + toInt(t);
+    };
+
+    [vt, v, t].forEach(el => el.addEventListener('input', update));
+    update();
+  }
+
   // ---- Start session ----
   $('#sessionForm').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -80,7 +109,13 @@
 
       // Task 1 parameters
       task1NumberOfBlocks:        int('task1NumberOfBlocks', 4),
-      task1TrialsPerBlock:        int('task1TrialsPerBlock', 40),
+      task1VtTrialsPerBlock:         int('task1VtTrialsPerBlock', 28),
+      task1VisualOnlyTrialsPerBlock: int('task1VisualOnlyTrialsPerBlock', 6),
+      task1TactileOnlyTrialsPerBlock:int('task1TactileOnlyTrialsPerBlock', 6),
+      task1TrialsPerBlock:
+        int('task1VtTrialsPerBlock', 28) +
+        int('task1VisualOnlyTrialsPerBlock', 6) +
+        int('task1TactileOnlyTrialsPerBlock', 6),
       task1BreakDurationSeconds:  num('task1BreakDurationSeconds', 30),
       task1NarrowOffsetCm:        num('task1NarrowOffsetCm', 5),
       task1WideOffsetCm:          num('task1WideOffsetCm', 15),

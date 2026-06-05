@@ -13,11 +13,11 @@ MonoBehaviour:
   m_Name: PpsTask
   m_EditorClassIdentifier: Assembly-CSharp::HitOrMiss.Pps.PpsTaskAsset
   m_TaskName: PPS Looming Task
-  m_BlockCount: 3
-  m_TrialsPerBlock: 80
-  m_PercentVT: 0.7
-  m_PercentV: 0.15
-  m_PercentT: 0.15
+  m_BlockCount: 2
+  m_TrialsPerBlock: 18
+  m_VtTrialsPerBlock: 10
+  m_VisualOnlyTrialsPerBlock: 4
+  m_TactileOnlyTrialsPerBlock: 4
   m_FastDurationSeconds: 1.5
   m_SlowDurationSeconds: 2.5
   m_ResponseGracePeriodSeconds: 1
@@ -49,14 +49,17 @@ MonoBehaviour:
     m_RotationOrder: 4
   m_CrosshairDistance: 11
   m_CrosshairHeight: 1.4
-  m_DefaultShoulderWidthMeters: 0.42
+  m_DefaultShoulderWidthMeters: 0.5
   m_WideOffsetMeters: 0.6
-  m_LedHeight: -15
-  m_DistanceD4: 5
+  m_LedHeight: 0
+  m_DistanceD7: 12
+  m_DistanceD6: 10
+  m_DistanceD5: 8
+  m_DistanceD4: 6
   m_DistanceD3: 4
-  m_DistanceD2: 3
+  m_DistanceD2: 2
   m_DistanceD1: 1
-  m_ScaleAtD4: {x: 15, y: 15, z: 15}
+  m_ScaleAtD7: {x: 10, y: 10, z: 10}
   m_ScaleAtD1: {x: 30, y: 30, z: 30}
   m_VibrationDurationMs: 300
   m_VibrationIntensity: 1

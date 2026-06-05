@@ -15048,7 +15048,7 @@ MonoBehaviour:
   m_ParticipantShoulderWidthMeters: 0.42
   m_ResponseAudioSource: {fileID: 867388213}
   m_ResponseRegisteredClip: {fileID: 8300000, guid: b319a2e4ff8f5d840b82d8635b645d22, type: 3}
-  m_ResponseRegisteredVolume: 0.447
+  m_ResponseRegisteredVolume: 0.35
   m_Ui: {fileID: 1643808109}
   m_Feedback: {fileID: 987324706}
   m_VibrotactileOutputBehaviour: {fileID: 440917402}
@@ -15235,8 +15235,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 35
-  m_fontSizeBase: 35
+  m_fontSize: 40
+  m_fontSizeBase: 40
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 24
@@ -17004,13 +17004,13 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: -1183493901
+  m_TextStyleHashCode: 0
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 35
-  m_fontSizeBase: 35
+  m_fontSize: 36
+  m_fontSizeBase: 36
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 18
@@ -17749,9 +17749,6 @@ MonoBehaviour:
   m_NoResponseFadeInSeconds: 0.6
   m_NoResponseFadeOutSeconds: 0.6
   m_NoResponseTargetAlpha: 0.55
-  m_NoResponseBackgroundAlpha: 0.549
-  m_NoResponseBackgroundColor: {r: 0, g: 0, b: 0, a: 1}
-  m_NoResponseTextColor: {r: 1, g: 1, b: 1, a: 1}
 --- !u!1 &994149399
 GameObject:
   m_ObjectHideFlags: 0
@@ -19284,9 +19281,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HitOrMiss.Pps.DistanceLayout
   m_Asset: {fileID: 11400000, guid: b6a0232453b4a5f4182f868a7d2920f0, type: 2}
-  m_D7: {fileID: 0}
-  m_D6: {fileID: 0}
-  m_D5: {fileID: 0}
   m_D4: {fileID: 0}
   m_D3: {fileID: 0}
   m_D2: {fileID: 0}
@@ -22514,8 +22508,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 40
-  m_fontSizeBase: 40
+  m_fontSize: 30
+  m_fontSizeBase: 30
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 24
@@ -24149,8 +24143,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 35
-  m_fontSizeBase: 35
+  m_fontSize: 30
+  m_fontSizeBase: 30
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 24
@@ -38770,7 +38764,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ce428f9ac6eb4f94a9324fda1c54d752, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HitOrMiss.Network.HitMissNetworkServer
-  m_Port: 7778
+  m_Port: 7777
   m_BindToAllInterfaces: 1
   m_AppController: {fileID: 0}
   m_TaskManager: {fileID: 0}
@@ -38797,7 +38791,7 @@ MonoBehaviour:
   m_FixationCross: {fileID: 0}
   m_StandingCross: {fileID: 0}
   m_ClinicianPanel: {fileID: 0}
-  m_SubjectIdFallback: PAMi
+  m_SubjectIdFallback: P000
   m_AutoStartOnPlay: 1
 --- !u!1 &9041478014344155232
 GameObject:

@@ -21,7 +21,10 @@ namespace HitOrMiss.Pps
 
     public enum DistanceStage
     {
-        None,
+        None = -1,
+        D7,
+        D6,
+        D5,
         D4,
         D3,
         D2,

@@ -17,6 +17,9 @@ namespace HitOrMiss.Pps
         public double loomOnsetTime;
 
         /// <summary>Time.timeAsDouble at each position crossing. NaN for T trials (no crossings exist).</summary>
+        public double crossingD7Time;
+        public double crossingD6Time;
+        public double crossingD5Time;
         public double crossingD4Time;
         public double crossingD3Time;
         public double crossingD2Time;
@@ -39,6 +42,9 @@ namespace HitOrMiss.Pps
         {
             definition = def,
             loomOnsetTime = double.NaN,
+            crossingD7Time = double.NaN,
+            crossingD6Time = double.NaN,
+            crossingD5Time = double.NaN,
             crossingD4Time = double.NaN,
             crossingD3Time = double.NaN,
             crossingD2Time = double.NaN,
@@ -74,6 +80,9 @@ namespace HitOrMiss.Pps
                 definition.speed.ToString().ToLowerInvariant(),
                 definition.width.ToString().ToLowerInvariant(),
                 MsOrBlank(loomOnsetTime),
+                MsOrBlank(crossingD7Time),
+                MsOrBlank(crossingD6Time),
+                MsOrBlank(crossingD5Time),
                 MsOrBlank(crossingD4Time),
                 MsOrBlank(crossingD3Time),
                 MsOrBlank(crossingD2Time),
@@ -85,7 +94,7 @@ namespace HitOrMiss.Pps
 
         public const string CsvHeader =
             "trial,block,sensory_condition,position,speed,width," +
-            "stimulus_onset_ms,position_D4_ms,position_D3_ms,position_D2_ms,position_D1_ms," +
+            "stimulus_onset_ms,position_D7_ms, position_D6_ms, position_D5_ms, position_D4_ms,position_D3_ms,position_D2_ms,position_D1_ms," +
             "vibrotactile_onset_ms,response_time_ms,response_made";
     }
 }

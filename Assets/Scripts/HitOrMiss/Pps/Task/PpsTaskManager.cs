@@ -304,8 +304,13 @@ namespace HitOrMiss.Pps
             m_LoggingMetadata = metadata;
             m_TrialsLoggedThisSession = 0;
 
-            var root = Path.Combine(Application.persistentDataPath, "Logs");
-            m_SessionDir = Path.Combine(root, $"{subjectId}_{metadata.sessionId}");
+            // var root = Path.Combine(Application.persistentDataPath, "Logs");
+            // m_SessionDir = Path.Combine(root, $"{subjectId}_{metadata.sessionId}");
+            string m_SessionDir = Path.Combine(
+                Directory.GetCurrentDirectory(),
+                "Logger",
+                $"{subjectId}_{metadata.sessionId}"
+            );
             Directory.CreateDirectory(m_SessionDir);
 
             string idSlug = subjectId.Replace(" ", "_");
@@ -537,14 +542,18 @@ namespace HitOrMiss.Pps
 
             // Stores the time at which the looming stimulus reaches each distance stage.
             // Index corresponds to DistanceStage enum values.
-            double[] crossings =
-            {
-                double.NaN,
-                double.NaN,
-                double.NaN,
-                double.NaN,
-                double.NaN
-            };
+            // Stores the time at which the looming stimulus reaches each distance stage.
+            // Index corresponds to DistanceStage enum values.
+            // This is now robust for D7..D1.
+            int stageCount = Enum.GetValues(typeof(DistanceStage)).Length;
+            double[] crossings = new double[stageCount];
+
+            for (int i = 0; i < crossings.Length; i++)
+                crossings[i] = double.NaN;
+
+
+
+
 
             if (trial.modality == PpsModality.TactileOnly)
             {
@@ -614,6 +623,9 @@ namespace HitOrMiss.Pps
             }
 
             // Store stage-crossing times in the result.
+            result.crossingD7Time = crossings[(int)DistanceStage.D7];
+            result.crossingD6Time = crossings[(int)DistanceStage.D6];
+            result.crossingD5Time = crossings[(int)DistanceStage.D5];
             result.crossingD4Time = crossings[(int)DistanceStage.D4];
             result.crossingD3Time = crossings[(int)DistanceStage.D3];
             result.crossingD2Time = crossings[(int)DistanceStage.D2];
@@ -903,7 +915,7 @@ namespace HitOrMiss.Pps
             DistanceStage stage
         )
         {
-            // Visual-only trials should not have a tactile position.
+            // Visual-only trials should not have a tactile / vibration distance marker.
             if (modality == PpsModality.VisualOnly)
                 return TriggerEncoder.TactilePosition.None;
 
@@ -920,6 +932,15 @@ namespace HitOrMiss.Pps
 
                 case DistanceStage.D4:
                     return TriggerEncoder.TactilePosition.D4;
+
+                case DistanceStage.D5:
+                    return TriggerEncoder.TactilePosition.D5;
+
+                case DistanceStage.D6:
+                    return TriggerEncoder.TactilePosition.D6;
+
+                case DistanceStage.D7:
+                    return TriggerEncoder.TactilePosition.D7;
 
                 default:
                     return TriggerEncoder.TactilePosition.None;

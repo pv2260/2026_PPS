@@ -151,6 +151,7 @@ public class EegMarkerEmitter : MonoBehaviour
                 case "pps_session_start": return 140;
                 case "pps_session_end": return 141;
                 case "pps_vib_fired": return 64;
+                case "pps_vib_fired_trigger": return 62;
                 case "pps_response": return 61;
 
                 // Task 2
@@ -175,7 +176,7 @@ public class EegMarkerEmitter : MonoBehaviour
                 case "block_end":         return 30;
 
                 // controller response
-                case "controller_left":   return 64; //40
+                case "controller_left":   return 40;
                 case "controller_right":  return 41;
                 case "trial_no_response": return 42;
                 case "trial_too_slow": return 43;

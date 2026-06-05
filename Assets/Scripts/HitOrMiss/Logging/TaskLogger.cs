@@ -74,8 +74,13 @@ namespace HitOrMiss
             // Per-session folder. Keeps trials.csv, eyetracking.csv, and
             // metadata.json siblings so the analyst can drop the whole
             // directory into their pipeline.
-            string root = Path.Combine(Application.persistentDataPath, "Logs");
-            m_SessionDir = Path.Combine(root, $"{m_ParticipantId}_{m_SessionId}");
+            //string root = Path.Combine(Application.persistentDataPath, "Logs");
+            // m_SessionDir = Path.Combine(root, $"{m_ParticipantId}_{m_SessionId}");
+            string m_SessionDir = Path.Combine(
+                Directory.GetCurrentDirectory(),
+                "Logger",
+                $"{m_ParticipantId}_{m_SessionId}"
+            );
             Directory.CreateDirectory(m_SessionDir);
 
             // File names follow the spec naming:
