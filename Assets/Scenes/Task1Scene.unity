@@ -28203,8 +28203,15 @@ MonoBehaviour:
       resterons \xE0 proximit\xE9 si vous avez besoin de quoi que ce soit.\\n\xCAtes-vous
       pr\xEAt(e) \xE0 commencer ?"
   - textTarget: {fileID: 623462703}
-    english: Block {currentBlock} / {totalBlocks}
-    french: Bloc {currentBlock} / {totalBlocks}
+    english: 'Block {currentBlock} / {totalBlocks}
+
+
+      Before starting, we will
+      check the foot sensors. Please lift your left foot, then put it back down.
+      Then lift your right foot, and put it back down.'
+    french: "Bloc {currentBlock} / {totalBlocks}\n\nAvant de commencer, nous allons
+      v\xE9rifier les capteurs sous vos pieds. Veuillez lever le pied gauche, puis
+      le reposer au sol. Ensuite, levez le pied droit, puis reposez-le au sol.\r\n"
   - textTarget: {fileID: 1532550668}
     english: Begin Block
     french: Commencer le Bloc

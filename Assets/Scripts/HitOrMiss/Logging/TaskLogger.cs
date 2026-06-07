@@ -36,6 +36,10 @@ namespace HitOrMiss
         string m_EyeCsvPath;
         string m_MetadataJsonPath;
         string m_FinalJsonPath;
+
+    // Pam: Added this variable to choose between tasks
+        string m_TaskName = "";
+
         StreamWriter m_TrialsWriter;
         readonly List<TrialJudgement> m_Judgements = new();
         bool m_SessionOpen;
@@ -68,6 +72,9 @@ namespace HitOrMiss
 
         public void BeginSession(string taskName)
         {
+            // Pam: Added this variable to choose between tasks
+            m_TaskName = string.IsNullOrEmpty(taskName) ? "task" : taskName;
+
             if (string.IsNullOrEmpty(m_SessionId))
                 m_SessionId = DateTime.Now.ToString("yyyyMMdd_HHmmss");
 
@@ -144,7 +151,8 @@ namespace HitOrMiss
                 totalTrials = m_Judgements.Count,
                 judgements = m_Judgements.ToArray(),
             }, true);
-            File.WriteAllText(m_FinalJsonPath, json, Encoding.UTF8);
+            // File.WriteAllText(m_FinalJsonPath, json, Encoding.UTF8);
+            File.WriteAllText(m_MetadataJsonPath, m_Metadata.ToSetupJson(m_TaskName), Encoding.UTF8);
 
             m_SessionOpen = false;
             Debug.Log($"[TaskLogger] Session ended. Logs saved to {m_SessionDir}");

@@ -25,7 +25,8 @@ public class EegMarkerEmitter : MonoBehaviour
     [Header("Participant")]
     [SerializeField] string m_ParticipantId = "P000";
     [Header("Trigger Server (Python)")]
-    [SerializeField] bool   m_UseTrigger    = true;
+    //[SerializeField] bool   m_UseTrigger    = true; temporarily disable
+    [SerializeField] bool   m_UseTrigger    = false;
     [Tooltip("Must match trigger_server.py → TCP_HOST")]
     [SerializeField] string m_TcpHost       = "127.0.0.1";
     [Tooltip("Must match trigger_server.py → TCP_PORT")]
