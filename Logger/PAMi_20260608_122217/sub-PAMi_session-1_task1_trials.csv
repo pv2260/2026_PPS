@@ -1,0 +1,6 @@
+﻿trial,block,sensory_condition,position,speed,width,stimulus_onset_ms,position_D7_ms, position_D6_ms, position_D5_ms, position_D4_ms,position_D3_ms,position_D2_ms,position_D1_ms,vibrotactile_onset_ms,response_time_ms,response_made
+B1_T01,1,V,,fast,wide,41891.186,41891.186,42238.604,42419.595,41891.186,42712.228,42851.028,43032.282,,,False
+B1_T02,1,VT,D6,fast,wide,45747.010,45747.010,46095.235,46276.638,45747.010,46568.519,46708.207,46888.573,46095.235,46415.180,True
+B1_T03,1,VT,D6,slow,wide,48851.688,48851.688,49436.295,49729.039,48851.688,50216.107,50466.675,50744.973,49436.295,49798.502,True
+B1_T04,1,VT,D6,fast,narrow,53682.877,53682.877,54030.225,54211.359,53682.877,54503.706,54643.006,54824.153,54030.225,54364.602,True
+B1_T05,1,T,D6,fast,narrow,,,,,,,,,57427.575,57887.024,True

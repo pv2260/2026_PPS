@@ -1,23 +1,38 @@
 import socket
 import serial
 import time
+from byte_triggers import ParallelPortTrigger
 
 # ── Configuration ──────────────────────────────────────────────────────────────
-ARDUINO_PORT = "COM8"
-BAUDRATE = 9600
+ARDUINO_PORT_1 = "COM10"
+ARDUINO_PORT_2 = "COM7"
+BAUDRATE = 115200
 
 TCP_HOST = "127.0.0.1"
 TCP_PORT = 5005
 
-# ── Serial setup ───────────────────────────────────────────────────────────────
-ser = serial.Serial(ARDUINO_PORT, BAUDRATE)
-time.sleep(2)  # allow Arduino reset
+# ── Parallel port trigger (Arduino 1 replacement path) ────────────────────────
+try:
+    trigger = ParallelPortTrigger(ARDUINO_PORT_1)
+    print("[Server] ParallelPortTrigger initialized on COM10")
+except Exception as e:
+    print(f"[Error] Could not init ParallelPortTrigger: {e}")
+    trigger = None
 
-print(f"[Server] Arduino on   : {ARDUINO_PORT}")
+# ── Serial setup (Arduino 2 only effectively used for serial output) ───────────
+try:
+    ser2 = serial.Serial(ARDUINO_PORT_2, BAUDRATE)
+    print(f"[Server] Arduino 2 connected on {ARDUINO_PORT_2}")
+except Exception as e:
+    print(f"[Error] Could not open Arduino 2: {e}")
+    ser2 = None
+
+time.sleep(2)  # allow devices to reset
+
 print(f"[Server] TCP listening: {TCP_HOST}:{TCP_PORT}")
 print("[Server] Waiting for Unity connection...\n")
 
-# ── TCP server ──────────────────────────────────────────────────────────────────
+# ── TCP server ─────────────────────────────────────────────────────────────────
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
     server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server.bind((TCP_HOST, TCP_PORT))
@@ -44,6 +59,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
                 if not line:
                     continue
 
+                # ── Parse value ───────────────────────────────────────────────
                 try:
                     value = int(line)
                 except ValueError:
@@ -54,8 +70,88 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
                     print(f"[Server] Out of range: {value}")
                     continue
 
-                print(f"[Arduino] Sending byte: {value}")
-                ser.write(bytes([value]))
+                print(f"[Router] Received trigger: {value}")
+
+                # ─────────────────────────────────────────────────────────────
+                # ARDUINO 1 ROUTING (HYBRID)
+                # ─────────────────────────────────────────────────────────────
+
+                if value == 64:
+                    try:
+                        ser2.write(bytes([value]))
+                        print("[Arduino2] Serial write (64)")
+                    except Exception as e:
+                        print(f"[Error] Arduino2 serial failed: {e}")
+
+                else:
+                    # Default → parallel port trigger
+                    if trigger:
+                        try:
+                            trigger.signal(value)
+                            print("[Arduino1] ParallelPortTrigger signal")
+                        except Exception as e:
+                            print(f"[Error] Parallel trigger failed: {e}")
+
+
+# import socket
+# import serial
+# import time
+
+# # ── Configuration ──────────────────────────────────────────────────────────────
+# ARDUINO_PORT = "COM8"
+# BAUDRATE = 115200
+
+# TCP_HOST = "127.0.0.1"
+# TCP_PORT = 5005
+
+# # ── Serial setup ───────────────────────────────────────────────────────────────
+# ser = serial.Serial(ARDUINO_PORT, BAUDRATE)
+# time.sleep(2)  # allow Arduino reset
+
+# print(f"[Server] Arduino on   : {ARDUINO_PORT}")
+# print(f"[Server] TCP listening: {TCP_HOST}:{TCP_PORT}")
+# print("[Server] Waiting for Unity connection...\n")
+
+# # ── TCP server ──────────────────────────────────────────────────────────────────
+# with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server:
+#     server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+#     server.bind((TCP_HOST, TCP_PORT))
+#     server.listen(1)
+
+#     conn, addr = server.accept()
+#     print(f"[Server] Unity connected: {addr}\n")
+
+#     buffer = ""
+
+#     with conn:
+#         while True:
+#             data = conn.recv(64)
+#             if not data:
+#                 print("[Server] Unity disconnected.")
+#                 break
+
+#             buffer += data.decode("utf-8")
+
+#             while "\n" in buffer:
+#                 line, buffer = buffer.split("\n", 1)
+#                 line = line.strip()
+
+#                 if not line:
+#                     continue
+
+#                 try:
+#                     value = int(line)
+#                 except ValueError:
+#                     print(f"[Server] Invalid value: {line!r}")
+#                     continue
+
+#                 if not 0 <= value <= 255:
+#                     print(f"[Server] Out of range: {value}")
+#                     continue
+
+#                 print(f"[Arduino] Sending byte: {value}")
+#                 # ser.write(bytes([value]))
+#                 ser.write(f"{value}\n".encode("utf-8"))
 
 
 # import socket

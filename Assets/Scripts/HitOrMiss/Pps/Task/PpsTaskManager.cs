@@ -804,6 +804,7 @@ namespace HitOrMiss.Pps
 
             // FLORE TRIGGERS
             // m_MarkerEmitter?.Emit("pps_vib_fired", trial.trialId, extra: stage.ToString());
+            m_MarkerEmitter?.Emit("pps_vib_fired_trigger");
             m_MarkerEmitter?.Emit("pps_vib_fired");
         }
 

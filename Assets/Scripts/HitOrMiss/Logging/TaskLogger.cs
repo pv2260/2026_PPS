@@ -76,7 +76,15 @@ namespace HitOrMiss
             // directory into their pipeline.
             //string root = Path.Combine(Application.persistentDataPath, "Logs");
             // m_SessionDir = Path.Combine(root, $"{m_ParticipantId}_{m_SessionId}");
-            string m_SessionDir = Path.Combine(
+            // string m_SessionDir = Path.Combine(
+            //     Directory.GetCurrentDirectory(),
+            //     "Logger",
+            //     $"{m_ParticipantId}_{m_SessionId}"
+            // );
+            // Directory.CreateDirectory(m_SessionDir);
+
+
+            m_SessionDir = Path.Combine(
                 Directory.GetCurrentDirectory(),
                 "Logger",
                 $"{m_ParticipantId}_{m_SessionId}"

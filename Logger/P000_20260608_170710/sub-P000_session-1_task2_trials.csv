@@ -1,0 +1,17 @@
+﻿subject_id,session_number,block_number,trial_number,trial_type,correct_response,previous_speed,current_speed,speed_sequence,transition_status,trajectory_offset_cm,trial_trigger_code,response_trigger_code,trigger_timestamp,participant_response,reaction_time_ms,accuracy,trial_interrupted,timestamp
+P000,1,1,1,near_hit,HIT,none,fast,start-fast,start,1.85,10,90,134.8354,HIT,1113.74,1,0,2026-06-08T17:09:19.7679394+02:00
+P000,1,1,2,clear_miss,MISS,fast,fast,fast-fast,repetition,-64.11,23,91,140.9889,MISS,877.08,1,0,2026-06-08T17:09:25.6844062+02:00
+P000,1,1,3,near_miss,MISS,fast,fast,fast-fast,repetition,-37.29,17,91,146.8362,MISS,946.80,1,0,2026-06-08T17:09:31.6016228+02:00
+P000,1,1,4,clear_hit,HIT,fast,fast,fast-fast,repetition,16.76,5,90,152.3912,HIT,877.01,1,0,2026-06-08T17:09:37.0868978+02:00
+P000,1,1,5,clear_miss,MISS,fast,fast,fast-fast,repetition,-50.27,23,91,158.1550,MISS,1531.51,1,0,2026-06-08T17:09:43.5051919+02:00
+P000,1,1,6,near_miss,MISS,fast,fast,fast-fast,repetition,30.04,17,91,163.8347,MISS,1197.49,1,0,2026-06-08T17:09:48.8506372+02:00
+P000,1,1,7,near_hit,HIT,fast,fast,fast-fast,repetition,-12.12,11,91,169.3480,MISS,821.57,0,0,2026-06-08T17:09:53.9884920+02:00
+P000,1,1,8,clear_hit,HIT,fast,slow,fast-slow,transition,10.23,3,91,175.3071,MISS,1879.08,0,0,2026-06-08T17:10:01.0044275+02:00
+P000,1,2,1,near_miss,MISS,none,fast,start-fast,start,-33.87,16,91,190.2172,MISS,1072.22,1,0,2026-06-08T17:10:15.1081973+02:00
+P000,1,2,2,near_hit,HIT,fast,fast,fast-fast,repetition,-9.57,11,90,195.7723,HIT,890.66,1,0,2026-06-08T17:10:20.4816603+02:00
+P000,1,2,3,clear_miss,MISS,fast,fast,fast-fast,repetition,50.65,23,91,201.7444,MISS,779.76,1,0,2026-06-08T17:10:26.3424202+02:00
+P000,1,2,4,clear_hit,HIT,fast,fast,fast-fast,repetition,13.00,5,90,207.2861,HIT,640.23,1,0,2026-06-08T17:10:31.7447976+02:00
+P000,1,2,5,near_hit,HIT,fast,fast,fast-fast,repetition,-10.61,11,91,212.9529,MISS,625.66,0,0,2026-06-08T17:10:37.3974700+02:00
+P000,1,2,6,clear_hit,HIT,fast,fast,fast-fast,repetition,-3.62,5,90,219.0496,HIT,1211.58,1,0,2026-06-08T17:10:44.0796053+02:00
+P000,1,2,7,clear_miss,MISS,fast,fast,fast-fast,repetition,-52.23,23,91,224.9112,MISS,1099.57,1,0,2026-06-08T17:10:49.8290302+02:00
+P000,1,2,8,near_miss,MISS,fast,slow,fast-slow,transition,30.87,15,90,230.3825,HIT,1976.49,0,0,2026-06-08T17:10:56.1775270+02:00
