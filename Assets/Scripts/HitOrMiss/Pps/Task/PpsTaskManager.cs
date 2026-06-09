@@ -306,7 +306,7 @@ namespace HitOrMiss.Pps
 
             // var root = Path.Combine(Application.persistentDataPath, "Logs");
             // m_SessionDir = Path.Combine(root, $"{subjectId}_{metadata.sessionId}");
-            string m_SessionDir = Path.Combine(
+            m_SessionDir = Path.Combine(
                 Directory.GetCurrentDirectory(),
                 "Logger",
                 $"{subjectId}_{metadata.sessionId}"
@@ -658,10 +658,9 @@ namespace HitOrMiss.Pps
                 }
             }
 
-                        // Finalize response timing and reaction-time data.
-            result.vibrationFiredTime = m_VibrationFiredTime;
+ 
             result.responseTime = m_FirstResponseTime;
-            result.responded = m_Responded;
+ 
 
             result.reactionTimeMs =
                 m_Responded && !double.IsNaN(m_VibrationFiredTime)

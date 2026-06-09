@@ -13,14 +13,9 @@ namespace HitOrMiss.Pps
         [Tooltip("Played on every accepted response, practice and main trials.")]
         [SerializeField] AudioClip m_ResponseSound;
 
-        [Header("Practice feedback flash")]
-        [Tooltip("Panel used for green/red practice feedback and no-response reminder.")]
+        [Header("No-response reminder panel")]
+        [Tooltip("Panel used only for no-response reminder.")]
         [SerializeField] GameObject m_PracticeFeedbackPanel;
-
-        [SerializeField] float m_FlashDurationSeconds = 0.35f;
-
-        [SerializeField, Range(0f, 1f)]
-        float m_FlashAlpha = 0.75f;
 
         [Header("No-response reminder")]
         [Tooltip("TMP_Text child inside PracticeFeedbackPanel.")]
@@ -49,13 +44,9 @@ namespace HitOrMiss.Pps
         [Tooltip("Text color for the no-response message.")]
         [SerializeField] Color m_NoResponseTextColor = Color.white;
 
-        // The Image on the panel itself, grabbed automatically in Awake.
         Image m_PanelImage;
-
-        // CanvasGroup used to fade the reminder in/out.
         CanvasGroup m_NoResponseCanvasGroup;
 
-        Coroutine m_FlashRoutine;
         Coroutine m_NoResponseFadeRoutine;
 
         void Awake()
@@ -66,12 +57,11 @@ namespace HitOrMiss.Pps
 
                 m_PanelImage = m_PracticeFeedbackPanel.GetComponent<Image>();
 
-                // If the panel does not yet have an Image, add one.
-                // This is the square/rectangle background behind the text.
                 if (m_PanelImage == null)
                     m_PanelImage = m_PracticeFeedbackPanel.AddComponent<Image>();
 
                 m_NoResponseCanvasGroup = m_PracticeFeedbackPanel.GetComponent<CanvasGroup>();
+
                 if (m_NoResponseCanvasGroup == null)
                     m_NoResponseCanvasGroup = m_PracticeFeedbackPanel.AddComponent<CanvasGroup>();
 
@@ -86,7 +76,9 @@ namespace HitOrMiss.Pps
         }
 
         /// <summary>
-        /// Call on every press — plays the confirmation sound.
+        /// Call on every accepted press.
+        /// This now only plays the confirmation sound.
+        /// No visual flash is shown.
         /// </summary>
         public void OnResponseSubmitted()
         {
@@ -95,14 +87,22 @@ namespace HitOrMiss.Pps
         }
 
         /// <summary>
-        /// Green flash for correct vibration detection (practice only).
+        /// Disabled: no more green flash.
+        /// Kept so old PpsTaskManager calls do not break.
         /// </summary>
-        public void FlashGreen() => Flash(Color.green);
+        public void FlashGreen()
+        {
+            // Intentionally empty.
+        }
 
         /// <summary>
-        /// Red flash for miss or false alarm (practice only).
+        /// Disabled: no more red flash.
+        /// Kept so old PpsTaskManager calls do not break.
         /// </summary>
-        public void FlashRed() => Flash(Color.red);
+        public void FlashRed()
+        {
+            // Intentionally empty.
+        }
 
         /// <summary>
         /// Shows the no-response reminder with a clear background behind the text.
@@ -111,13 +111,6 @@ namespace HitOrMiss.Pps
         {
             if (m_PracticeFeedbackPanel == null)
                 return;
-
-            // Stop any running flash so it does not hide the reminder.
-            if (m_FlashRoutine != null)
-            {
-                StopCoroutine(m_FlashRoutine);
-                m_FlashRoutine = null;
-            }
 
             if (m_NoResponseFadeRoutine != null)
             {
@@ -206,51 +199,6 @@ namespace HitOrMiss.Pps
             }
 
             m_NoResponseFadeRoutine = null;
-        }
-
-        void Flash(Color color)
-        {
-            if (m_PracticeFeedbackPanel == null)
-                return;
-
-            if (m_NoResponseFadeRoutine != null)
-            {
-                StopCoroutine(m_NoResponseFadeRoutine);
-                m_NoResponseFadeRoutine = null;
-            }
-
-            if (m_FlashRoutine != null)
-                StopCoroutine(m_FlashRoutine);
-
-            m_FlashRoutine = StartCoroutine(FlashRoutine(color));
-        }
-
-        IEnumerator FlashRoutine(Color color)
-        {
-            if (m_NoResponseLabel != null)
-                m_NoResponseLabel.text = string.Empty;
-
-            if (m_NoResponseCanvasGroup != null)
-                m_NoResponseCanvasGroup.alpha = 1f;
-
-            SetPanelColor(color);
-            m_PracticeFeedbackPanel.SetActive(true);
-
-            yield return new WaitForSeconds(m_FlashDurationSeconds);
-
-            if (m_PracticeFeedbackPanel != null)
-                m_PracticeFeedbackPanel.SetActive(false);
-
-            m_FlashRoutine = null;
-        }
-
-        void SetPanelColor(Color color)
-        {
-            if (m_PanelImage == null)
-                return;
-
-            color.a = m_FlashAlpha;
-            m_PanelImage.color = color;
         }
 
         void SetNoResponseBackground()
