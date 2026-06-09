@@ -41,12 +41,12 @@ namespace HitOrMiss.Pps
         [SerializeField] float m_ItiMaxSeconds = 2.5f;
 
         [Header("Motion curve (shared by visual loom and tactile-only timing)")]
-        [Tooltip("Normalized loom progress t ∈ [0,1] → curved progress. Stage thresholds are split across D7..D1.")]
+        [Tooltip("Normalized loom progress t ∈ [0,1] → curved progress. Stage thresholds are split across the equally spaced distance stages.")]
         [SerializeField] AnimationCurve m_MotionCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
 
         [Header("Spatial layout (all values in METERS, measured from the body anchor)")]
 
-        [Tooltip("Distance forward from the body anchor to the fixation crosshair (meters). Usually slightly farther than D7.")]
+        [Tooltip("Distance forward from the body anchor to the fixation crosshair (meters). Usually slightly farther than the loom start distance.")]
         [SerializeField, Min(0.01f)] float m_CrosshairDistance = 2.6f;
 
         [Tooltip("Vertical offset of the crosshair above the body anchor (meters). Typically eye level.")]
@@ -61,35 +61,23 @@ namespace HitOrMiss.Pps
         [Tooltip("Vertical offset of the side LEDs relative to the body anchor.")]
         [SerializeField] float m_LedHeight = 0f;
 
-        [Header("Distance stages D7 to D1")]
+        [Header("Distance stages")]
 
-        [Tooltip("D7 = farthest point / loom start. Distance in meters from the body anchor.")]
-        [SerializeField, Min(0.01f)] float m_DistanceD7 = 2.4f;
+        [Tooltip("Farthest point / loom start. This corresponds to D7 when using 7 stages.")]
+        [SerializeField, Min(0.01f)] float m_LoomStartDistance = 2.4f;
 
-        [Tooltip("D6 distance in meters from the body anchor.")]
-        [SerializeField, Min(0.01f)] float m_DistanceD6 = 2.1f;
+        [Tooltip("Nearest point / loom end. This corresponds to D1 when using 7 stages.")]
+        [SerializeField, Min(0.01f)] float m_LoomEndDistance = 0.6f;
 
-        [Tooltip("D5 distance in meters from the body anchor.")]
-        [SerializeField, Min(0.01f)] float m_DistanceD5 = 1.8f;
-
-        [Tooltip("D4 distance in meters from the body anchor.")]
-        [SerializeField, Min(0.01f)] float m_DistanceD4 = 1.5f;
-
-        [Tooltip("D3 distance in meters from the body anchor.")]
-        [SerializeField, Min(0.01f)] float m_DistanceD3 = 1.2f;
-
-        [Tooltip("D2 distance in meters from the body anchor.")]
-        [SerializeField, Min(0.01f)] float m_DistanceD2 = 0.9f;
-
-        [Tooltip("D1 = nearest point / loom end. Distance in meters from the body anchor.")]
-        [SerializeField, Min(0.01f)] float m_DistanceD1 = 0.6f;
+        [Tooltip("Number of equally spaced distance stages, including start and end. Use 7 for D7..D1.")]
+        [SerializeField, Min(2)] int m_DistanceStageCount = 7;
 
         [Header("Scale growth (looming cue)")]
 
-        [Tooltip("Scale of the looming lights at the farthest stage D7.")]
+        [Tooltip("Scale of the looming lights at the farthest stage.")]
         [SerializeField] Vector3 m_ScaleAtD7 = new(0.02f, 0.02f, 0.02f);
 
-        [Tooltip("Scale of the looming lights at the nearest stage D1.")]
+        [Tooltip("Scale of the looming lights at the nearest stage.")]
         [SerializeField] Vector3 m_ScaleAtD1 = new(0.09f, 0.09f, 0.09f);
 
         [Header("Vibrotactile")]
@@ -124,7 +112,6 @@ namespace HitOrMiss.Pps
         public int VisualOnlyTrialsPerBlock => m_VisualOnlyTrialsPerBlock;
         public int TactileOnlyTrialsPerBlock => m_TactileOnlyTrialsPerBlock;
 
-
         public float FastDurationSeconds => m_FastDurationSeconds;
         public float SlowDurationSeconds => m_SlowDurationSeconds;
         public float ResponseGracePeriodSeconds => m_ResponseGracePeriodSeconds;
@@ -145,13 +132,9 @@ namespace HitOrMiss.Pps
 
         public float LedHeight => m_LedHeight;
 
-        public float DistanceD7 => m_DistanceD7;
-        public float DistanceD6 => m_DistanceD6;
-        public float DistanceD5 => m_DistanceD5;
-        public float DistanceD4 => m_DistanceD4;
-        public float DistanceD3 => m_DistanceD3;
-        public float DistanceD2 => m_DistanceD2;
-        public float DistanceD1 => m_DistanceD1;
+        public float LoomStartDistance => m_LoomStartDistance;
+        public float LoomEndDistance => m_LoomEndDistance;
+        public int DistanceStageCount => m_DistanceStageCount;
 
         public Vector3 ScaleAtD7 => m_ScaleAtD7;
 
@@ -173,6 +156,17 @@ namespace HitOrMiss.Pps
 
         public TrialOrder OrderingStrategy => m_OrderingStrategy;
         public int? RngSeed => m_RngSeed < 0 ? null : m_RngSeed;
+
+        // ---- Compatibility getters for existing DistanceLayout code ----
+        // These are now computed automatically from start/end/stage count.
+
+        public float DistanceD7 => DistanceForStage(DistanceStage.D7);
+        public float DistanceD6 => DistanceForStage(DistanceStage.D6);
+        public float DistanceD5 => DistanceForStage(DistanceStage.D5);
+        public float DistanceD4 => DistanceForStage(DistanceStage.D4);
+        public float DistanceD3 => DistanceForStage(DistanceStage.D3);
+        public float DistanceD2 => DistanceForStage(DistanceStage.D2);
+        public float DistanceD1 => DistanceForStage(DistanceStage.D1);
 
         public float DurationFor(PpsSpeed speed)
         {
@@ -203,23 +197,41 @@ namespace HitOrMiss.Pps
         }
 
         /// <summary>
-        /// Elapsed seconds from loom onset at which the motion curve reaches the given stage boundary.
+        /// Returns the normalized progress value for a given distance stage.
+        /// With 7 stages:
+        /// D7 = 0/6 = 0.000
+        /// D6 = 1/6 = 0.167
+        /// D5 = 2/6 = 0.333
+        /// D4 = 3/6 = 0.500
+        /// D3 = 4/6 = 0.667
+        /// D2 = 5/6 = 0.833
+        /// D1 = 6/6 = 1.000
+        /// </summary>
+        public float ProgressForStage(DistanceStage stage)
+        {
+            int index = StageIndex(stage);
+            int maxIndex = Mathf.Max(1, m_DistanceStageCount - 1);
+
+            return Mathf.Clamp01((float)index / maxIndex);
+        }
+
+        /// <summary>
+        /// Returns the distance in meters for a given stage.
+        /// Intermediate stages are equally spaced between loom start and loom end.
+        /// </summary>
+        public float DistanceForStage(DistanceStage stage)
+        {
+            float progress = ProgressForStage(stage);
+            return Mathf.Lerp(m_LoomStartDistance, m_LoomEndDistance, progress);
+        }
+
+        /// <summary>
+        /// Elapsed seconds from loom onset at which the motion curve reaches the given stage.
         /// Used by tactile-only trials to fire at a time-matched moment.
-        /// D7 is the start of the loom. D1 is the final near stage.
         /// </summary>
         public float TimeToReachStage(PpsSpeed speed, DistanceStage stage)
         {
-            float threshold = stage switch
-            {
-                DistanceStage.D7 => 0f,
-                DistanceStage.D6 => 1f / 7f,
-                DistanceStage.D5 => 2f / 7f,
-                DistanceStage.D4 => 3f / 7f,
-                DistanceStage.D3 => 4f / 7f,
-                DistanceStage.D2 => 5f / 7f,
-                DistanceStage.D1 => 6f / 7f,
-                _ => 0f,
-            };
+            float threshold = ProgressForStage(stage);
 
             float duration = DurationFor(speed);
             if (threshold <= 0f) return 0f;
@@ -249,6 +261,27 @@ namespace HitOrMiss.Pps
             return duration;
         }
 
+        int StageIndex(DistanceStage stage)
+        {
+            // This assumes the standard PPS labels D7..D1.
+            // If m_DistanceStageCount is 7, all stages are used.
+            // If fewer stages are used, the index is clamped to the available range.
+            int index = stage switch
+            {
+                DistanceStage.D7 => 0,
+                DistanceStage.D6 => 1,
+                DistanceStage.D5 => 2,
+                DistanceStage.D4 => 3,
+                DistanceStage.D3 => 4,
+                DistanceStage.D2 => 5,
+                DistanceStage.D1 => 6,
+                _ => 0,
+            };
+
+            int maxIndex = Mathf.Max(1, m_DistanceStageCount - 1);
+            return Mathf.Clamp(index, 0, maxIndex);
+        }
+
         void OnValidate()
         {
             if (m_BlockCount < 1) m_BlockCount = 1;
@@ -270,30 +303,21 @@ namespace HitOrMiss.Pps
                 m_TrialsPerBlock = 1;
             }
 
-
             if (m_FastDurationSeconds <= 0f) m_FastDurationSeconds = 0.1f;
             if (m_SlowDurationSeconds <= 0f) m_SlowDurationSeconds = 0.1f;
 
-            if (m_DistanceD1 <= 0f) m_DistanceD1 = 0.01f;
-            if (m_DistanceD2 <= 0f) m_DistanceD2 = 0.01f;
-            if (m_DistanceD3 <= 0f) m_DistanceD3 = 0.01f;
-            if (m_DistanceD4 <= 0f) m_DistanceD4 = 0.01f;
-            if (m_DistanceD5 <= 0f) m_DistanceD5 = 0.01f;
-            if (m_DistanceD6 <= 0f) m_DistanceD6 = 0.01f;
-            if (m_DistanceD7 <= 0f) m_DistanceD7 = 0.01f;
+            if (m_LoomStartDistance <= 0f) m_LoomStartDistance = 0.01f;
+            if (m_LoomEndDistance <= 0f) m_LoomEndDistance = 0.01f;
 
-            if (!(m_DistanceD7 > m_DistanceD6 &&
-                m_DistanceD6 > m_DistanceD5 &&
-                m_DistanceD5 > m_DistanceD4 &&
-                m_DistanceD4 > m_DistanceD3 &&
-                m_DistanceD3 > m_DistanceD2 &&
-                m_DistanceD2 > m_DistanceD1))
+            if (m_DistanceStageCount < 2)
+                m_DistanceStageCount = 2;
+
+            if (m_LoomStartDistance <= m_LoomEndDistance)
             {
                 Debug.LogWarning(
-                    $"[PpsTaskAsset] '{name}' has distances out of order. " +
-                    $"Expected D7 > D6 > D5 > D4 > D3 > D2 > D1. " +
-                    $"Got D7={m_DistanceD7}, D6={m_DistanceD6}, D5={m_DistanceD5}, " +
-                    $"D4={m_DistanceD4}, D3={m_DistanceD3}, D2={m_DistanceD2}, D1={m_DistanceD1}."
+                    $"[PpsTaskAsset] '{name}' has loom distances out of order. " +
+                    $"Expected LoomStartDistance > LoomEndDistance. " +
+                    $"Got start={m_LoomStartDistance}, end={m_LoomEndDistance}."
                 );
             }
 
