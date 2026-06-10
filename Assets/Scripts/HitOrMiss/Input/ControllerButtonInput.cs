@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using HitOrMiss.Pps;
 
 namespace HitOrMiss
 {
@@ -14,6 +15,9 @@ namespace HitOrMiss
         [SerializeField] InputActionReference m_HitAction;   // Left controller trigger/button
         [SerializeField] InputActionReference m_MissAction;  // Right controller trigger/button
 
+        [Header("Haptics")]
+        [SerializeField] private PPSControllerHaptics m_Haptics;
+
         public event Action<ResponseEvent> ResponseReceived;
 
         bool m_Enabled;
@@ -21,11 +25,13 @@ namespace HitOrMiss
         public void Enable()
         {
             m_Enabled = true;
+
             if (m_HitAction != null && m_HitAction.action != null)
             {
                 m_HitAction.action.Enable();
                 m_HitAction.action.performed += OnHitPerformed;
             }
+
             if (m_MissAction != null && m_MissAction.action != null)
             {
                 m_MissAction.action.Enable();
@@ -36,11 +42,13 @@ namespace HitOrMiss
         public void Disable()
         {
             m_Enabled = false;
+
             if (m_HitAction != null && m_HitAction.action != null)
             {
                 m_HitAction.action.performed -= OnHitPerformed;
                 m_HitAction.action.Disable();
             }
+
             if (m_MissAction != null && m_MissAction.action != null)
             {
                 m_MissAction.action.performed -= OnMissPerformed;
@@ -51,6 +59,9 @@ namespace HitOrMiss
         void OnHitPerformed(InputAction.CallbackContext ctx)
         {
             if (!m_Enabled) return;
+
+            m_Haptics?.PlayLeftResponseHaptic();
+
             ResponseReceived?.Invoke(new ResponseEvent
             {
                 rawSource = "controller_left",
@@ -63,6 +74,9 @@ namespace HitOrMiss
         void OnMissPerformed(InputAction.CallbackContext ctx)
         {
             if (!m_Enabled) return;
+
+            m_Haptics?.PlayRightResponseHaptic();
+
             ResponseReceived?.Invoke(new ResponseEvent
             {
                 rawSource = "controller_right",

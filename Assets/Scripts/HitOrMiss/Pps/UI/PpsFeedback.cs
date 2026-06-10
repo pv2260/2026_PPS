@@ -53,8 +53,6 @@ namespace HitOrMiss.Pps
         {
             if (m_PracticeFeedbackPanel != null)
             {
-                m_PracticeFeedbackPanel.SetActive(false);
-
                 m_PanelImage = m_PracticeFeedbackPanel.GetComponent<Image>();
 
                 if (m_PanelImage == null)
@@ -65,7 +63,14 @@ namespace HitOrMiss.Pps
                 if (m_NoResponseCanvasGroup == null)
                     m_NoResponseCanvasGroup = m_PracticeFeedbackPanel.AddComponent<CanvasGroup>();
 
+                // Safety: prevent any accidental white/default panel flash.
+                SetNoResponseBackground();
+
                 m_NoResponseCanvasGroup.alpha = 0f;
+                m_NoResponseCanvasGroup.interactable = false;
+                m_NoResponseCanvasGroup.blocksRaycasts = false;
+
+                m_PracticeFeedbackPanel.SetActive(false);
             }
 
             if (m_NoResponseLabel != null)
@@ -73,40 +78,14 @@ namespace HitOrMiss.Pps
                 m_NoResponseLabel.text = string.Empty;
                 m_NoResponseLabel.color = m_NoResponseTextColor;
             }
-        }
+}
 
-        /// <summary>
-        /// Call on every accepted press.
-        /// This now only plays the confirmation sound.
-        /// No visual flash is shown.
-        /// </summary>
         public void OnResponseSubmitted()
         {
             if (m_AudioSource != null && m_ResponseSound != null)
                 m_AudioSource.PlayOneShot(m_ResponseSound);
         }
 
-        /// <summary>
-        /// Disabled: no more green flash.
-        /// Kept so old PpsTaskManager calls do not break.
-        /// </summary>
-        public void FlashGreen()
-        {
-            // Intentionally empty.
-        }
-
-        /// <summary>
-        /// Disabled: no more red flash.
-        /// Kept so old PpsTaskManager calls do not break.
-        /// </summary>
-        public void FlashRed()
-        {
-            // Intentionally empty.
-        }
-
-        /// <summary>
-        /// Shows the no-response reminder with a clear background behind the text.
-        /// </summary>
         public void ShowNoResponseMessage()
         {
             if (m_PracticeFeedbackPanel == null)
@@ -124,7 +103,16 @@ namespace HitOrMiss.Pps
                 m_NoResponseLabel.color = m_NoResponseTextColor;
             }
 
+            // Set safe dark background before enabling the panel.
             SetNoResponseBackground();
+
+            if (m_NoResponseCanvasGroup != null)
+            {
+                // Critical: guarantee no one-frame full-alpha flash.
+                m_NoResponseCanvasGroup.alpha = 0f;
+                m_NoResponseCanvasGroup.interactable = false;
+                m_NoResponseCanvasGroup.blocksRaycasts = false;
+            }
 
             m_PracticeFeedbackPanel.SetActive(true);
 
@@ -172,7 +160,7 @@ namespace HitOrMiss.Pps
 
             float start = m_NoResponseCanvasGroup.alpha;
             float t = 0f;
-            float safeDuration = Mathf.Max(duration, 0.0001f);
+            float safeDuration = Mathf.Max(duration, 0.25f);
 
             while (t < safeDuration)
             {

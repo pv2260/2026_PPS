@@ -57,7 +57,7 @@ namespace HitOrMiss.Network
 
         [Header("References / Task 1 (PPS)")]
         [Tooltip("Wire this when the server lives in Task1Scene. Leave empty when running Task 2.")]
-        [SerializeField] HitOrMiss.Pps.PPSAppController m_PpsAppController;
+        [SerializeField] HitOrMiss.Pps.PpsAppController m_PpsAppController;
         [Tooltip("Wire this when the server lives in Task1Scene. Leave empty when running Task 2.")]
         [SerializeField] HitOrMiss.Pps.PpsTaskManager m_PpsTaskManager;
 
@@ -224,7 +224,7 @@ namespace HitOrMiss.Network
         }
 
         async Task HandleSimple(MiniHttpResponse resp, Action<HitOrMissAppController> action,
-                                Action<HitOrMiss.Pps.PPSAppController> ppsAction = null)
+                                Action<HitOrMiss.Pps.PpsAppController> ppsAction = null)
         {
             var ack = await RunOnMainThread(() =>
             {

@@ -17,7 +17,7 @@ namespace HitOrMiss.Pps
     public class PpsParticipantPausePanel : MonoBehaviour
     {
         [Header("References")]
-        [SerializeField] PPSAppController m_AppController;
+        [SerializeField] PpsAppController m_AppController;
         [SerializeField] GameObject m_Root;
         [SerializeField] Button m_ResumeButton;
         [SerializeField] Button m_StopButton;

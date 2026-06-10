@@ -689,11 +689,6 @@ namespace HitOrMiss.Pps
                 bool miss = vibrationTrial && !m_Responded;  // will always be false here now
                 bool falseAlarm = (!vibrationTrial && m_Responded) ||
                                 (vibrationTrial && respondedBeforeVibration);
-
-                if (hit)
-                    m_Feedback.FlashGreen();
-                else if (miss || falseAlarm)
-                    m_Feedback.FlashRed();
             }
             // Finalize response timing and reaction-time data.
             result.vibrationFiredTime = m_VibrationFiredTime;
@@ -737,14 +732,6 @@ namespace HitOrMiss.Pps
                     (!vibrationTrial && m_Responded) ||
                     (vibrationTrial && respondedBeforeVibration);
 
-                if (hit)
-                {
-                    m_Feedback.FlashGreen();
-                }
-                else if (miss || falseAlarm)
-                {
-                    m_Feedback.FlashRed();
-                }
             }
 
 

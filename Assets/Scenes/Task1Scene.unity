@@ -703,6 +703,18 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+      - m_Target: {fileID: 542131541}
+        m_TargetAssemblyTypeName: HitOrMiss.Pps.PPSControllerHaptics, Assembly-CSharp
+        m_MethodName: PlayUIHaptic
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!222 &25483925
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -1797,7 +1809,19 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1643808109}
         m_TargetAssemblyTypeName: HitOrMiss.Pps.SessionFlowPanels, Assembly-CSharp
-        m_MethodName: OnStopPressed
+        m_MethodName: OnStop
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 542131541}
+        m_TargetAssemblyTypeName: HitOrMiss.Pps.PPSControllerHaptics, Assembly-CSharp
+        m_MethodName: PlayUIHaptic
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -2722,6 +2746,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 4614628877062732605, guid: 97c4e40b856a4fe4f8c6e3191d6b0430, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1643808109}
+    - targetCorrespondingSourceObject: {fileID: 4614628877062732605, guid: 97c4e40b856a4fe4f8c6e3191d6b0430, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1643808110}
   m_SourcePrefab: {fileID: 100100000, guid: 97c4e40b856a4fe4f8c6e3191d6b0430, type: 3}
 --- !u!1 &123846906
 GameObject:
@@ -4362,7 +4389,19 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1643808109}
         m_TargetAssemblyTypeName: HitOrMiss.Pps.SessionFlowPanels, Assembly-CSharp
-        m_MethodName: OnStopPressed
+        m_MethodName: OnStop
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 542131541}
+        m_TargetAssemblyTypeName: HitOrMiss.Pps.PPSControllerHaptics, Assembly-CSharp
+        m_MethodName: PlayUIHaptic
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -5265,7 +5304,19 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1643808109}
         m_TargetAssemblyTypeName: HitOrMiss.Pps.SessionFlowPanels, Assembly-CSharp
-        m_MethodName: OnContinue
+        m_MethodName: OnStop
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 542131541}
+        m_TargetAssemblyTypeName: HitOrMiss.Pps.PPSControllerHaptics, Assembly-CSharp
+        m_MethodName: PlayUIHaptic
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -7295,7 +7346,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 783384356}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 542131541}
+        m_TargetAssemblyTypeName: HitOrMiss.Pps.PPSControllerHaptics, Assembly-CSharp
+        m_MethodName: PlayUIHaptic
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!222 &412532742
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -7863,6 +7926,18 @@ MonoBehaviour:
       - m_Target: {fileID: 1643808109}
         m_TargetAssemblyTypeName: HitOrMiss.Pps.SessionFlowPanels, Assembly-CSharp
         m_MethodName: OnContinue
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 542131541}
+        m_TargetAssemblyTypeName: HitOrMiss.Pps.PPSControllerHaptics, Assembly-CSharp
+        m_MethodName: PlayUIHaptic
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -9116,7 +9191,19 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1643808109}
         m_TargetAssemblyTypeName: HitOrMiss.Pps.SessionFlowPanels, Assembly-CSharp
-        m_MethodName: OnStopPressed
+        m_MethodName: OnContinue
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 542131541}
+        m_TargetAssemblyTypeName: HitOrMiss.Pps.PPSControllerHaptics, Assembly-CSharp
+        m_MethodName: PlayUIHaptic
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -9134,6 +9221,56 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 528422538}
   m_CullTransparentMesh: 0
+--- !u!1 &542131540
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 542131542}
+  - component: {fileID: 542131541}
+  m_Layer: 0
+  m_Name: PPSControllerHaptics
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &542131541
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 542131540}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1ba63a15ac86192468b0c722304f866a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PPSControllerHaptics
+  uiAmplitude: 0.15
+  uiDuration: 0.04
+  responseAmplitude: 0.25
+  responseDuration: 0.06
+  hoverAmplitude: 0.08
+  hoverDuration: 0.025
+--- !u!4 &542131542
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 542131540}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 8848404438533868169}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &550755281
 GameObject:
   m_ObjectHideFlags: 0
@@ -9150,6 +9287,7 @@ GameObject:
   - component: {fileID: 550755285}
   - component: {fileID: 550755284}
   - component: {fileID: 550755283}
+  - component: {fileID: 550755290}
   m_Layer: 5
   m_Name: LanguageButton
   m_TagString: Untagged
@@ -9448,6 +9586,18 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+      - m_Target: {fileID: 542131541}
+        m_TargetAssemblyTypeName: HitOrMiss.Pps.PPSControllerHaptics, Assembly-CSharp
+        m_MethodName: PlayUIHaptic
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!222 &550755289
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -9456,6 +9606,24 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 550755281}
   m_CullTransparentMesh: 0
+--- !u!114 &550755290
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 550755281}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1ba63a15ac86192468b0c722304f866a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: '::'
+  uiAmplitude: 0.15
+  uiDuration: 0.04
+  responseAmplitude: 0.25
+  responseDuration: 0.06
+  hoverAmplitude: 0.08
+  hoverDuration: 0.025
 --- !u!1 &565881260
 GameObject:
   m_ObjectHideFlags: 0
@@ -9973,6 +10141,18 @@ MonoBehaviour:
       - m_Target: {fileID: 1643808109}
         m_TargetAssemblyTypeName: HitOrMiss.Pps.SessionFlowPanels, Assembly-CSharp
         m_MethodName: OnContinue
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 542131541}
+        m_TargetAssemblyTypeName: HitOrMiss.Pps.PPSControllerHaptics, Assembly-CSharp
+        m_MethodName: PlayUIHaptic
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -11789,7 +11969,19 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1643808109}
         m_TargetAssemblyTypeName: HitOrMiss.Pps.SessionFlowPanels, Assembly-CSharp
-        m_MethodName: OnStopPressed
+        m_MethodName: OnStop
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 542131541}
+        m_TargetAssemblyTypeName: HitOrMiss.Pps.PPSControllerHaptics, Assembly-CSharp
+        m_MethodName: PlayUIHaptic
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -12603,6 +12795,18 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+      - m_Target: {fileID: 542131541}
+        m_TargetAssemblyTypeName: HitOrMiss.Pps.PPSControllerHaptics, Assembly-CSharp
+        m_MethodName: PlayUIHaptic
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!222 &690716576
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -13155,6 +13359,18 @@ MonoBehaviour:
       - m_Target: {fileID: 1643808109}
         m_TargetAssemblyTypeName: HitOrMiss.Pps.SessionFlowPanels, Assembly-CSharp
         m_MethodName: OnContinue
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 542131541}
+        m_TargetAssemblyTypeName: HitOrMiss.Pps.PPSControllerHaptics, Assembly-CSharp
+        m_MethodName: PlayUIHaptic
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -14160,6 +14376,18 @@ MonoBehaviour:
       - m_Target: {fileID: 1643808109}
         m_TargetAssemblyTypeName: HitOrMiss.Pps.SessionFlowPanels, Assembly-CSharp
         m_MethodName: OnBack
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 542131541}
+        m_TargetAssemblyTypeName: HitOrMiss.Pps.PPSControllerHaptics, Assembly-CSharp
+        m_MethodName: PlayUIHaptic
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -15745,6 +15973,18 @@ MonoBehaviour:
       - m_Target: {fileID: 1643808109}
         m_TargetAssemblyTypeName: HitOrMiss.Pps.SessionFlowPanels, Assembly-CSharp
         m_MethodName: OnBack
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 542131541}
+        m_TargetAssemblyTypeName: HitOrMiss.Pps.PPSControllerHaptics, Assembly-CSharp
+        m_MethodName: PlayUIHaptic
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -17716,7 +17956,19 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1643808109}
         m_TargetAssemblyTypeName: HitOrMiss.Pps.SessionFlowPanels, Assembly-CSharp
-        m_MethodName: OnStopPressed
+        m_MethodName: OnStop
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 542131541}
+        m_TargetAssemblyTypeName: HitOrMiss.Pps.PPSControllerHaptics, Assembly-CSharp
+        m_MethodName: PlayUIHaptic
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -20153,6 +20405,18 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+      - m_Target: {fileID: 542131541}
+        m_TargetAssemblyTypeName: HitOrMiss.Pps.PPSControllerHaptics, Assembly-CSharp
+        m_MethodName: PlayUIHaptic
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!222 &1179005551
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -21911,6 +22175,18 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+      - m_Target: {fileID: 542131541}
+        m_TargetAssemblyTypeName: HitOrMiss.Pps.PPSControllerHaptics, Assembly-CSharp
+        m_MethodName: PlayUIHaptic
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!222 &1250276894
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -22533,7 +22809,19 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1643808109}
         m_TargetAssemblyTypeName: HitOrMiss.Pps.SessionFlowPanels, Assembly-CSharp
-        m_MethodName: OnStopPressed
+        m_MethodName: OnStop
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 542131541}
+        m_TargetAssemblyTypeName: HitOrMiss.Pps.PPSControllerHaptics, Assembly-CSharp
+        m_MethodName: PlayUIHaptic
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -22933,6 +23221,18 @@ MonoBehaviour:
       - m_Target: {fileID: 1643808109}
         m_TargetAssemblyTypeName: HitOrMiss.Pps.SessionFlowPanels, Assembly-CSharp
         m_MethodName: OnContinue
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 542131541}
+        m_TargetAssemblyTypeName: HitOrMiss.Pps.PPSControllerHaptics, Assembly-CSharp
+        m_MethodName: PlayUIHaptic
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -24230,6 +24530,18 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+      - m_Target: {fileID: 542131541}
+        m_TargetAssemblyTypeName: HitOrMiss.Pps.PPSControllerHaptics, Assembly-CSharp
+        m_MethodName: PlayUIHaptic
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!222 &1371339034
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -24618,6 +24930,18 @@ MonoBehaviour:
       - m_Target: {fileID: 1643808109}
         m_TargetAssemblyTypeName: HitOrMiss.Pps.SessionFlowPanels, Assembly-CSharp
         m_MethodName: OnStop
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 542131541}
+        m_TargetAssemblyTypeName: HitOrMiss.Pps.PPSControllerHaptics, Assembly-CSharp
+        m_MethodName: PlayUIHaptic
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -27178,6 +27502,18 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+      - m_Target: {fileID: 542131541}
+        m_TargetAssemblyTypeName: HitOrMiss.Pps.PPSControllerHaptics, Assembly-CSharp
+        m_MethodName: PlayUIHaptic
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!222 &1567753047
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -27772,6 +28108,22 @@ MonoBehaviour:
       vibration.'
     french: "Vous n'avez pas r\xE9pondu.\nAppuyez sur le bouton quand vous sentez
       la vibration."
+--- !u!114 &1643808110
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1643808108}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 906113359956f654890d79b93bf05884, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HitOrMiss.Pps.PPSGlobalButtonHaptics
+  haptics: {fileID: 542131541}
+  includeInactiveButtons: 1
+  addHoverHaptics: 1
+  addClickHaptics: 1
 --- !u!1 &1644804969
 GameObject:
   m_ObjectHideFlags: 0
@@ -29764,6 +30116,18 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+      - m_Target: {fileID: 542131541}
+        m_TargetAssemblyTypeName: HitOrMiss.Pps.PPSControllerHaptics, Assembly-CSharp
+        m_MethodName: PlayUIHaptic
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!222 &1793120649
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -31340,6 +31704,18 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+      - m_Target: {fileID: 542131541}
+        m_TargetAssemblyTypeName: HitOrMiss.Pps.PPSControllerHaptics, Assembly-CSharp
+        m_MethodName: PlayUIHaptic
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!222 &1906566490
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -31865,6 +32241,18 @@ MonoBehaviour:
       - m_Target: {fileID: 1643808109}
         m_TargetAssemblyTypeName: HitOrMiss.Pps.SessionFlowPanels, Assembly-CSharp
         m_MethodName: OnContinue
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 542131541}
+        m_TargetAssemblyTypeName: HitOrMiss.Pps.PPSControllerHaptics, Assembly-CSharp
+        m_MethodName: PlayUIHaptic
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -32785,7 +33173,19 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1643808109}
         m_TargetAssemblyTypeName: HitOrMiss.Pps.SessionFlowPanels, Assembly-CSharp
-        m_MethodName: OnStopPressed
+        m_MethodName: OnStop
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 542131541}
+        m_TargetAssemblyTypeName: HitOrMiss.Pps.PPSControllerHaptics, Assembly-CSharp
+        m_MethodName: PlayUIHaptic
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -33245,6 +33645,18 @@ MonoBehaviour:
       - m_Target: {fileID: 1643808109}
         m_TargetAssemblyTypeName: HitOrMiss.Pps.SessionFlowPanels, Assembly-CSharp
         m_MethodName: OnBack
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 542131541}
+        m_TargetAssemblyTypeName: HitOrMiss.Pps.PPSControllerHaptics, Assembly-CSharp
+        m_MethodName: PlayUIHaptic
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -34081,7 +34493,19 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1643808109}
         m_TargetAssemblyTypeName: HitOrMiss.Pps.SessionFlowPanels, Assembly-CSharp
-        m_MethodName: OnStopPressed
+        m_MethodName: OnStop
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 542131541}
+        m_TargetAssemblyTypeName: HitOrMiss.Pps.PPSControllerHaptics, Assembly-CSharp
+        m_MethodName: PlayUIHaptic
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -34537,6 +34961,18 @@ MonoBehaviour:
       - m_Target: {fileID: 1643808109}
         m_TargetAssemblyTypeName: HitOrMiss.Pps.SessionFlowPanels, Assembly-CSharp
         m_MethodName: OnContinue
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 542131541}
+        m_TargetAssemblyTypeName: HitOrMiss.Pps.PPSControllerHaptics, Assembly-CSharp
+        m_MethodName: PlayUIHaptic
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -36026,6 +36462,18 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
+      - m_Target: {fileID: 542131541}
+        m_TargetAssemblyTypeName: HitOrMiss.Pps.PPSControllerHaptics, Assembly-CSharp
+        m_MethodName: PlayUIHaptic
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!222 &2089091993
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -36517,7 +36965,19 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1643808109}
         m_TargetAssemblyTypeName: HitOrMiss.Pps.SessionFlowPanels, Assembly-CSharp
-        m_MethodName: OnStopPressed
+        m_MethodName: OnStop
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+      - m_Target: {fileID: 542131541}
+        m_TargetAssemblyTypeName: HitOrMiss.Pps.PPSControllerHaptics, Assembly-CSharp
+        m_MethodName: PlayUIHaptic
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -37809,6 +38269,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_HitAction: {fileID: 2467071505138073356, guid: 802539f2b83b1424a880af4d5fa97b2f, type: 3}
   m_MissAction: {fileID: -7136492285707115695, guid: 802539f2b83b1424a880af4d5fa97b2f, type: 3}
+  m_Haptics: {fileID: 0}
 --- !u!4 &7836148384108896329
 Transform:
   m_ObjectHideFlags: 0
@@ -37939,6 +38400,7 @@ Transform:
   - {fileID: 7130775027214725095}
   - {fileID: 624187189}
   - {fileID: 987324704}
+  - {fileID: 542131542}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &8848404438533868170

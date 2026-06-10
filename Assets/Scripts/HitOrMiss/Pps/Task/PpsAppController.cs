@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace HitOrMiss.Pps
 {
-    public class PPSAppController : MonoBehaviour
+    public class PpsAppController : MonoBehaviour
     {
         [Header("Input")]
         [SerializeField] private KeyboardCommandInput m_KeyboardInput;
