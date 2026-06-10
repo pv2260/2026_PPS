@@ -118,6 +118,8 @@ namespace HitOrMiss.Pps
         // clinician hits pause.
         bool m_Paused;
 
+        bool m_AbortCurrentRunRequested;
+
         /// <summary>True if the session was paused via PauseBlock and has
         /// not yet been resumed.</summary>
         public bool IsPaused => m_Paused;
@@ -135,6 +137,12 @@ namespace HitOrMiss.Pps
             m_MarkerEmitter?.Emit("pps_block_paused");
             BlockPaused?.Invoke();
             Debug.Log("[PpsTaskManager] Paused.");
+        }
+
+        public void RequestAbortCurrentRun()
+        {
+            m_AbortCurrentRunRequested = true;
+            Debug.Log("[PpsTaskManager] Abort current RunTrials requested.");
         }
 
         /// <summary>Resumes from a paused trial loop. Input is re-enabled and
@@ -434,6 +442,8 @@ namespace HitOrMiss.Pps
         /// </summary>
         public IEnumerator RunTrials(PpsTrialDefinition[] trials, int blockIndex)
         {
+            
+
             if (m_TaskAsset == null)
             {
                 Debug.LogError("[PpsTaskManager] Cannot run trials. No PpsTaskAsset assigned.");
@@ -448,6 +458,8 @@ namespace HitOrMiss.Pps
 
             Initialize();
 
+            m_AbortCurrentRunRequested = false;
+
             if (trials == null)
                 yield break;
 
@@ -459,25 +471,40 @@ namespace HitOrMiss.Pps
 
             foreach (var trial in trials)
             {
-                // Pause checkpoint between trials. PauseBlock disabled input
-                // already; here we just hold the loop until ResumeBlock flips
-                // m_Paused back off.
-                while (m_Paused) yield return null;
+                while (m_Paused)
+                {
+                    if (m_AbortCurrentRunRequested)
+                        yield break;
+
+                    yield return null;
+                }
+
+                if (m_AbortCurrentRunRequested)
+                    yield break;
 
                 yield return RunOneTrial(trial);
+
+                if (m_AbortCurrentRunRequested)
+                    yield break;
+
                 m_TrialsCompletedInBlock++;
 
-                // Wait a randomized inter-trial interval before the next trial.
-                // Frame-by-frame loop instead of WaitForSeconds so a pause hit
-                // during the ITI freezes the ITI clock and survives a resume.
                 float iti = NextItiSeconds();
                 float elapsedIti = 0f;
+
                 while (elapsedIti < iti)
                 {
-                    if (m_Paused)
+                    if (m_AbortCurrentRunRequested)
+                        yield break;
+
+                    while (m_Paused)
                     {
-                        while (m_Paused) yield return null;
+                        if (m_AbortCurrentRunRequested)
+                            yield break;
+
+                        yield return null;
                     }
+
                     elapsedIti += Time.deltaTime;
                     yield return null;
                 }

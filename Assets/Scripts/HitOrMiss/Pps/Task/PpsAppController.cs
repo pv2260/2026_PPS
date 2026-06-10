@@ -54,6 +54,7 @@ namespace HitOrMiss.Pps
         public event System.Action SessionEnded;
         public event System.Action SessionPaused;
         public event System.Action SessionResumed;
+        private bool m_RestartCurrentBlockRequested;
 
         /// <summary>
         /// Asks the running task to wind down at the next checkpoint.
@@ -135,6 +136,43 @@ namespace HitOrMiss.Pps
             m_EegMarkerEmitter?.Emit("pps_session_resumed");
             SessionResumed?.Invoke();
             Debug.Log("[PPSAppController] Session resumed.");
+        }
+        
+        public void RequestParticipantPause()
+        {
+            Debug.Log("[PPS APP] Participant pause requested.");
+            PauseSession();
+        }
+
+        public void ResumeFromParticipantPauseNextTrial()
+        {
+            Debug.Log("[PPS APP] Resume from participant pause.");
+
+            ResumeSession();
+        }
+
+        public void RestartCurrentBlockFromParticipantPause()
+        {
+            Debug.Log("[PPS APP] Restart current block from participant pause.");
+
+            m_RestartCurrentBlockRequested = true;
+
+            if (m_TaskManager != null)
+                m_TaskManager.RequestAbortCurrentRun();
+
+            ResumeSession();
+        }
+
+        public void StopTaskFromParticipantPause()
+        {
+            Debug.Log("[PPS APP] Stop task from participant pause.");
+
+            m_StopRequested = true;
+
+            if (m_TaskManager != null)
+                m_TaskManager.RequestAbortCurrentRun();
+
+            ResumeSession();
         }
 
         private IEnumerator Start()
@@ -276,19 +314,36 @@ namespace HitOrMiss.Pps
 
             for (int blockIndex = 0; blockIndex < m_TaskAsset.BlockCount; blockIndex++)
             {
-                m_Ui.SetTokens(
-                    blocksCount:  m_TaskAsset.BlockCount,
-                    currentBlock: blockIndex + 1,
-                    totalBlocks:  m_TaskAsset.BlockCount,
-                    breakSeconds: m_TaskAsset.RestDurationSeconds
-                );
+                bool blockCompleted = false;
 
-                yield return m_Ui.ShowBlockCounterAndWait(blockIndex, m_TaskAsset.BlockCount);
-                if (StopWasRequested()) { yield return StopExperiment(); yield break; }
+                while (!blockCompleted)
+                {
+                    m_RestartCurrentBlockRequested = false;
 
-                PpsTrialDefinition[] trials = m_TaskAsset.GenerateBlock(blockIndex);
-                yield return m_TaskManager.RunTrials(trials, blockIndex);
-                if (StopWasRequested()) { yield return StopExperiment(); yield break; }
+                    m_Ui.SetTokens(
+                        blocksCount:  m_TaskAsset.BlockCount,
+                        currentBlock: blockIndex + 1,
+                        totalBlocks:  m_TaskAsset.BlockCount,
+                        breakSeconds: m_TaskAsset.RestDurationSeconds
+                    );
+
+                    yield return m_Ui.ShowBlockCounterAndWait(blockIndex, m_TaskAsset.BlockCount);
+                    if (StopWasRequested()) { yield return StopExperiment(); yield break; }
+
+                    PpsTrialDefinition[] trials = m_TaskAsset.GenerateBlock(blockIndex);
+
+                    yield return m_TaskManager.RunTrials(trials, blockIndex);
+
+                    if (StopWasRequested()) { yield return StopExperiment(); yield break; }
+
+                    if (m_RestartCurrentBlockRequested)
+                    {
+                        Debug.Log($"[PPS APP] Restarting block {blockIndex + 1}.");
+                        continue;
+                    }
+
+                    blockCompleted = true;
+                }
 
                 if (blockIndex < m_TaskAsset.BlockCount - 1)
                 {
