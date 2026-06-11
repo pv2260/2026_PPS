@@ -23,6 +23,22 @@ namespace HitOrMiss.Pps
         [SerializeField] Transform m_RightLed;
         [SerializeField] DistanceLayout m_Layout;
 
+        [Header("3D depth core")]
+        [Tooltip("If true, spawns a small lit sphere child on each LED at Awake. The core gives the brain real stereoscopic + silhouette depth cues that the billboard glow shader can't provide. Highly recommended for distance perception.")]
+        [SerializeField] bool m_SpawnDepthCore = true;
+
+        [Tooltip("Physical diameter of the lit core sphere, in meters. Stays constant across the loom; Unity's perspective camera produces the apparent growth as the LED approaches.")]
+        [SerializeField, Min(0.005f)] float m_CoreDiameterMeters = 0.10f;
+
+        [Tooltip("Material applied to the core sphere. Recommended: URP/Lit or URP/Simple Lit, opaque. If empty, a URP/Lit fallback is created at runtime so the sphere is visible.")]
+        [SerializeField] Material m_CoreMaterial;
+
+        [Tooltip("Color used by the runtime fallback material (only if m_CoreMaterial is empty). Pick something warm/bright so the core reads against a dark passthrough scene.")]
+        [SerializeField] Color m_CoreFallbackColor = new Color(1.0f, 0.55f, 0.15f, 1f);
+
+        Transform m_LeftCore;
+        Transform m_RightCore;
+
         public AnimationCurve speedCurve;
 
         static readonly DistanceStage[] k_OrderedStages =
@@ -44,6 +60,85 @@ namespace HitOrMiss.Pps
 
         public DistanceStage CurrentStage { get; private set; } = DistanceStage.None;
         public bool IsRunning { get; private set; }
+
+        void Awake()
+        {
+            if (m_SpawnDepthCore)
+            {
+                m_LeftCore  = EnsureCoreChild(m_LeftLed,  "DepthCore_Left");
+                m_RightCore = EnsureCoreChild(m_RightLed, "DepthCore_Right");
+            }
+        }
+
+        /// <summary>
+        /// Creates (or finds) a child sphere that gives the LED a solid 3D
+        /// silhouette, lit by the scene. The glow billboard on the parent LED
+        /// stays — the core is an additional cue, not a replacement.
+        /// </summary>
+        Transform EnsureCoreChild(Transform led, string childName)
+        {
+            if (led == null) return null;
+
+            Transform existing = led.Find(childName);
+            if (existing != null) return existing;
+
+            GameObject core = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            core.name = childName;
+
+            // Drop the collider Unity attaches by default; PPS doesn't need physics on the LEDs.
+            Collider col = core.GetComponent<Collider>();
+            if (col != null) Destroy(col);
+
+            core.transform.SetParent(led, worldPositionStays: false);
+            core.transform.localPosition = Vector3.zero;
+            core.transform.localRotation = Quaternion.identity;
+            core.transform.localScale    = Vector3.one;
+
+            var renderer = core.GetComponent<MeshRenderer>();
+            if (renderer != null)
+                renderer.sharedMaterial = ResolveCoreMaterial();
+
+            return core.transform;
+        }
+
+        Material ResolveCoreMaterial()
+        {
+            if (m_CoreMaterial != null) return m_CoreMaterial;
+
+            Shader shader =
+                Shader.Find("Universal Render Pipeline/Lit") ??
+                Shader.Find("Universal Render Pipeline/Simple Lit") ??
+                Shader.Find("Standard");
+
+            if (shader == null)
+            {
+                Debug.LogWarning("[LoomingPairController] No lit shader available for the depth core. " +
+                                 "The core will render in magenta; assign a Material in the inspector.");
+                return null;
+            }
+
+            var mat = new Material(shader) { color = m_CoreFallbackColor };
+            // Add a touch of emission so the sphere stays visible even if the
+            // scene has no directional light. Subtle on purpose: we still want
+            // the shading gradient to read.
+            if (mat.HasProperty("_EmissionColor"))
+            {
+                mat.EnableKeyword("_EMISSION");
+                mat.SetColor("_EmissionColor", m_CoreFallbackColor * 0.6f);
+            }
+            return mat;
+        }
+
+        /// <summary>
+        /// Computes the child's localScale so its world-space diameter matches
+        /// m_CoreDiameterMeters regardless of the parent LED's localScale
+        /// (which is driven by the glow shader's size, not by physical units).
+        /// </summary>
+        Vector3 CompensateCoreScale(Vector3 parentScale)
+        {
+            float Inv(float s) => Mathf.Abs(s) > 1e-4f ? m_CoreDiameterMeters / s : m_CoreDiameterMeters;
+            return new Vector3(Inv(parentScale.x), Inv(parentScale.y), Inv(parentScale.z));
+        }
 
         /// <summary>
         /// Run one looming pass.
@@ -170,6 +265,14 @@ namespace HitOrMiss.Pps
 
                 m_LeftLed.localScale = scale;
                 m_RightLed.localScale = scale;
+
+                // Keep the depth core at a constant world-space diameter even
+                // though the parent LED's scale changes during the loom. This
+                // is what gives the brain a real-distance cue: the solid lit
+                // sphere grows naturally via perspective, not via artificial
+                // scaling.
+                if (m_LeftCore != null)  m_LeftCore.localScale  = CompensateCoreScale(scale);
+                if (m_RightCore != null) m_RightCore.localScale = CompensateCoreScale(scale);
 
                 DistanceStage newStage = StageAtProgress(curved, asset);
 

@@ -15170,7 +15170,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HitOrMiss.Pps.PpsParticipantPausePanel
   m_AppController: {fileID: 8848404438533868171}
   m_Root: {fileID: 0}
-  m_ResumeButton: {fileID: 0}
+  m_PauseAccessButtonRoot: {fileID: 0}
+  m_ResumeNextTrialButton: {fileID: 0}
+  m_RestartCurrentBlockButton: {fileID: 0}
   m_StopButton: {fileID: 884112231}
   m_StatusText: {fileID: 0}
 --- !u!1 &885081164
@@ -33723,6 +33725,10 @@ MonoBehaviour:
   m_LeftLed: {fileID: 416702264}
   m_RightLed: {fileID: 1186889165}
   m_Layout: {fileID: 1086280596}
+  m_SpawnDepthCore: 1
+  m_CoreDiameterMeters: 0.02
+  m_CoreMaterial: {fileID: 7390553463975553142, guid: 7ab6f3b0fd1a6ba41b2a47766c16613f, type: 3}
+  m_CoreFallbackColor: {r: 1, g: 0.55, b: 0.15, a: 1}
   speedCurve:
     serializedVersion: 2
     m_Curve:
@@ -38439,6 +38445,7 @@ MonoBehaviour:
   m_TaskManager: {fileID: 867388212}
   m_TaskAsset: {fileID: 11400000, guid: b6a0232453b4a5f4182f868a7d2920f0, type: 2}
   m_EegMarkerEmitter: {fileID: 0}
+  m_TaskLogger: {fileID: 0}
   m_FixationCross: {fileID: 0}
   m_StandingCross: {fileID: 0}
   m_ClinicianPanel: {fileID: 0}
