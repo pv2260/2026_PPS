@@ -245,6 +245,29 @@
     $('#pauseBtn').disabled = false;
     $('#resumeBtn').disabled = false;
     $('#stopBtn').disabled = false;
+
+    applyTaskKind(s.taskKind);
+  }
+
+  // Hides the irrelevant task's section of the New Session form based on
+  // which task the connected headset is hosting. taskKind is one of
+  // "Task1Pps" / "Task2HitOrMiss" (string form of the C# enum). If absent
+  // (e.g. against an older server) both fieldsets stay visible.
+  function applyTaskKind(taskKind) {
+    const task1 = $('#task1Fieldset');
+    const task2 = $('#task2Fieldset');
+    if (!task1 || !task2) return;
+
+    if (taskKind === 'Task1Pps') {
+      task1.style.display = '';
+      task2.style.display = 'none';
+    } else if (taskKind === 'Task2HitOrMiss') {
+      task1.style.display = 'none';
+      task2.style.display = '';
+    } else {
+      task1.style.display = '';
+      task2.style.display = '';
+    }
   }
 
   function connectWs() {

@@ -251,7 +251,7 @@ namespace HitOrMiss
             {
                 m_TaskLogger.ParticipantId = ParticipantId;
                 m_TaskLogger.SetMetadata(m_SessionMetadata);
-                m_TaskLogger.BeginSession(m_TaskAsset != null ? m_TaskAsset.TaskName : "HitOrMiss");
+                m_TaskLogger.BeginSession(TaskKind.Task2HitOrMiss, m_TaskAsset != null ? m_TaskAsset.TaskName : "HitOrMiss");
                 m_TaskManager.TrialJudged += m_TaskLogger.LogTrial;
             }
 

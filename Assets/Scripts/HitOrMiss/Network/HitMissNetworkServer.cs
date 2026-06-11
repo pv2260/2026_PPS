@@ -265,6 +265,7 @@ namespace HitOrMiss.Network
                         isPaused            = m_PpsAppController.IsPaused,
                         trialsCompletedInBlock = m_PpsTaskManager != null ? m_PpsTaskManager.TrialsCompletedInBlock : 0,
                         totalTrialsInBlock     = m_PpsTaskManager != null ? m_PpsTaskManager.TotalTrialsInBlock     : 0,
+                        taskKind               = TaskKind.Task1Pps.ToString(),
                     };
                 }
 
@@ -276,6 +277,7 @@ namespace HitOrMiss.Network
                     currentBlockIndex = m_AppController != null ? m_AppController.CurrentBlockIndex : -1,
                     isRunning = m_TaskManager != null && m_TaskManager.IsRunning,
                     isPaused = m_TaskManager != null && m_TaskManager.IsPaused,
+                    taskKind = TaskKind.Task2HitOrMiss.ToString(),
                 };
                 if (m_TaskManager != null)
                 {

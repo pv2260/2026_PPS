@@ -17,6 +17,12 @@ namespace HitOrMiss.Pps
 
         [Header("Logging")]
         [SerializeField] EegMarkerEmitter m_EegMarkerEmitter;
+        [Tooltip("Single TaskLogger shared with Task 2. Drag the scene's TaskLogger here. " +
+                 "It writes the per-session folder, trials CSV, setup.json, and session.json.")]
+        [SerializeField] TaskLogger m_TaskLogger;
+
+        // Cached delegate so we can unsubscribe with the same reference.
+        System.Action<PpsTrialResult> m_LoggerTrialHandler;
 
         [Header("Visuals")]
         [SerializeField] FixationCrossController m_FixationCross;
@@ -122,7 +128,11 @@ namespace HitOrMiss.Pps
             if (!m_Running || m_TaskManager == null || m_TaskManager.IsPaused) return;
 
             m_TaskManager.PauseBlock();
-            m_TaskManager.FlushProgress();
+
+            // Progress snapshot now lives in the shared TaskLogger; uses the
+            // task manager's current block/trial cursor.
+            m_TaskLogger?.Flush(m_TaskManager.CurrentBlockIndex, m_TaskManager.TrialsCompletedInBlock);
+
             m_EegMarkerEmitter?.Emit("pps_session_paused");
             SessionPaused?.Invoke();
             Debug.Log("[PPSAppController] Session paused.");
@@ -219,6 +229,15 @@ namespace HitOrMiss.Pps
                 else
                     Debug.Log("[PPSAppController] EegMarkerEmitter auto-wired.");
             }
+
+            if (m_TaskLogger == null)
+            {
+                m_TaskLogger = FindAnyObjectByType<TaskLogger>();
+                if (m_TaskLogger == null)
+                    Debug.LogWarning("[PPSAppController] No TaskLogger in scene. Trial data will NOT be written to disk.");
+                else
+                    Debug.Log("[PPSAppController] TaskLogger auto-wired.");
+            }
         }
 
         private IEnumerator RunSessionInternal()
@@ -310,7 +329,22 @@ namespace HitOrMiss.Pps
             yield return m_Ui.ShowReadyToStartAndWait();
             if (StopWasRequested()) { yield return StopExperiment(); yield break; }
 
-            m_TaskManager.BeginLogging(ParticipantId, m_SessionMetadata);
+            // Logging: open the shared TaskLogger with TaskKind.Task1Pps so
+            // file names, setup.json, and session.json all carry the task1
+            // layout. PpsTaskManager only emits TrialCompleted; the logger
+            // owns the disk.
+            if (m_TaskLogger != null)
+            {
+                m_TaskLogger.ParticipantId = ParticipantId;
+                m_SessionMetadata.PopulateFromPpsTaskAsset(m_TaskAsset);
+                m_TaskLogger.SetMetadata(m_SessionMetadata);
+                m_TaskLogger.BeginSession(TaskKind.Task1Pps, m_TaskAsset.TaskName);
+
+                m_LoggerTrialHandler = m_TaskLogger.LogTrial;
+                m_TaskManager.TrialCompleted += m_LoggerTrialHandler;
+            }
+
+            m_TaskManager.BeginSession();
 
             for (int blockIndex = 0; blockIndex < m_TaskAsset.BlockCount; blockIndex++)
             {
@@ -352,7 +386,7 @@ namespace HitOrMiss.Pps
                 }
             }
 
-            m_TaskManager.EndLogging();
+            CloseLoggingSession();
 
             if (m_ClinicianPanel != null) m_ClinicianPanel.ExitTaskMode();
 
@@ -362,6 +396,24 @@ namespace HitOrMiss.Pps
             m_Ui.HideStandingCross();
 
             yield return m_Ui.ShowEndAndWait("Task 1 complete.\n\nThank you.");
+        }
+
+        /// <summary>
+        /// Unsubscribes the logger from TrialCompleted and closes the session
+        /// folder. Safe to call multiple times; no-op if logging never began.
+        /// </summary>
+        void CloseLoggingSession()
+        {
+            m_TaskManager.EndSession();
+
+            if (m_TaskLogger == null) return;
+
+            if (m_LoggerTrialHandler != null)
+            {
+                m_TaskManager.TrialCompleted -= m_LoggerTrialHandler;
+                m_LoggerTrialHandler = null;
+            }
+            m_TaskLogger.EndSession();
         }
 
         private bool StopWasRequested()
@@ -374,8 +426,7 @@ namespace HitOrMiss.Pps
         {
             Debug.Log("[PPSAppController] Stop requested. Ending task.");
 
-            if (m_TaskManager != null)
-                m_TaskManager.EndLogging();
+            CloseLoggingSession();
 
             if (m_ClinicianPanel != null) m_ClinicianPanel.ExitTaskMode();
 

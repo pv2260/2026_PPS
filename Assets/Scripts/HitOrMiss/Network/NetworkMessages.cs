@@ -48,6 +48,10 @@ namespace HitOrMiss.Network
         public int totalTrialsInBlock;
         public bool isRunning;
         public bool isPaused;
+        // Which task this Unity instance is hosting. Lets the clinician SPA
+        // hide the irrelevant task's fields/controls without having to infer
+        // it from the phase string. Values: "Task1Pps", "Task2HitOrMiss".
+        public string taskKind;
     }
 
     [Serializable]

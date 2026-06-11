@@ -1,13 +1,11 @@
 using System;
 using System.Collections;
-using System.IO;
-using System.Text;
 using UnityEngine;
 
 namespace HitOrMiss.Pps
 {
     /// <summary>
-    /// Runs PPS trials and records trial-level data.
+    /// Runs PPS trials and emits trial-level events.
     ///
     /// Current responsibilities:
     /// - Run individual trials
@@ -15,11 +13,11 @@ namespace HitOrMiss.Pps
     /// - Trigger vibrotactile stimulation
     /// - Capture participant responses
     /// - Emit EEG/event markers
-    /// - Write CSV output
+    /// - Emit TrialStarted / TrialCompleted events
     ///
-    /// Note:
-    /// In the refactored architecture, higher-level experiment flow
-    /// should move out of this class into PPSAppController.
+    /// Persistence is handled by <see cref="HitOrMiss.TaskLogger"/>, which the
+    /// PpsAppController wires up at session start by subscribing to
+    /// TrialCompleted. This class no longer owns any files or folders.
     /// </summary>
     public class PpsTaskManager : MonoBehaviour
     {
@@ -91,21 +89,6 @@ namespace HitOrMiss.Pps
 
         // Random number generator used for inter-trial intervals.
         private System.Random m_ItiRng;
-
-        // CSV logging state. Layout mirrors Task 2's TaskLogger:
-        // one folder per session with metadata.json, setup.json,
-        // sub-{id}_session-{n}_task1_trials.csv, plus progress.json on pause
-        // and sub-{id}_session-{n}_task1_session.json on EndLogging.
-        private StreamWriter m_CsvWriter;
-        private string m_CsvPath;
-        private string m_SessionDir;
-        private string m_SetupJsonPath;
-        private string m_MetadataJsonPath;
-        private string m_FinalJsonPath;
-        private string m_LoggingSubjectId;
-        private SessionMetadata m_LoggingMetadata;
-        private int m_TrialsLoggedThisSession;
-        public string SessionDirectory => m_SessionDir;
 
         // External systems can subscribe to these events to react to trial start/end.
         public event Action<PpsTrialDefinition> TrialStarted;
@@ -219,8 +202,6 @@ namespace HitOrMiss.Pps
 
             if (m_InputSource != null)
                 m_InputSource.ResponseReceived -= OnResponseReceived;
-
-            EndLogging();
         }
 
         /// <summary>
@@ -268,162 +249,30 @@ namespace HitOrMiss.Pps
         }
 
         /// <summary>
-        /// Starts CSV logging and enables participant input.
+        /// Enables participant input and emits the session-start marker.
+        /// Replaces the previous CSV-owning BeginLogging — persistence now
+        /// lives in <see cref="HitOrMiss.TaskLogger"/>, wired by
+        /// PpsAppController.
         /// </summary>
-        /// <summary>
-        /// Back-compat overload. Builds default metadata for the subject id
-        /// and delegates to the metadata-aware BeginLogging.
-        /// </summary>
-        public void BeginLogging(string subjectId)
-            => BeginLogging(subjectId, SessionMetadata.CreateDefault(subjectId));
-
-        /// <summary>
-        /// Opens a per-session folder under Application.persistentDataPath/Logs,
-        /// writes metadata.json + setup.json, and starts streaming trial rows to
-        /// sub-{id}_session-{n}_task1_trials.csv. Layout matches what Task 2's
-        /// TaskLogger produces so the browser SPA's session list and the analysis
-        /// pipeline can treat both tasks the same way.
-        /// </summary>
-        public void BeginLogging(string subjectId, SessionMetadata metadata)
+        public void BeginSession()
         {
-            if (m_TaskAsset == null)
-            {
-                Debug.LogError("[PpsTaskManager] Cannot begin logging. No PpsTaskAsset assigned.");
-                return;
-            }
-
-            if (string.IsNullOrWhiteSpace(subjectId))
-                subjectId = "P000";
-
-            // Stamp authoritative ids onto the metadata snapshot so the
-            // setup.json and trial rows agree with the folder name.
-            if (string.IsNullOrEmpty(metadata.participantId))
-                metadata.participantId = subjectId;
-            if (string.IsNullOrEmpty(metadata.sessionId))
-                metadata.sessionId = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-            if (string.IsNullOrEmpty(metadata.sessionDate))
-                metadata.sessionDate = DateTime.Now.ToString("yyyy-MM-dd");
-
-            // Capture Task 1 asset parameters in the snapshot so analysts can
-            // tell exactly which protocol ran.
-            metadata.PopulateFromPpsTaskAsset(m_TaskAsset);
-
-            m_LoggingSubjectId = subjectId;
-            m_LoggingMetadata = metadata;
-            m_TrialsLoggedThisSession = 0;
-
-            // var root = Path.Combine(Application.persistentDataPath, "Logs");
-            // m_SessionDir = Path.Combine(root, $"{subjectId}_{metadata.sessionId}");
-            m_SessionDir = Path.Combine(
-                Directory.GetCurrentDirectory(),
-                "Logger",
-                $"{subjectId}_{metadata.sessionId}"
-            );
-            Directory.CreateDirectory(m_SessionDir);
-
-            string idSlug = subjectId.Replace(" ", "_");
-            int sn = metadata.sessionNumber > 0 ? metadata.sessionNumber : 1;
-            m_CsvPath          = Path.Combine(m_SessionDir, $"sub-{idSlug}_session-{sn}_task1_trials.csv");
-            m_SetupJsonPath    = Path.Combine(m_SessionDir, $"sub-{idSlug}_session-{sn}_setup.json");
-            m_FinalJsonPath    = Path.Combine(m_SessionDir, $"sub-{idSlug}_session-{sn}_task1_session.json");
-            m_MetadataJsonPath = Path.Combine(m_SessionDir, "metadata.json");
-
-            File.WriteAllText(m_SetupJsonPath, metadata.ToSetupJson(), Encoding.UTF8);
-            File.WriteAllText(m_MetadataJsonPath, JsonUtility.ToJson(metadata, true), Encoding.UTF8);
-
-            m_CsvWriter = new StreamWriter(m_CsvPath, false, Encoding.UTF8);
-            m_CsvWriter.WriteLine(PpsTrialResult.CsvHeader);
-            m_CsvWriter.Flush();
-
             m_MarkerEmitter?.Emit("pps_session_start");
             m_InputSource?.Enable();
-
-            Debug.Log($"[PpsTaskManager] Session folder: {m_SessionDir}");
-            Debug.Log($"[PpsTaskManager] Trials CSV:     {m_CsvPath}");
         }
 
         /// <summary>
-        /// Writes a progress snapshot to <c>progress.json</c> in the active
-        /// session folder. Called by PPSAppController.PauseSession so an
-        /// interrupted session can be inspected or resumed later.
+        /// Disables participant input and emits the session-end marker.
         /// </summary>
-        public void FlushProgress()
-        {
-            if (string.IsNullOrEmpty(m_SessionDir)) return;
-
-            m_CsvWriter?.Flush();
-
-            string progressPath = Path.Combine(m_SessionDir, "progress.json");
-            string json = JsonUtility.ToJson(new PpsProgressSnapshot
-            {
-                participantId      = m_LoggingSubjectId,
-                sessionId          = m_LoggingMetadata.sessionId,
-                timestamp          = DateTime.Now.ToString("o"),
-                currentBlockIndex  = m_CurrentBlockIndex,
-                nextTrialIndex     = m_TrialsCompletedInBlock,
-                trialsLogged       = m_TrialsLoggedThisSession,
-            }, true);
-            File.WriteAllText(progressPath, json, Encoding.UTF8);
-
-            Debug.Log($"[PpsTaskManager] Progress snapshot: {progressPath}");
-        }
-
-        /// <summary>
-        /// Closes the trials CSV and writes the consolidated session.json.
-        /// </summary>
-        public void EndLogging()
+        public void EndSession()
         {
             m_MarkerEmitter?.Emit("pps_session_end");
             m_InputSource?.Disable();
-
-            if (m_CsvWriter != null)
-            {
-                m_CsvWriter.Dispose();
-                m_CsvWriter = null;
-            }
-
-            if (!string.IsNullOrEmpty(m_FinalJsonPath))
-            {
-                string json = JsonUtility.ToJson(new PpsSessionLog
-                {
-                    metadata    = m_LoggingMetadata,
-                    timestamp   = DateTime.Now.ToString("o"),
-                    totalTrials = m_TrialsLoggedThisSession,
-                    trialsCsv   = Path.GetFileName(m_CsvPath ?? ""),
-                }, true);
-                File.WriteAllText(m_FinalJsonPath, json, Encoding.UTF8);
-            }
-
-            m_SessionDir = null;
-            m_FinalJsonPath = null;
         }
 
-        [Serializable]
-        struct PpsProgressSnapshot
-        {
-            public string participantId;
-            public string sessionId;
-            public string timestamp;
-            public int currentBlockIndex;
-            public int nextTrialIndex;
-            public int trialsLogged;
-        }
-
-        [Serializable]
-        struct PpsSessionLog
-        {
-            public SessionMetadata metadata;
-            public string timestamp;
-            public int totalTrials;
-            public string trialsCsv;
-        }
-
-        // FLORE TRIGGER
         public void SetMarkerEmitter(EegMarkerEmitter emitter)
         {
             m_MarkerEmitter = emitter;
         }
-        //
 
         /// <summary>
         /// Runs a sequence of trials with an inter-trial interval after each trial.
@@ -786,8 +635,8 @@ namespace HitOrMiss.Pps
             m_CurrentTrialIsPractice = false;
             m_VibrationHasFired = false;
 
-            // Save and broadcast the completed result.
-            WriteCsvRow(result);
+            // Broadcast the completed result. Persistence happens via the
+            // subscribed TaskLogger; this class does not own any files.
             TrialCompleted?.Invoke(result);
         }
 
@@ -867,24 +716,6 @@ namespace HitOrMiss.Pps
         }
 
 
-
-        /// <summary>
-        /// Writes one trial result to the CSV file. Practice trials
-        /// (isPractice == true or blockIndex &lt; 0) are skipped so the
-        /// main-task CSV matches the analysis pipeline's expectations.
-        /// </summary>
-        private void WriteCsvRow(PpsTrialResult result)
-        {
-            if (m_CsvWriter == null)
-                return;
-
-            if (result.definition.isPractice || result.definition.blockIndex < 0)
-                return;
-
-            m_CsvWriter.WriteLine(result.ToCsvRow());
-            m_CsvWriter.Flush();
-            m_TrialsLoggedThisSession++;
-        }
 
         /// <summary>
         /// Formats a time value for readable debug output.
