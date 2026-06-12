@@ -15,19 +15,19 @@ namespace HitOrMiss.Pps
         [Tooltip("Number of experimental blocks")]
         [SerializeField] int m_BlockCount = 3;
 
-        [Tooltip("Total trials per block. Automatically forced to VT + V + T.")]
-        [SerializeField] int m_TrialsPerBlock = 40;
+        [Tooltip("Total trials per block. Automatically forced to VT + V + T. Balanced default = 140.")]
+        [SerializeField] int m_TrialsPerBlock = 140;
 
         [Header("Trial counts per block")]
 
-        [Tooltip("Number of visuotactile trials per block: looming + vibration.")]
-        [SerializeField, Min(0)] int m_VtTrialsPerBlock = 28;
+        [Tooltip("Number of visuotactile trials per block: 3 repetitions x 7 distances x 4 speed-width conditions = 84 by default.")]
+        [SerializeField, Min(0)] int m_VtTrialsPerBlock = 84;
 
-        [Tooltip("Number of visual-only trials per block: looming, no vibration.")]
-        [SerializeField, Min(0)] int m_VisualOnlyTrialsPerBlock = 6;
+        [Tooltip("Number of visual-only trials per block: 7 repetitions x 4 speed-width conditions = 28 by default.")]
+        [SerializeField, Min(0)] int m_VisualOnlyTrialsPerBlock = 28;
 
-        [Tooltip("Number of tactile-only trials per block: vibration only, no looming.")]
-        [SerializeField, Min(0)] int m_TactileOnlyTrialsPerBlock = 6;
+        [Tooltip("Number of tactile-only trials per block: 7 distances x 4 matched timing conditions = 28 by default.")]
+        [SerializeField, Min(0)] int m_TactileOnlyTrialsPerBlock = 28;
 
         [Header("Loom timing")]
         [SerializeField] float m_FastDurationSeconds = 1.5f;
@@ -36,9 +36,9 @@ namespace HitOrMiss.Pps
         [Tooltip("Extra seconds after loom/vibration during which a response is still accepted")]
         [SerializeField] float m_ResponseGracePeriodSeconds = 1.0f;
 
-        [Header("Inter-trial interval (jittered, seconds)")]
-        [SerializeField] float m_ItiMinSeconds = 1.5f;
-        [SerializeField] float m_ItiMaxSeconds = 2.5f;
+        [Header("Inter-trial interval (fixed, seconds)")]
+        [Tooltip("Fixed inter-trial interval before every trial.")]
+        [SerializeField] float m_ItiSeconds = 1.2f;
 
         [Header("Motion curve (shared by visual loom and tactile-only timing)")]
         [Tooltip("Normalized loom progress t ∈ [0,1] → curved progress. Stage thresholds are split across the equally spaced distance stages.")]
@@ -116,8 +116,12 @@ namespace HitOrMiss.Pps
         public float SlowDurationSeconds => m_SlowDurationSeconds;
         public float ResponseGracePeriodSeconds => m_ResponseGracePeriodSeconds;
 
-        public float ItiMinSeconds => m_ItiMinSeconds;
-        public float ItiMaxSeconds => m_ItiMaxSeconds;
+        public float ItiSeconds => m_ItiSeconds;
+
+        // Compatibility getters for PpsTaskManager.
+        // Both return the same value so the ITI is fixed, not jittered.
+        public float ItiMinSeconds => m_ItiSeconds;
+        public float ItiMaxSeconds => m_ItiSeconds;
 
         public AnimationCurve MotionCurve => m_MotionCurve;
 
@@ -330,8 +334,7 @@ namespace HitOrMiss.Pps
             if (m_WideOffsetMeters < 0f)
                 m_WideOffsetMeters = 0f;
 
-            if (m_ItiMinSeconds < 0f) m_ItiMinSeconds = 0f;
-            if (m_ItiMaxSeconds < 0f) m_ItiMaxSeconds = 0f;
+            if (m_ItiSeconds < 0f) m_ItiSeconds = 0f;
 
             if (m_ScaleAtD7.x <= 0f || m_ScaleAtD7.y <= 0f || m_ScaleAtD7.z <= 0f)
                 m_ScaleAtD7 = Vector3.one * 0.02f;

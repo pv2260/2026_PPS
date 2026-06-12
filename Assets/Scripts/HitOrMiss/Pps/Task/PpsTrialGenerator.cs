@@ -45,50 +45,127 @@ namespace HitOrMiss.Pps
                 ? new System.Random(asset.RngSeed.Value + blockIndex)
                 : new System.Random();
 
-            int nVT = asset.VtTrialsPerBlock;
-            int nV  = asset.VisualOnlyTrialsPerBlock;
-            int nT  = asset.TactileOnlyTrialsPerBlock;
+            var trials = new List<PpsTrialDefinition>();
 
-            int total = nVT + nV + nT;
+            // ------------------------------------------------------------
+            // 1. VISUOTACTILE TRIALS
+            // ------------------------------------------------------------
+            // Desired:
+            // 3 repetitions x 7 distances x 4 speed-width conditions = 84 VT trials
+            //
+            // For each distance:
+            //   Fast/Wide, Fast/Narrow, Slow/Wide, Slow/Narrow
+            // repeated 3 times.
+            // ------------------------------------------------------------
 
-            var trials = new List<PpsTrialDefinition>(total);
+            const int vtRepetitionsPerConditionPerDistance = 3;
 
-            for (int i = 0; i < nVT; i++)
+            for (int rep = 0; rep < vtRepetitionsPerConditionPerDistance; rep++)
             {
-                trials.Add(PpsTrialDefinition.CreateBoth(
-                    blockIndex,
-                    Pick(Speeds, rng),
-                    Pick(Widths, rng),
-                    Pick(VibStages, rng)
-                ));
+                foreach (var stage in VibStages)
+                {
+                    foreach (var speed in Speeds)
+                    {
+                        foreach (var width in Widths)
+                        {
+                            trials.Add(PpsTrialDefinition.CreateBoth(
+                                blockIndex,
+                                speed,
+                                width,
+                                stage
+                            ));
+                        }
+                    }
+                }
             }
 
-            for (int i = 0; i < nV; i++)
+            // ------------------------------------------------------------
+            // 2. TACTILE-ONLY TRIALS
+            // ------------------------------------------------------------
+            // Desired:
+            // 7 distances x 4 timing conditions = 28 T trials
+            //
+            // Even though width has no visual meaning in T-only trials,
+            // we keep speed-width combinations so that timing is matched
+            // to the VT design and the logged schema stays consistent.
+            // ------------------------------------------------------------
+
+            foreach (var stage in VibStages)
             {
-                trials.Add(PpsTrialDefinition.CreateVisualOnly(
-                    blockIndex,
-                    Pick(Speeds, rng),
-                    Pick(Widths, rng)
-                ));
+                foreach (var speed in Speeds)
+                {
+                    foreach (var width in Widths)
+                    {
+                        trials.Add(PpsTrialDefinition.CreateTactileOnly(
+                            blockIndex,
+                            speed,
+                            width,
+                            stage
+                        ));
+                    }
+                }
             }
 
-            for (int i = 0; i < nT; i++)
+            // ------------------------------------------------------------
+            // 3. VISUAL-ONLY TRIALS
+            // ------------------------------------------------------------
+            // Desired:
+            // 7 repetitions x 4 speed-width conditions = 28 V trials
+            //
+            // Visual-only trials have no vibration stage.
+            // ------------------------------------------------------------
+
+            const int visualOnlyRepetitionsPerCondition = 7;
+
+            for (int rep = 0; rep < visualOnlyRepetitionsPerCondition; rep++)
             {
-                trials.Add(PpsTrialDefinition.CreateTactileOnly(
-                    blockIndex,
-                    Pick(Speeds, rng),
-                    Pick(Widths, rng),
-                    Pick(VibStages, rng)
-                ));
+                foreach (var speed in Speeds)
+                {
+                    foreach (var width in Widths)
+                    {
+                        trials.Add(PpsTrialDefinition.CreateVisualOnly(
+                            blockIndex,
+                            speed,
+                            width
+                        ));
+                    }
+                }
+            }
+
+            // ------------------------------------------------------------
+            // 4. SAFETY CHECK
+            // ------------------------------------------------------------
+            // Expected total:
+            // VT = 84
+            // T  = 28
+            // V  = 28
+            // Total = 140
+            // ------------------------------------------------------------
+
+            int expectedTotal = 140;
+
+            if (trials.Count != expectedTotal)
+            {
+                throw new InvalidOperationException(
+                    $"PPS trial generation error: expected {expectedTotal} trials, but generated {trials.Count}."
+                );
+            }
+
+            // Optional: if your asset still has TrialsPerBlock, make sure it agrees.
+            if (asset.TrialsPerBlock != expectedTotal)
+            {
+                throw new InvalidOperationException(
+                    $"PpsTaskAsset.TrialsPerBlock is {asset.TrialsPerBlock}, but the balanced generator requires {expectedTotal} trials per block."
+                );
             }
 
             if (asset.OrderingStrategy == TrialOrder.Shuffled)
                 Shuffle(trials, rng);
 
             AssignIds(trials, blockIndex);
+
             return trials.ToArray();
         }
-
         /// <summary>
         /// Practice block: one of each trial type (V, T, VT).
         /// </summary>

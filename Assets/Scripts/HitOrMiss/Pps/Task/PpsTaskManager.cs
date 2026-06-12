@@ -275,7 +275,7 @@ namespace HitOrMiss.Pps
         }
 
         /// <summary>
-        /// Runs a sequence of trials with an inter-trial interval after each trial.
+        /// Runs a sequence of trials with an inter-trial interval before every trial.
         ///
         /// In the future, PPSAppController should call this or RunOneTrial
         /// as part of the higher-level experiment flow.
@@ -320,24 +320,9 @@ namespace HitOrMiss.Pps
 
             foreach (var trial in trials)
             {
-                while (m_Paused)
-                {
-                    if (m_AbortCurrentRunRequested)
-                        yield break;
-
-                    yield return null;
-                }
-
-                if (m_AbortCurrentRunRequested)
-                    yield break;
-
-                yield return RunOneTrial(trial);
-
-                if (m_AbortCurrentRunRequested)
-                    yield break;
-
-                m_TrialsCompletedInBlock++;
-
+                // ------------------------------------------------------------
+                // ITI BEFORE EVERY TRIAL
+                // ------------------------------------------------------------
                 float iti = NextItiSeconds();
                 float elapsedIti = 0f;
 
@@ -357,6 +342,27 @@ namespace HitOrMiss.Pps
                     elapsedIti += Time.deltaTime;
                     yield return null;
                 }
+
+                // ------------------------------------------------------------
+                // Trial starts only AFTER the ITI has completed
+                // ------------------------------------------------------------
+                while (m_Paused)
+                {
+                    if (m_AbortCurrentRunRequested)
+                        yield break;
+
+                    yield return null;
+                }
+
+                if (m_AbortCurrentRunRequested)
+                    yield break;
+
+                yield return RunOneTrial(trial);
+
+                if (m_AbortCurrentRunRequested)
+                    yield break;
+
+                m_TrialsCompletedInBlock++;
             }
         }
 
@@ -415,6 +421,19 @@ namespace HitOrMiss.Pps
             m_VibrationFiredTime = double.NaN;
             m_FirstResponseTime = double.NaN;
             m_Responded = false;
+
+            // Use the longest speed duration as the common trial duration.
+            // Fast trials keep their true timing, but wait at the end so that
+            // fast and slow trials have the same total duration.
+            float matchedTrialDuration = Mathf.Max(
+                m_TaskAsset.DurationFor(PpsSpeed.Fast),
+                m_TaskAsset.DurationFor(PpsSpeed.Slow)
+            );
+
+            // This marks the beginning of the trial timing window.
+            // For visual/VT trials, this is the looming onset.
+            // For tactile-only trials, this is the start of the matched timing window.
+            double trialTimingStart = Time.timeAsDouble;
 
             // Stores the time at which the looming stimulus reaches each distance stage.
             // Index corresponds to DistanceStage enum values.
@@ -496,6 +515,28 @@ namespace HitOrMiss.Pps
                         FireVibration(trial, stage);
                     }
                 });
+            }
+
+            // ------------------------------------------------------------
+            // EEG alignment padding
+            // ------------------------------------------------------------
+            // Fast trials finish earlier than slow trials. We do not delay
+            // the onset or the vibration. Instead, we wait at the end so
+            // every trial has the same total duration before moving on.
+            float elapsedTrialTime = (float)(Time.timeAsDouble - trialTimingStart);
+            float paddingTime = Mathf.Max(0f, matchedTrialDuration - elapsedTrialTime);
+
+            if (paddingTime > 0f)
+            {
+                Debug.Log(
+                    $"[PPS EEG PADDING] trial={trial.trialId} | " +
+                    $"speed={trial.speed} | " +
+                    $"elapsed={elapsedTrialTime:F3}s | " +
+                    $"padding={paddingTime:F3}s | " +
+                    $"matchedDuration={matchedTrialDuration:F3}s"
+                );
+
+                yield return new WaitForSeconds(paddingTime);
             }
 
             // Store stage-crossing times in the result.

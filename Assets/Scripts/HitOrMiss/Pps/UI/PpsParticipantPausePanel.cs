@@ -70,10 +70,22 @@ namespace HitOrMiss.Pps
 
         public void RequestPause()
         {
+            Debug.Log("[PpsParticipantPausePanel] RequestPause was called.");
+
             if (m_AppController != null)
+            {
+                Debug.Log("[PpsParticipantPausePanel] Forwarding pause request to PpsAppController.");
                 m_AppController.RequestParticipantPause();
+            }
             else
-                Show();
+            {
+                Debug.LogWarning("[PpsParticipantPausePanel] No AppController assigned.");
+            }
+
+            // Show the panel immediately.
+            // We do not wait for SessionPaused because the pause request may be accepted
+            // at the next trial boundary, but the participant needs visual confirmation now.
+            Show();
         }
 
         private void OnPaused()
@@ -93,6 +105,8 @@ namespace HitOrMiss.Pps
 
         public void Show()
         {
+            Debug.Log("[PpsParticipantPausePanel] Show pause panel.");
+
             if (m_StatusText != null)
                 m_StatusText.text = "Task paused. Choose how to continue.";
 
@@ -101,8 +115,10 @@ namespace HitOrMiss.Pps
 
             if (m_Root != null)
                 m_Root.SetActive(true);
+            else
+                Debug.LogError("[PpsParticipantPausePanel] Root is missing.");
         }
-
+        
         public void Hide()
         {
             if (m_Root != null)
