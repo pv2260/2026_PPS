@@ -15215,6 +15215,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: HitOrMissComponents
       objectReference: {fileID: 0}
+    - target: {fileID: 3759500561752380470, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
+      propertyPath: m_ComPort
+      value: COM8
+      objectReference: {fileID: 0}
     - target: {fileID: 3799011170388618083, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
       propertyPath: m_AnchorMax.y
       value: 0.5

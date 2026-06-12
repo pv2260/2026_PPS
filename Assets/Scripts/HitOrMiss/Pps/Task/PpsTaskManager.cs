@@ -476,13 +476,43 @@ namespace HitOrMiss.Pps
                 // FLORE TRIGGERS
                 // m_MarkerEmitter?.Emit("pps_loom_onset", trial.trialId);
                 // Emit trial-start marker for EEG/event synchronization.
+                // int triggerCode = TriggerEncoder.EncodeTask1(
+                //     ToTask1TrialType(trial.modality),
+                //     ToTactilePosition(trial.modality, trial.vibrationStage),
+                //     ToTask1Speed(trial.speed),
+                //     ToTask1Width(trial.width)
+                // );
+                // m_MarkerEmitter?.Emit("pps_loom_onset",  extra: triggerCode.ToString());
+
                 int triggerCode = TriggerEncoder.EncodeTask1(
-                    ToTask1TrialType(trial.modality),
-                    ToTactilePosition(trial.modality, trial.vibrationStage),
-                    ToTask1Speed(trial.speed),
-                    ToTask1Width(trial.width)
+                    trial.vibrationStage.ToString(),
+                    trial.modality switch
+                    {
+                        PpsModality.VisualOnly  => TriggerEncoder.Task1TrialType.VisualOnly,
+                        PpsModality.TactileOnly => TriggerEncoder.Task1TrialType.VibrotactileOnly,
+                        PpsModality.Both        => TriggerEncoder.Task1TrialType.Both,
+                        _                       => TriggerEncoder.Task1TrialType.VisualOnly
+                    },
+                    trial.width switch
+                    {
+                        PpsWidth.Narrow => TriggerEncoder.Task1Width.Narrow,
+                        PpsWidth.Wide   => TriggerEncoder.Task1Width.Wide,
+                        _               => TriggerEncoder.Task1Width.Narrow
+                    },
+                    trial.speed switch
+                    {
+                        PpsSpeed.Slow => TriggerEncoder.Task1Speed.Slow,
+                        PpsSpeed.Fast => TriggerEncoder.Task1Speed.Fast,
+                        _             => TriggerEncoder.Task1Speed.Slow
+                    }
                 );
-                m_MarkerEmitter?.Emit("pps_loom_onset",  extra: triggerCode.ToString());
+
+                m_MarkerEmitter?.Emit(
+                    "pps_trial_start",
+                    trial.trialId,
+                    trial.modality.ToString(),
+                    extra: triggerCode.ToString()
+                );
 
                 bool vibFired = false;
 
@@ -669,7 +699,7 @@ namespace HitOrMiss.Pps
             );
 
             // Emit trial-end marker.
-            m_MarkerEmitter?.Emit("pps_trial_end", extra: m_Responded ? "62" : "63");
+            // m_MarkerEmitter?.Emit("pps_trial_end", extra: m_Responded ? "62" : "63");
 
             // Stop accepting responses after the trial is finished.
             m_CaptureResponses = false;
@@ -707,8 +737,9 @@ namespace HitOrMiss.Pps
 
             // FLORE TRIGGERS
             // m_MarkerEmitter?.Emit("pps_vib_fired", trial.trialId, extra: stage.ToString());
-            m_MarkerEmitter?.Emit("pps_vib_fired_trigger");
-            m_MarkerEmitter?.Emit("pps_vib_fired");
+            // m_MarkerEmitter?.Emit("pps_vib_fired_trigger");
+            // m_MarkerEmitter?.Emit("pps_vib_fired");
+            m_MarkerEmitter?.Emit("pps_vib_fired", trial.trialId, extra: stage.ToString());
         }
 
         /// <summary>
@@ -774,101 +805,101 @@ namespace HitOrMiss.Pps
             return float.IsNaN(value) ? "NA" : value.ToString("F1");
         }
         
-        private static TriggerEncoder.Task1TrialType ToTask1TrialType(PpsModality modality)
-        {
-            switch (modality)
-            {
-                case PpsModality.VisualOnly:
-                    return TriggerEncoder.Task1TrialType.VisualOnly;
+    //     private static TriggerEncoder.Task1TrialType ToTask1TrialType(PpsModality modality)
+    //     {
+    //         switch (modality)
+    //         {
+    //             case PpsModality.VisualOnly:
+    //                 return TriggerEncoder.Task1TrialType.VisualOnly;
 
-                case PpsModality.TactileOnly:
-                    return TriggerEncoder.Task1TrialType.VibrotactileOnly;
+    //             case PpsModality.TactileOnly:
+    //                 return TriggerEncoder.Task1TrialType.VibrotactileOnly;
 
-                case PpsModality.Both:
-                    return TriggerEncoder.Task1TrialType.VisualAndVibrotactile;
+    //             case PpsModality.Both:
+    //                 return TriggerEncoder.Task1TrialType.VisualAndVibrotactile;
 
-                default:
-                    throw new ArgumentOutOfRangeException(
-                        nameof(modality),
-                        modality,
-                        "Unknown PPS modality."
-                    );
-            }
-        }
+    //             default:
+    //                 throw new ArgumentOutOfRangeException(
+    //                     nameof(modality),
+    //                     modality,
+    //                     "Unknown PPS modality."
+    //                 );
+    //         }
+    //     }
 
-        private static TriggerEncoder.TactilePosition ToTactilePosition(
-            PpsModality modality,
-            DistanceStage stage
-        )
-        {
-            // Visual-only trials should not have a tactile / vibration distance marker.
-            if (modality == PpsModality.VisualOnly)
-                return TriggerEncoder.TactilePosition.None;
+    //     private static TriggerEncoder.TactilePosition ToTactilePosition(
+    //         PpsModality modality,
+    //         DistanceStage stage
+    //     )
+    //     {
+    //         // Visual-only trials should not have a tactile / vibration distance marker.
+    //         if (modality == PpsModality.VisualOnly)
+    //             return TriggerEncoder.TactilePosition.None;
 
-            switch (stage)
-            {
-                case DistanceStage.D1:
-                    return TriggerEncoder.TactilePosition.D1;
+    //         switch (stage)
+    //         {
+    //             case DistanceStage.D1:
+    //                 return TriggerEncoder.TactilePosition.D1;
 
-                case DistanceStage.D2:
-                    return TriggerEncoder.TactilePosition.D2;
+    //             case DistanceStage.D2:
+    //                 return TriggerEncoder.TactilePosition.D2;
 
-                case DistanceStage.D3:
-                    return TriggerEncoder.TactilePosition.D3;
+    //             case DistanceStage.D3:
+    //                 return TriggerEncoder.TactilePosition.D3;
 
-                case DistanceStage.D4:
-                    return TriggerEncoder.TactilePosition.D4;
+    //             case DistanceStage.D4:
+    //                 return TriggerEncoder.TactilePosition.D4;
 
-                case DistanceStage.D5:
-                    return TriggerEncoder.TactilePosition.D5;
+    //             case DistanceStage.D5:
+    //                 return TriggerEncoder.TactilePosition.D5;
 
-                case DistanceStage.D6:
-                    return TriggerEncoder.TactilePosition.D6;
+    //             case DistanceStage.D6:
+    //                 return TriggerEncoder.TactilePosition.D6;
 
-                case DistanceStage.D7:
-                    return TriggerEncoder.TactilePosition.D7;
+    //             case DistanceStage.D7:
+    //                 return TriggerEncoder.TactilePosition.D7;
 
-                default:
-                    return TriggerEncoder.TactilePosition.None;
-            }
-        }
+    //             default:
+    //                 return TriggerEncoder.TactilePosition.None;
+    //         }
+    //     }
 
-        private static TriggerEncoder.Task1Speed ToTask1Speed(PpsSpeed speed)
-        {
-            switch (speed)
-            {
-                case PpsSpeed.Slow:
-                    return TriggerEncoder.Task1Speed.Slow;
+    //     private static TriggerEncoder.Task1Speed ToTask1Speed(PpsSpeed speed)
+    //     {
+    //         switch (speed)
+    //         {
+    //             case PpsSpeed.Slow:
+    //                 return TriggerEncoder.Task1Speed.Slow;
 
-                case PpsSpeed.Fast:
-                    return TriggerEncoder.Task1Speed.Fast;
+    //             case PpsSpeed.Fast:
+    //                 return TriggerEncoder.Task1Speed.Fast;
 
-                default:
-                    throw new ArgumentOutOfRangeException(
-                        nameof(speed),
-                        speed,
-                        "Unknown PPS speed."
-                    );
-            }
-        }
+    //             default:
+    //                 throw new ArgumentOutOfRangeException(
+    //                     nameof(speed),
+    //                     speed,
+    //                     "Unknown PPS speed."
+    //                 );
+    //         }
+    //     }
 
-        private static TriggerEncoder.Task1Width ToTask1Width(PpsWidth width)
-        {
-            switch (width)
-            {
-                case PpsWidth.Narrow:
-                    return TriggerEncoder.Task1Width.Narrow;
+    //     private static TriggerEncoder.Task1Width ToTask1Width(PpsWidth width)
+    //     {
+    //         switch (width)
+    //         {
+    //             case PpsWidth.Narrow:
+    //                 return TriggerEncoder.Task1Width.Narrow;
 
-                case PpsWidth.Wide:
-                    return TriggerEncoder.Task1Width.Wide;
+    //             case PpsWidth.Wide:
+    //                 return TriggerEncoder.Task1Width.Wide;
 
-                default:
-                    throw new ArgumentOutOfRangeException(
-                        nameof(width),
-                        width,
-                        "Unknown PPS width."
-                    );
-            }
-        }
+    //             default:
+    //                 throw new ArgumentOutOfRangeException(
+    //                     nameof(width),
+    //                     width,
+    //                     "Unknown PPS width."
+    //                 );
+    //         }
+    //     }
     }
 }

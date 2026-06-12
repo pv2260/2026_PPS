@@ -11145,9 +11145,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HitOrMiss.EegMarkerEmitter
   m_ParticipantId: P000
-  m_UseTrigger: 1
-  m_TcpHost: 127.0.0.1
-  m_TcpPort: 5005
+  m_UseSerialBridge: 1
+  m_ComPort: COM8
+  m_BaudRate: 115200
   m_TriggerDuration: 0.01
 --- !u!4 &624187189
 Transform:
@@ -37951,9 +37951,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_ParticipantId: P000
-  m_UseTrigger: 1
-  m_TcpHost: 127.0.0.1
-  m_TcpPort: 5005
+  m_UseSerialBridge: 1
+  m_ComPort: COM3
+  m_BaudRate: 115200
   m_TriggerDuration: 0.01
 --- !u!114 &949874007889434172
 MonoBehaviour:
@@ -38912,12 +38912,12 @@ MonoBehaviour:
   m_Ui: {fileID: 1643808109}
   m_TaskManager: {fileID: 867388212}
   m_TaskAsset: {fileID: 11400000, guid: b6a0232453b4a5f4182f868a7d2920f0, type: 2}
-  m_EegMarkerEmitter: {fileID: 0}
   m_TaskLogger: {fileID: 0}
+  m_EegMarkerEmitter: {fileID: 0}
   m_FixationCross: {fileID: 0}
   m_StandingCross: {fileID: 0}
   m_ClinicianPanel: {fileID: 0}
-  m_SubjectIdFallback: PAMi
+  m_SubjectIdFallback: FLORI
   m_AutoStartOnPlay: 1
 --- !u!1 &9041478014344155232
 GameObject:

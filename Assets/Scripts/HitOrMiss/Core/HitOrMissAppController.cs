@@ -255,6 +255,20 @@ namespace HitOrMiss
                 m_TaskManager.TrialJudged += m_TaskLogger.LogTrial;
             }
 
+            if (m_EegMarkerEmitter == null)
+            {
+                m_EegMarkerEmitter = FindAnyObjectByType<EegMarkerEmitter>();
+
+                if (m_EegMarkerEmitter == null)
+                {
+                    Debug.LogWarning("[PPSAppController] No EegMarkerEmitter found in the scene. EEG markers will be disabled.");
+                }
+                else
+                {
+                    Debug.Log("[PPSAppController] Found EegMarkerEmitter automatically.");
+                }
+            }
+            
             if (m_EegMarkerEmitter != null)
             {
                 string sessionId = System.DateTime.Now.ToString("yyyyMMdd_HHmmss");

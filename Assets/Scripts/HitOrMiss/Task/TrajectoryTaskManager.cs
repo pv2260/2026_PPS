@@ -198,7 +198,7 @@ namespace HitOrMiss
             EnsureCrosshair();
             SetCrosshairActive(true);
 
-            m_MarkerEmitter?.Emit("block_start");
+            m_MarkerEmitter?.Emit("block_triL_start");
             BlockStarted?.Invoke(blockIndex);
 
             Debug.Log($"[TrajectoryTaskManager] Block {blockIndex + 1} started with {trials.Length} trials. " +
@@ -568,13 +568,18 @@ namespace HitOrMiss
                 !hasPrev                  ? TransitionStatus.Start :
                 currentLevel == prevLevel ? TransitionStatus.Repetition :
                                             TransitionStatus.Transition;
-            int triggerCode = TriggerEncoder.EncodeTask2(trial.category, currentLevel, tStatus);
-            rt.TrialTriggerCode = triggerCode;
-            rt.TriggerTimestamp = Time.timeAsDouble;
+            // int triggerCode = TriggerEncoder.EncodeTask2(trial.category, currentLevel, tStatus);
+            // rt.TrialTriggerCode = triggerCode;
+            // rt.TriggerTimestamp = Time.timeAsDouble;
 
-            // Human-readable string marker for Console / log files; numeric
-            // BCD as the "extra" payload field for the parallel-port / LSL.
-            m_MarkerEmitter?.Emit("trial_spawn", extra: triggerCode.ToString());
+            // // Human-readable string marker for Console / log files; numeric
+            // // BCD as the "extra" payload field for the parallel-port / LSL.
+            // m_MarkerEmitter?.Emit("trial_spawn", extra: triggerCode.ToString());
+            int triggerCode = TriggerEncoder.EncodeTask2(trial.category, currentLevel, tStatus);
+            m_MarkerEmitter?.Emit("trial_spawn", trial.trialId,
+                trial.category.ToCode(), trial.expectedResponse.ToString(),
+                extra: triggerCode.ToString());
+            
             TrialSpawned?.Invoke(trial.trialId, trial);
         }
 
@@ -766,7 +771,7 @@ namespace HitOrMiss
                 failureReason = failureReason,
                 trialTriggerCode = trial.TrialTriggerCode,
                 triggerTimestamp = trial.TriggerTimestamp,
-                responseTriggerCode = TriggerEncoder.EncodeResponse(received),
+                //responseTriggerCode = TriggerEncoder.EncodeResponse(received),
               trialInterrupted = (failureReason == "block_stopped"),
                 wasTooSlow = wasTooSlow,
             };

@@ -16,10 +16,8 @@ namespace HitOrMiss.Pps
         [SerializeField] private PpsTaskAsset m_TaskAsset;
 
         [Header("Logging")]
-        [SerializeField] EegMarkerEmitter m_EegMarkerEmitter;
-        [Tooltip("Single TaskLogger shared with Task 2. Drag the scene's TaskLogger here. " +
-                 "It writes the per-session folder, trials CSV, setup.json, and session.json.")]
         [SerializeField] TaskLogger m_TaskLogger;
+        [SerializeField] EegMarkerEmitter m_EegMarkerEmitter;
 
         // Cached delegate so we can unsubscribe with the same reference.
         System.Action<PpsTrialResult> m_LoggerTrialHandler;
@@ -243,6 +241,20 @@ namespace HitOrMiss.Pps
         private IEnumerator RunSessionInternal()
         {
             // EEG marker session
+            if (m_EegMarkerEmitter == null)
+            {
+                m_EegMarkerEmitter = FindAnyObjectByType<EegMarkerEmitter>();
+
+                if (m_EegMarkerEmitter == null)
+                {
+                    Debug.LogWarning("[PPSAppController] No EegMarkerEmitter found in the scene. EEG markers will be disabled.");
+                }
+                else
+                {
+                    Debug.Log("[PPSAppController] Found EegMarkerEmitter automatically.");
+                }
+            }
+
             if (m_EegMarkerEmitter != null)
             {
                 string sessionId = !string.IsNullOrEmpty(m_SessionMetadata.sessionId)
