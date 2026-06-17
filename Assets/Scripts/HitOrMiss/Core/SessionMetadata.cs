@@ -53,7 +53,10 @@ namespace HitOrMiss
 
         // Task config snapshot — Task 1 (PPS)
         public int task1NumberOfBlocks;
-        public int task1TrialsPerBlock;
+        public int task1TrialsPerBlock;            // Derived: VT + V + T
+        public int task1VtTrialsPerBlock;          // Visuotactile (loom + vibration)
+        public int task1VisualOnlyTrialsPerBlock;  // Loom only, no vibration
+        public int task1TactileOnlyTrialsPerBlock; // Vibration only, no loom
         public float task1BreakDurationSeconds;
         public float task1NarrowOffsetCm;
         public float task1WideOffsetCm;
@@ -101,6 +104,9 @@ namespace HitOrMiss
 
                 task1NumberOfBlocks = 4,
                 task1TrialsPerBlock = 40,
+                task1VtTrialsPerBlock = 28,
+                task1VisualOnlyTrialsPerBlock = 6,
+                task1TactileOnlyTrialsPerBlock = 6,
                 task1BreakDurationSeconds = 30f,
                 task1NarrowOffsetCm = 5f,
                 task1WideOffsetCm = 15f,
@@ -149,6 +155,9 @@ namespace HitOrMiss
             if (asset == null) return;
             task1NumberOfBlocks = asset.BlockCount;
             task1TrialsPerBlock = asset.TrialsPerBlock;
+            task1VtTrialsPerBlock = asset.VtTrialsPerBlock;
+            task1VisualOnlyTrialsPerBlock = asset.VisualOnlyTrialsPerBlock;
+            task1TactileOnlyTrialsPerBlock = asset.TactileOnlyTrialsPerBlock;
             task1BreakDurationSeconds = asset.RestDurationSeconds;
             // Narrow = shoulder width itself (0 cm offset from shoulder).
             // Wide   = shoulder width + WideOffsetMeters (cm).
@@ -247,6 +256,9 @@ namespace HitOrMiss
                 sb.AppendLine("  \"task1_parameters\": {");
                 sb.AppendLine($"    \"number_of_blocks\": {task1NumberOfBlocks},");
                 sb.AppendLine($"    \"trials_per_block\": {task1TrialsPerBlock},");
+                sb.AppendLine($"    \"vt_trials_per_block\": {task1VtTrialsPerBlock},");
+                sb.AppendLine($"    \"visual_only_trials_per_block\": {task1VisualOnlyTrialsPerBlock},");
+                sb.AppendLine($"    \"tactile_only_trials_per_block\": {task1TactileOnlyTrialsPerBlock},");
                 sb.AppendLine($"    \"break_duration_seconds\": {task1BreakDurationSeconds},");
                 sb.AppendLine($"    \"narrow_offset_cm\": {task1NarrowOffsetCm},");
                 sb.AppendLine($"    \"wide_offset_cm\": {task1WideOffsetCm},");

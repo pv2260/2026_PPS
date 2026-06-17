@@ -57,6 +57,11 @@ namespace HitOrMiss
         /// <summary>Which task this logger is currently recording. Set by BeginSession.</summary>
         public TaskKind ActiveTaskKind => m_TaskKind;
 
+        /// <summary>True between BeginSession and EndSession. Lets app
+        /// controllers expose a real "currently recording" signal to the
+        /// clinician UI instead of inferring it from session state.</summary>
+        public bool IsSessionOpen => m_SessionOpen;
+
         /// <summary>
         /// Supplies the session metadata that will be written to
         /// <c>metadata.json</c> and stamped into each trial row. Must be called

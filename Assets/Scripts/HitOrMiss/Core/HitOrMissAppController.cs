@@ -161,6 +161,9 @@ namespace HitOrMiss
         public string ParticipantId { get; set; } = "P000";
         public int CurrentBlockIndex { get; private set; }
         public bool IsPaused => m_TaskManager != null && m_TaskManager.IsPaused;
+        /// <summary>True while the TaskLogger is open (CSV is being written).
+        /// False during the intro/practice flow.</summary>
+        public bool IsRecording => m_TaskLogger != null && m_TaskLogger.IsSessionOpen;
         public SupportedLanguage CurrentLanguage => m_Language;
 
         public event System.Action SessionPaused;

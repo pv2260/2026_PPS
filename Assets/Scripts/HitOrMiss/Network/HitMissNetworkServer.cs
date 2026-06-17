@@ -70,6 +70,12 @@ namespace HitOrMiss.Network
         readonly List<MiniWebSocket> m_WsConnections = new();
         readonly object m_WsLock = new();
 
+        // Pre-loaded SPA bytes. Keyed by relative path under m_ClinicianRoot
+        // (e.g. "index.html", "app.js"). Filled at OnEnable so the first
+        // browser request doesn't pay a disk read on the Unity main thread.
+        readonly Dictionary<string, byte[]> m_StaticCache =
+            new(StringComparer.OrdinalIgnoreCase);
+
         public bool IsRunning => m_Server != null && m_Server.IsRunning;
         public string BaseUrl { get; private set; } = "";
 
@@ -78,6 +84,8 @@ namespace HitOrMiss.Network
             m_ClinicianRoot = Path.Combine(Application.streamingAssetsPath, "clinician");
             m_LogsRoot = Path.Combine(Application.persistentDataPath, "Logs");
             Directory.CreateDirectory(m_LogsRoot);
+
+            WarmStaticCache();
 
             try
             {
@@ -99,6 +107,38 @@ namespace HitOrMiss.Network
             {
                 Debug.LogError($"[HitMissNetworkServer] Failed to start: {e.Message}");
             }
+        }
+
+        // Eager-loads every file under m_ClinicianRoot into memory so the
+        // first browser request hits a dictionary lookup instead of a Unity
+        // main-thread disk read. Big wins on initial page load right after
+        // pressing Play in the editor.
+        void WarmStaticCache()
+        {
+            m_StaticCache.Clear();
+            if (!Directory.Exists(m_ClinicianRoot)) return;
+
+            int count = 0;
+            long bytes = 0;
+            string rootFull = Path.GetFullPath(m_ClinicianRoot);
+            foreach (var file in Directory.EnumerateFiles(m_ClinicianRoot, "*", SearchOption.AllDirectories))
+            {
+                try
+                {
+                    byte[] data = File.ReadAllBytes(file);
+                    string rel = Path.GetFullPath(file).Substring(rootFull.Length)
+                        .TrimStart(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                        .Replace('\\', '/');
+                    m_StaticCache[rel] = data;
+                    count++;
+                    bytes += data.LongLength;
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning($"[HitMissNetworkServer] Failed to cache {file}: {e.Message}");
+                }
+            }
+            Debug.Log($"[HitMissNetworkServer] Static cache warmed: {count} files, {bytes / 1024} KB.");
         }
 
         void OnDisable()
@@ -263,6 +303,7 @@ namespace HitOrMiss.Network
                         currentBlockIndex   = m_PpsTaskManager != null ? m_PpsTaskManager.CurrentBlockIndex : -1,
                         isRunning           = m_PpsAppController.IsRunning,
                         isPaused            = m_PpsAppController.IsPaused,
+                        isRecording         = m_PpsAppController.IsRecording,
                         trialsCompletedInBlock = m_PpsTaskManager != null ? m_PpsTaskManager.TrialsCompletedInBlock : 0,
                         totalTrialsInBlock     = m_PpsTaskManager != null ? m_PpsTaskManager.TotalTrialsInBlock     : 0,
                         taskKind               = TaskKind.Task1Pps.ToString(),
@@ -277,6 +318,7 @@ namespace HitOrMiss.Network
                     currentBlockIndex = m_AppController != null ? m_AppController.CurrentBlockIndex : -1,
                     isRunning = m_TaskManager != null && m_TaskManager.IsRunning,
                     isPaused = m_TaskManager != null && m_TaskManager.IsPaused,
+                    isRecording = m_AppController != null && m_AppController.IsRecording,
                     taskKind = TaskKind.Task2HitOrMiss.ToString(),
                 };
                 if (m_TaskManager != null)
@@ -392,6 +434,21 @@ namespace HitOrMiss.Network
             }
 
             if (string.IsNullOrEmpty(rel)) rel = "index.html";
+
+            // Try the warmed cache first. Hit = sub-microsecond serve, no
+            // disk I/O on the Unity main thread. Miss = fall back to a disk
+            // read (handles files added after Play, e.g. live editing).
+            if (m_StaticCache.TryGetValue(rel, out var cachedBytes))
+            {
+                resp.StatusCode = 200;
+                resp.Headers["content-type"] = MimeFor(rel);
+                // Tell the browser it MAY cache but must revalidate. We don't
+                // emit ETag yet, so this is effectively "always revalidate";
+                // good for dev where SPA edits are frequent.
+                resp.Headers["cache-control"] = "no-cache";
+                resp.Body = cachedBytes;
+                return;
+            }
 
             string fullPath = Path.GetFullPath(Path.Combine(m_ClinicianRoot, rel));
             if (!fullPath.StartsWith(Path.GetFullPath(m_ClinicianRoot)))
@@ -523,6 +580,7 @@ namespace HitOrMiss.Network
                 m_PpsAppController.SessionEnded   += OnSessionEnded;
                 m_PpsAppController.SessionPaused  += OnSessionPaused;
                 m_PpsAppController.SessionResumed += OnSessionResumed;
+                m_PpsAppController.RecordingStarted += OnRecordingStarted;
             }
         }
 
@@ -554,7 +612,14 @@ namespace HitOrMiss.Network
                 m_PpsAppController.SessionEnded   -= OnSessionEnded;
                 m_PpsAppController.SessionPaused  -= OnSessionPaused;
                 m_PpsAppController.SessionResumed -= OnSessionResumed;
+                m_PpsAppController.RecordingStarted -= OnRecordingStarted;
             }
+        }
+
+        void OnRecordingStarted()
+        {
+            Broadcast("recording_started", new SimpleEvent { note = "recording" });
+            _ = BroadcastStatusAsync();
         }
 
         // ---- PPS event handlers ----

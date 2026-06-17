@@ -41,6 +41,12 @@ namespace HitOrMiss.Pps
         SessionMetadata m_SessionMetadata;
         bool m_SessionMetadataSet;
 
+        // Runtime-only clone of m_TaskAsset that carries the clinician form's
+        // overrides (block count, per-modality trial counts, ITI, etc). Lives
+        // for the duration of one session; destroyed on EndSession / Stop.
+        PpsTaskAsset m_SessionAsset;
+        PpsTaskAsset Asset => m_SessionAsset != null ? m_SessionAsset : m_TaskAsset;
+
         Coroutine m_SessionCoroutine;
         private bool m_Running;
         private bool m_StopRequested;
@@ -58,6 +64,15 @@ namespace HitOrMiss.Pps
         public event System.Action SessionEnded;
         public event System.Action SessionPaused;
         public event System.Action SessionResumed;
+        /// <summary>Fires the moment the TaskLogger actually opens the
+        /// per-session folder (i.e. real CSV recording begins). Useful so the
+        /// clinician UI can flip a "REC" indicator only when data is being
+        /// written, not during the practice phase.</summary>
+        public event System.Action RecordingStarted;
+
+        /// <summary>True while the TaskLogger is open and the main blocks are
+        /// being recorded. False during practice and intro panels.</summary>
+        public bool IsRecording => m_TaskLogger != null && m_TaskLogger.IsSessionOpen;
         private bool m_RestartCurrentBlockRequested;
 
         /// <summary>
@@ -112,9 +127,27 @@ namespace HitOrMiss.Pps
                 m_SessionMetadataSet = true;
                 Debug.Log("[PPSAppController] No metadata set; using defaults derived from the task asset.");
             }
-            else
+            // NOTE: when metadata IS already set (clinician form), we do NOT
+            // overwrite it from the asset. The form values are the source of
+            // truth; they get pushed INTO the asset clone below.
+
+            // Apply form overrides onto a session-local clone so the on-disk
+            // PpsTaskAsset stays untouched. The clone is what the TaskManager
+            // and PpsTrialGenerator read for block count, trial counts, ITI,
+            // wide offset, etc.
+            if (m_TaskAsset != null)
             {
-                m_SessionMetadata.PopulateFromPpsTaskAsset(m_TaskAsset);
+                m_SessionAsset = m_TaskAsset.CreateSessionClone();
+                m_SessionAsset.ApplyTask1SessionOverrides(m_SessionMetadata);
+                if (m_TaskManager != null) m_TaskManager.TaskAsset = m_SessionAsset;
+
+                Debug.Log("[PPSAppController] Session asset clone applied. " +
+                          $"BlockCount={m_SessionAsset.BlockCount}, " +
+                          $"VT={m_SessionAsset.VtTrialsPerBlock}, " +
+                          $"V={m_SessionAsset.VisualOnlyTrialsPerBlock}, " +
+                          $"T={m_SessionAsset.TactileOnlyTrialsPerBlock}, " +
+                          $"Break={m_SessionAsset.RestDurationSeconds}s, " +
+                          $"WideOffset={m_SessionAsset.WideOffsetMeters}m");
             }
 
             m_StopRequested = false;
@@ -302,10 +335,10 @@ namespace HitOrMiss.Pps
             // {blocksCount}, {currentBlock}, {totalBlocks}, or {breakTime}
             // resolves correctly from the first screen onward.
             m_Ui.SetTokens(
-                blocksCount:   m_TaskAsset.BlockCount,
+                blocksCount:   Asset.BlockCount,
                 currentBlock:  0,
-                totalBlocks:   m_TaskAsset.BlockCount,
-                breakSeconds:  m_TaskAsset.RestDurationSeconds
+                totalBlocks:   Asset.BlockCount,
+                breakSeconds:  Asset.RestDurationSeconds
             );
 
             yield return m_Ui.ShowWelcomeAndWait();
@@ -324,7 +357,7 @@ namespace HitOrMiss.Pps
             if (StopWasRequested()) { yield return StopExperiment(); yield break; }
 
             Debug.Log("[PPS] Starting VT-only practice.");
-            yield return m_TaskManager.RunTrials(PpsTrialGenerator.GenerateVTOnlyPractice(m_TaskAsset));
+            yield return m_TaskManager.RunTrials(PpsTrialGenerator.GenerateVTOnlyPractice(Asset));
             if (StopWasRequested()) { yield return StopExperiment(); yield break; }
 
             // ---- Practice 2: visual + tactile ----
@@ -332,7 +365,7 @@ namespace HitOrMiss.Pps
             if (StopWasRequested()) { yield return StopExperiment(); yield break; }
 
             Debug.Log("[PPS] Starting VT+Visual practice.");
-            yield return m_TaskManager.RunTrials(PpsTrialGenerator.GenerateVTVisualPractice(m_TaskAsset));
+            yield return m_TaskManager.RunTrials(PpsTrialGenerator.GenerateVTVisualPractice(Asset));
             if (StopWasRequested()) { yield return StopExperiment(); yield break; }
 
             yield return m_Ui.ShowNoFeedbackAndWait();
@@ -348,17 +381,23 @@ namespace HitOrMiss.Pps
             if (m_TaskLogger != null)
             {
                 m_TaskLogger.ParticipantId = ParticipantId;
-                m_SessionMetadata.PopulateFromPpsTaskAsset(m_TaskAsset);
+                // Do NOT PopulateFromPpsTaskAsset here — that would overwrite the
+                // clinician-form values that drove the session asset clone.
                 m_TaskLogger.SetMetadata(m_SessionMetadata);
-                m_TaskLogger.BeginSession(TaskKind.Task1Pps, m_TaskAsset.TaskName);
+                m_TaskLogger.BeginSession(TaskKind.Task1Pps, Asset.TaskName);
 
                 m_LoggerTrialHandler = m_TaskLogger.LogTrial;
                 m_TaskManager.TrialCompleted += m_LoggerTrialHandler;
+
+                Debug.Log("================================");
+                Debug.Log($"[PpsAppController] RECORDING STARTED -> {m_TaskLogger.SessionDirectory}");
+                Debug.Log("================================");
+                RecordingStarted?.Invoke();
             }
 
             m_TaskManager.BeginSession();
 
-            for (int blockIndex = 0; blockIndex < m_TaskAsset.BlockCount; blockIndex++)
+            for (int blockIndex = 0; blockIndex < Asset.BlockCount; blockIndex++)
             {
                 bool blockCompleted = false;
 
@@ -367,16 +406,16 @@ namespace HitOrMiss.Pps
                     m_RestartCurrentBlockRequested = false;
 
                     m_Ui.SetTokens(
-                        blocksCount:  m_TaskAsset.BlockCount,
+                        blocksCount:  Asset.BlockCount,
                         currentBlock: blockIndex + 1,
-                        totalBlocks:  m_TaskAsset.BlockCount,
-                        breakSeconds: m_TaskAsset.RestDurationSeconds
+                        totalBlocks:  Asset.BlockCount,
+                        breakSeconds: Asset.RestDurationSeconds
                     );
 
-                    yield return m_Ui.ShowBlockCounterAndWait(blockIndex, m_TaskAsset.BlockCount);
+                    yield return m_Ui.ShowBlockCounterAndWait(blockIndex, Asset.BlockCount);
                     if (StopWasRequested()) { yield return StopExperiment(); yield break; }
 
-                    PpsTrialDefinition[] trials = m_TaskAsset.GenerateBlock(blockIndex);
+                    PpsTrialDefinition[] trials = Asset.GenerateBlock(blockIndex);
 
                     yield return m_TaskManager.RunTrials(trials, blockIndex);
 
@@ -391,9 +430,9 @@ namespace HitOrMiss.Pps
                     blockCompleted = true;
                 }
 
-                if (blockIndex < m_TaskAsset.BlockCount - 1)
+                if (blockIndex < Asset.BlockCount - 1)
                 {
-                    yield return m_Ui.ShowBreakAndWait(m_TaskAsset.RestDurationSeconds);
+                    yield return m_Ui.ShowBreakAndWait(Asset.RestDurationSeconds);
                     if (StopWasRequested()) { yield return StopExperiment(); yield break; }
                 }
             }
@@ -411,21 +450,32 @@ namespace HitOrMiss.Pps
         }
 
         /// <summary>
-        /// Unsubscribes the logger from TrialCompleted and closes the session
-        /// folder. Safe to call multiple times; no-op if logging never began.
+        /// Unsubscribes the logger from TrialCompleted, closes the session
+        /// folder, and restores the original PpsTaskAsset on the task manager
+        /// (destroying the runtime clone). Safe to call multiple times.
         /// </summary>
         void CloseLoggingSession()
         {
             m_TaskManager.EndSession();
 
-            if (m_TaskLogger == null) return;
-
-            if (m_LoggerTrialHandler != null)
+            if (m_TaskLogger != null)
             {
-                m_TaskManager.TrialCompleted -= m_LoggerTrialHandler;
-                m_LoggerTrialHandler = null;
+                if (m_LoggerTrialHandler != null)
+                {
+                    m_TaskManager.TrialCompleted -= m_LoggerTrialHandler;
+                    m_LoggerTrialHandler = null;
+                }
+                m_TaskLogger.EndSession();
             }
-            m_TaskLogger.EndSession();
+
+            // Hand the manager back the on-disk asset and dispose of the
+            // session clone so we don't leak ScriptableObjects across runs.
+            if (m_SessionAsset != null)
+            {
+                if (m_TaskManager != null) m_TaskManager.TaskAsset = m_TaskAsset;
+                Destroy(m_SessionAsset);
+                m_SessionAsset = null;
+            }
         }
 
         private bool StopWasRequested()

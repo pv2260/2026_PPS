@@ -48,6 +48,11 @@ namespace HitOrMiss.Network
         public int totalTrialsInBlock;
         public bool isRunning;
         public bool isPaused;
+        // True while the TaskLogger is actively writing trial rows (i.e.
+        // past the practice phase, the real session is being recorded).
+        // The SPA uses this to flip a "REC" pill so the clinician knows
+        // when data is actually hitting disk.
+        public bool isRecording;
         // Which task this Unity instance is hosting. Lets the clinician SPA
         // hide the irrelevant task's fields/controls without having to infer
         // it from the phase string. Values: "Task1Pps", "Task2HitOrMiss".

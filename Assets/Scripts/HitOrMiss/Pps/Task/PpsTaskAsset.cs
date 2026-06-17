@@ -201,6 +201,47 @@ namespace HitOrMiss.Pps
         }
 
         /// <summary>
+        /// Returns a runtime-only clone of this asset that can be safely
+        /// mutated for the active session without touching the on-disk
+        /// ScriptableObject. The caller (PpsAppController) is responsible
+        /// for calling Destroy on the clone at session end.
+        /// </summary>
+        public PpsTaskAsset CreateSessionClone()
+        {
+            return Instantiate(this);
+        }
+
+        /// <summary>
+        /// Applies overrides from the clinician form (carried in
+        /// SessionMetadata) to this asset. Only call this on a
+        /// CreateSessionClone() result so the on-disk asset stays clean.
+        ///
+        /// Fields with zero or empty values are NOT overridden, so a
+        /// partially filled form still inherits sensible defaults.
+        /// </summary>
+        public void ApplyTask1SessionOverrides(SessionMetadata md)
+        {
+            if (md.task1NumberOfBlocks > 0)
+                m_BlockCount = md.task1NumberOfBlocks;
+
+            if (md.task1VtTrialsPerBlock > 0)
+                m_VtTrialsPerBlock = md.task1VtTrialsPerBlock;
+            if (md.task1VisualOnlyTrialsPerBlock > 0)
+                m_VisualOnlyTrialsPerBlock = md.task1VisualOnlyTrialsPerBlock;
+            if (md.task1TactileOnlyTrialsPerBlock > 0)
+                m_TactileOnlyTrialsPerBlock = md.task1TactileOnlyTrialsPerBlock;
+
+            // Keep the derived total in lockstep with the per-modality counts.
+            m_TrialsPerBlock = m_VtTrialsPerBlock + m_VisualOnlyTrialsPerBlock + m_TactileOnlyTrialsPerBlock;
+
+            if (md.task1BreakDurationSeconds > 0f)
+                m_RestDurationSeconds = md.task1BreakDurationSeconds;
+
+            if (md.task1WideOffsetCm > 0f)
+                m_WideOffsetMeters = md.task1WideOffsetCm / 100f;
+        }
+
+        /// <summary>
         /// Returns the normalized progress value for a given distance stage.
         /// With 7 stages:
         /// D7 = 0/6 = 0.000
