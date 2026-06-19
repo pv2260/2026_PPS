@@ -4,89 +4,149 @@ using UnityEngine.UI;
 
 namespace HitOrMiss.Pps
 {
-    /// <summary>
-    /// Headset-side pause panel for Task 1 (PPS). Mirrors the Task 2
-    /// ParticipantPausePanel: shows when the session pauses (either from the
-    /// clinician panel or from the network), offers Resume and Stop, and
-    /// auto-hides when the session resumes or ends.
-    ///
-    /// Wire m_AppController to the PPSAppController in the scene and assign
-    /// the button GameObjects on the panel root. Restart-block is intentionally
-    /// omitted: PPS does not yet support mid-session block restart.
-    /// </summary>
     public class PpsParticipantPausePanel : MonoBehaviour
     {
         [Header("References")]
-        [SerializeField] PPSAppController m_AppController;
-        [SerializeField] GameObject m_Root;
-        [SerializeField] Button m_ResumeButton;
-        [SerializeField] Button m_StopButton;
-        [SerializeField] TMP_Text m_StatusText;
+        [SerializeField] private PpsAppController m_AppController;
+        [SerializeField] private GameObject m_Root;
+        [SerializeField] private GameObject m_PauseAccessButtonRoot;
 
-        void Awake()
+        [Header("Buttons")]
+        [SerializeField] private Button m_ResumeNextTrialButton;
+        [SerializeField] private Button m_RestartCurrentBlockButton;
+        [SerializeField] private Button m_StopButton;
+
+        [Header("Text")]
+        [SerializeField] private TMP_Text m_StatusText;
+
+        private void Awake()
         {
-            if (m_Root == null) m_Root = gameObject;
-            if (m_ResumeButton != null) m_ResumeButton.onClick.AddListener(OnResume);
-            if (m_StopButton   != null) m_StopButton.onClick.AddListener(OnStop);
+            if (m_Root == null)
+                m_Root = gameObject;
+
+            if (m_ResumeNextTrialButton != null)
+                m_ResumeNextTrialButton.onClick.AddListener(OnResumeNextTrial);
+
+            if (m_RestartCurrentBlockButton != null)
+                m_RestartCurrentBlockButton.onClick.AddListener(OnRestartCurrentBlock);
+
+            if (m_StopButton != null)
+                m_StopButton.onClick.AddListener(OnStopTask);
+
             Hide();
         }
 
-        void OnEnable()
+        private void OnEnable()
         {
             if (m_AppController != null)
             {
-                m_AppController.SessionPaused  += OnPaused;
+                m_AppController.SessionPaused += OnPaused;
                 m_AppController.SessionResumed += OnResumed;
-                m_AppController.SessionEnded   += OnEnded;
+                m_AppController.SessionEnded += OnEnded;
             }
         }
 
-        void OnDisable()
+        private void OnDisable()
         {
             if (m_AppController != null)
             {
-                m_AppController.SessionPaused  -= OnPaused;
+                m_AppController.SessionPaused -= OnPaused;
                 m_AppController.SessionResumed -= OnResumed;
-                m_AppController.SessionEnded   -= OnEnded;
+                m_AppController.SessionEnded -= OnEnded;
             }
         }
 
-        void OnDestroy()
+        private void OnDestroy()
         {
-            if (m_ResumeButton != null) m_ResumeButton.onClick.RemoveListener(OnResume);
-            if (m_StopButton   != null) m_StopButton.onClick.RemoveListener(OnStop);
+            if (m_ResumeNextTrialButton != null)
+                m_ResumeNextTrialButton.onClick.RemoveListener(OnResumeNextTrial);
+
+            if (m_RestartCurrentBlockButton != null)
+                m_RestartCurrentBlockButton.onClick.RemoveListener(OnRestartCurrentBlock);
+
+            if (m_StopButton != null)
+                m_StopButton.onClick.RemoveListener(OnStopTask);
         }
 
-        void OnPaused()
+        public void RequestPause()
         {
-            if (m_StatusText != null)
-                m_StatusText.text = "Task paused.\nWaiting for clinician.";
+            Debug.Log("[PpsParticipantPausePanel] RequestPause was called.");
+
+            if (m_AppController != null)
+            {
+                Debug.Log("[PpsParticipantPausePanel] Forwarding pause request to PpsAppController.");
+                m_AppController.RequestParticipantPause();
+            }
+            else
+            {
+                Debug.LogWarning("[PpsParticipantPausePanel] No AppController assigned.");
+            }
+
+            // Show the panel immediately.
+            // We do not wait for SessionPaused because the pause request may be accepted
+            // at the next trial boundary, but the participant needs visual confirmation now.
             Show();
         }
 
-        void OnResumed() => Hide();
-        void OnEnded()   => Hide();
-
-        void OnResume()
+        private void OnPaused()
         {
-            if (m_AppController != null) m_AppController.ResumeSession();
+            Show();
+        }
+
+        private void OnResumed()
+        {
             Hide();
         }
 
-        void OnStop()
+        private void OnEnded()
         {
-            if (m_AppController != null) m_AppController.RequestStop();
             Hide();
         }
 
         public void Show()
         {
-            if (m_Root != null) m_Root.SetActive(true);
-        }
+            Debug.Log("[PpsParticipantPausePanel] Show pause panel.");
 
+            if (m_StatusText != null)
+                m_StatusText.text = "Task paused. Choose how to continue.";
+
+            if (m_PauseAccessButtonRoot != null)
+                m_PauseAccessButtonRoot.SetActive(false);
+
+            if (m_Root != null)
+                m_Root.SetActive(true);
+            else
+                Debug.LogError("[PpsParticipantPausePanel] Root is missing.");
+        }
+        
         public void Hide()
         {
-            if (m_Root != null) m_Root.SetActive(false);
+            if (m_Root != null)
+                m_Root.SetActive(false);
+        }
+
+        private void OnResumeNextTrial()
+        {
+            if (m_AppController != null)
+                m_AppController.ResumeFromParticipantPauseNextTrial();
+            else
+                Hide();
+        }
+
+        private void OnRestartCurrentBlock()
+        {
+            if (m_AppController != null)
+                m_AppController.RestartCurrentBlockFromParticipantPause();
+
+            Hide();
+        }
+
+        private void OnStopTask()
+        {
+            if (m_AppController != null)
+                m_AppController.StopTaskFromParticipantPause();
+
+            Hide();
         }
     }
 }

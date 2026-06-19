@@ -17,8 +17,15 @@
     correctCount: 0,
     totalScored: 0,
     socket: null,
-    reconnectMs: 1000,
+    // Start with an aggressive reconnect cadence so a page opened just before
+    // Unity finishes loading the scene snaps online fast (within a few hundred
+    // milliseconds of the server coming up). Backoff grows after every failure
+    // and is capped — see connectWs() below.
+    reconnectMs: 250,
   };
+
+  const WS_RECONNECT_MIN_MS = 250;
+  const WS_RECONNECT_MAX_MS = 3000;
 
   // ---- Tabs ----
   $$('.tab').forEach(btn => btn.addEventListener('click', () => {
@@ -245,6 +252,36 @@
     $('#pauseBtn').disabled = false;
     $('#resumeBtn').disabled = false;
     $('#stopBtn').disabled = false;
+
+    // REC pill: shown only when the TaskLogger is open (past practice).
+    // Gives the clinician a clear, separate signal from "isRunning" since
+    // a session is technically "running" during the intro/practice flow
+    // when nothing is hitting disk yet.
+    const rec = $('#recPill');
+    if (rec) rec.hidden = !s.isRecording;
+
+    applyTaskKind(s.taskKind);
+  }
+
+  // Hides the irrelevant task's section of the New Session form based on
+  // which task the connected headset is hosting. taskKind is one of
+  // "Task1Pps" / "Task2HitOrMiss" (string form of the C# enum). If absent
+  // (e.g. against an older server) both fieldsets stay visible.
+  function applyTaskKind(taskKind) {
+    const task1 = $('#task1Fieldset');
+    const task2 = $('#task2Fieldset');
+    if (!task1 || !task2) return;
+
+    if (taskKind === 'Task1Pps') {
+      task1.style.display = '';
+      task2.style.display = 'none';
+    } else if (taskKind === 'Task2HitOrMiss') {
+      task1.style.display = 'none';
+      task2.style.display = '';
+    } else {
+      task1.style.display = '';
+      task2.style.display = '';
+    }
   }
 
   function connectWs() {
@@ -258,14 +295,19 @@
     sock.addEventListener('open', () => {
       console.log('[clinician] WS connected', url);
       setConn(true);
-      state.reconnectMs = 1000;
+      // Reset the backoff so a brief disconnect later doesn't inherit a
+      // 3-second delay.
+      state.reconnectMs = WS_RECONNECT_MIN_MS;
     });
 
     sock.addEventListener('close', (e) => {
       console.warn('[clinician] WS closed', e.code, e.reason);
       setConn(false);
-      // Exponential-ish backoff so a downed server doesn't flood the console.
-      state.reconnectMs = Math.min(state.reconnectMs * 1.5, 8000);
+      // Aggressive at the start (250 ms, 375 ms, 562 ms ...), capped at 3 s.
+      // Designed for the "open browser right after pressing Play in editor"
+      // case: as soon as Unity boots the server, the SPA snaps online within
+      // a few hundred ms instead of waiting for an 8-second backoff.
+      state.reconnectMs = Math.min(state.reconnectMs * 1.5, WS_RECONNECT_MAX_MS);
       setTimeout(connectWs, state.reconnectMs);
     });
 
@@ -290,6 +332,11 @@
     const pill = $('#connStatus');
     pill.textContent = ok ? 'connected' : 'disconnected';
     pill.className = 'conn-pill ' + (ok ? 'conn-connected' : 'conn-disconnected');
+
+    // Show the waiting banner while disconnected so the clinician knows
+    // why the UI isn't responding. Hides as soon as the WS comes up.
+    const banner = $('#waitingBanner');
+    if (banner) banner.hidden = ok;
   }
 
   function handleEvent(type, p, ts) {
@@ -317,6 +364,11 @@
       case 'session_started':
       case 'session_ended':
         log(type, p.note || '', ts);
+        break;
+      case 'recording_started':
+        // Loud event in the log so the clinician sees the exact moment
+        // trial CSV writing begins (vs the intro/practice flow above).
+        log(type, '— CSV recording started', ts, 'recording');
         break;
     }
   }

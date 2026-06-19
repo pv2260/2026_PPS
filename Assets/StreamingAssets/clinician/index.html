@@ -12,6 +12,7 @@
     <div class="status-block">
       <span id="connStatus" class="conn-pill conn-disconnected">disconnected</span>
       <span id="phasePill" class="phase-pill">idle</span>
+      <span id="recPill" class="rec-pill" hidden>● REC</span>
       <span id="participantPill" class="muted"></span>
     </div>
   </header>
@@ -21,6 +22,11 @@
     <button class="tab" data-tab="live">Live</button>
     <button class="tab" data-tab="sessions">Sessions</button>
   </nav>
+
+  <div id="waitingBanner" class="waiting-banner" hidden>
+    <span class="waiting-spinner"></span>
+    <span class="waiting-text">Waiting for headset. Make sure Unity is in Play mode on the same Wi-Fi.</span>
+  </div>
 
   <main>
 
@@ -111,7 +117,7 @@
           </div>
         </fieldset>
 
-        <fieldset>
+        <fieldset id="task1Fieldset">
           <legend>Task 1 — PPS / vibrotactile</legend>
           <div class="form-grid">
             <label>Number of blocks
@@ -150,7 +156,7 @@
           </div>
         </fieldset>
 
-        <fieldset>
+        <fieldset id="task2Fieldset">
           <legend>Task 2 — Hit-or-Miss</legend>
           <div class="form-grid">
             <label>Number of blocks

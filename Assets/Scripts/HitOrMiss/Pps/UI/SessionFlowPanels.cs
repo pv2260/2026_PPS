@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic; 
 using UnityEngine;
 using TMPro;
+using UnityEngine.UI;
 
 namespace HitOrMiss.Pps
 {
@@ -34,6 +35,13 @@ namespace HitOrMiss.Pps
 
         [Header("Feedback Timing")]
         [SerializeField] float m_PracticeFeedbackSeconds = 1f;
+
+        [Header("Break Extension")]
+        [SerializeField] private Button m_ExtendBreakButton;
+        [SerializeField] private float m_ExtendBreakSeconds = 30f;
+
+        private float m_BreakRemainingSeconds;
+        private bool m_BreakIsRunning;
 
         private readonly Stack<GameObject> m_PanelHistory = new Stack<GameObject>();
 
@@ -115,8 +123,16 @@ namespace HitOrMiss.Pps
         {
             HideAll();
             RefreshLanguage();
+                if (m_ExtendBreakButton != null)
+                m_ExtendBreakButton.onClick.AddListener(ExtendBreak);
+
         }
 
+        void OnDestroy()
+        {
+            if (m_ExtendBreakButton != null)
+                m_ExtendBreakButton.onClick.RemoveListener(ExtendBreak);
+        }
         public void HideAll()
         {
             SetActive(m_WelcomePanel, false);
@@ -215,6 +231,19 @@ namespace HitOrMiss.Pps
             m_WaitingForContinue = false;
         }
 
+        public void ExtendBreak()
+        {
+            if (!m_BreakIsRunning)
+                return;
+
+            m_BreakRemainingSeconds += m_ExtendBreakSeconds;
+
+            Debug.Log(
+                $"[UI FLOW] Break extended by {m_ExtendBreakSeconds:F0}s. " +
+                $"Remaining={m_BreakRemainingSeconds:F1}s"
+            );
+        }
+
         public IEnumerator ShowPauseAndWait()
             => ShowAndWait(m_PausePanel);
 
@@ -265,7 +294,8 @@ namespace HitOrMiss.Pps
 
             m_WaitingForContinue = true; // re-arm so the panel waits again
         }
-        public IEnumerator ShowBreakAndWait(float seconds)
+        
+        public IEnumerator ShowBreakAndWait(float breakSeconds)
         {
             HideAll();
 
@@ -277,46 +307,58 @@ namespace HitOrMiss.Pps
 
             SetActive(m_BreakPanel, true);
 
-            // Warn loudly if the break countdown has nowhere to display so
-            // the scene-wiring fix is obvious.
+            if (m_ExtendBreakButton != null)
+                m_ExtendBreakButton.gameObject.SetActive(true);
+
             if (m_BreakText == null && m_BreakCountdownText == null)
-                Debug.LogWarning("[UI FLOW] ShowBreakAndWait: both m_BreakText and m_BreakCountdownText are NULL — break countdown will not be visible. Wire at least one on SessionFlowPanels.");
+            {
+                Debug.LogWarning(
+                    "[UI FLOW] ShowBreakAndWait: both m_BreakText and m_BreakCountdownText are NULL — " +
+                    "break countdown will not be visible. Wire at least one on SessionFlowPanels."
+                );
+            }
 
             m_WaitingForContinue = true;
-            float remaining = seconds;
+            m_BreakIsRunning = true;
+            m_BreakRemainingSeconds = Mathf.Max(0f, breakSeconds);
+
             int lastWholeSecond = -1;
 
-            while (remaining > 0f && m_WaitingForContinue && !StopRequested)
+            while (m_BreakRemainingSeconds > 0f && m_WaitingForContinue && !StopRequested)
             {
-                int secondsLeft = Mathf.CeilToInt(remaining);
+                int secondsLeft = Mathf.CeilToInt(m_BreakRemainingSeconds);
 
-                // Update once per whole second to avoid re-laying out TMP each
-                // frame. Dramatically cheaper on the headset and looks the
-                // same to the participant.
                 if (secondsLeft != lastWholeSecond)
                 {
                     lastWholeSecond = secondsLeft;
-
-                    if (m_BreakText != null)
-                    {
-                        m_BreakText.text = m_CurrentLanguage == UiLanguage.English
-                            ? $"Break\n\n{secondsLeft} seconds remaining.\n\nPress Continue when ready."
-                            : $"Pause\n\nIl reste {secondsLeft} secondes.\n\nAppuyez sur Continuer lorsque vous êtes prêt.";
-                    }
-
-                    if (m_BreakCountdownText != null)
-                        m_BreakCountdownText.text = secondsLeft.ToString();
+                    UpdateBreakText(secondsLeft);
                 }
 
-                remaining -= Time.deltaTime;
+                m_BreakRemainingSeconds -= Time.deltaTime;
                 yield return null;
             }
 
-            // Clear the countdown so it doesn't flash "0" at the end.
-            if (m_BreakCountdownText != null) m_BreakCountdownText.text = string.Empty;
+            m_BreakIsRunning = false;
+            m_WaitingForContinue = false;
+
+            if (m_ExtendBreakButton != null)
+                m_ExtendBreakButton.gameObject.SetActive(false);
 
             SetActive(m_BreakPanel, false);
-            m_WaitingForContinue = false;
+        }
+
+
+        private void UpdateBreakText(int secondsLeft)
+        {
+            if (m_BreakText != null)
+            {
+                m_BreakText.text = m_CurrentLanguage == UiLanguage.English
+                    ? $"Break\n\n{secondsLeft} seconds remaining.\n\nPress Continue when ready."
+                    : $"Pause\n\nIl reste {secondsLeft} secondes.\n\nAppuyez sur Continuer lorsque vous êtes prêt.";
+            }
+
+            if (m_BreakCountdownText != null)
+                m_BreakCountdownText.text = secondsLeft.ToString();
         }
 
         public IEnumerator ShowAndWait(GameObject panel)

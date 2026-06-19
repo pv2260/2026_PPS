@@ -161,6 +161,9 @@ namespace HitOrMiss
         public string ParticipantId { get; set; } = "P000";
         public int CurrentBlockIndex { get; private set; }
         public bool IsPaused => m_TaskManager != null && m_TaskManager.IsPaused;
+        /// <summary>True while the TaskLogger is open (CSV is being written).
+        /// False during the intro/practice flow.</summary>
+        public bool IsRecording => m_TaskLogger != null && m_TaskLogger.IsSessionOpen;
         public SupportedLanguage CurrentLanguage => m_Language;
 
         public event System.Action SessionPaused;
@@ -251,10 +254,24 @@ namespace HitOrMiss
             {
                 m_TaskLogger.ParticipantId = ParticipantId;
                 m_TaskLogger.SetMetadata(m_SessionMetadata);
-                m_TaskLogger.BeginSession(m_TaskAsset != null ? m_TaskAsset.TaskName : "HitOrMiss");
+                m_TaskLogger.BeginSession(TaskKind.Task2HitOrMiss, m_TaskAsset != null ? m_TaskAsset.TaskName : "HitOrMiss");
                 m_TaskManager.TrialJudged += m_TaskLogger.LogTrial;
             }
 
+            if (m_EegMarkerEmitter == null)
+            {
+                m_EegMarkerEmitter = FindAnyObjectByType<EegMarkerEmitter>();
+
+                if (m_EegMarkerEmitter == null)
+                {
+                    Debug.LogWarning("[PPSAppController] No EegMarkerEmitter found in the scene. EEG markers will be disabled.");
+                }
+                else
+                {
+                    Debug.Log("[PPSAppController] Found EegMarkerEmitter automatically.");
+                }
+            }
+            
             if (m_EegMarkerEmitter != null)
             {
                 string sessionId = System.DateTime.Now.ToString("yyyyMMdd_HHmmss");

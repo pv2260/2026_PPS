@@ -13,16 +13,15 @@ MonoBehaviour:
   m_Name: PpsTask
   m_EditorClassIdentifier: Assembly-CSharp::HitOrMiss.Pps.PpsTaskAsset
   m_TaskName: PPS Looming Task
-  m_BlockCount: 2
-  m_TrialsPerBlock: 18
-  m_VtTrialsPerBlock: 10
-  m_VisualOnlyTrialsPerBlock: 4
-  m_TactileOnlyTrialsPerBlock: 4
-  m_FastDurationSeconds: 1.5
-  m_SlowDurationSeconds: 2.5
+  m_BlockCount: 3
+  m_TrialsPerBlock: 140
+  m_VtTrialsPerBlock: 84
+  m_VisualOnlyTrialsPerBlock: 28
+  m_TactileOnlyTrialsPerBlock: 28
+  m_FastDurationSeconds: 1
+  m_SlowDurationSeconds: 3
   m_ResponseGracePeriodSeconds: 1
-  m_ItiMinSeconds: 1.5
-  m_ItiMaxSeconds: 2.5
+  m_ItiSeconds: 1.2
   m_MotionCurve:
     serializedVersion: 2
     m_Curve:
@@ -47,20 +46,16 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
-  m_CrosshairDistance: 11
+  m_CrosshairDistance: 18
   m_CrosshairHeight: 1.4
-  m_DefaultShoulderWidthMeters: 0.5
-  m_WideOffsetMeters: 0.6
+  m_DefaultShoulderWidthMeters: 0.8
+  m_WideOffsetMeters: 1
   m_LedHeight: 0
-  m_DistanceD7: 12
-  m_DistanceD6: 10
-  m_DistanceD5: 8
-  m_DistanceD4: 6
-  m_DistanceD3: 4
-  m_DistanceD2: 2
-  m_DistanceD1: 1
-  m_ScaleAtD7: {x: 10, y: 10, z: 10}
-  m_ScaleAtD1: {x: 30, y: 30, z: 30}
+  m_LoomStartDistance: 18
+  m_LoomEndDistance: 1.5
+  m_DistanceStageCount: 7
+  m_ScaleAtD7: {x: 0.005, y: 0.005, z: 0.005}
+  m_ScaleAtD1: {x: 0.005, y: 0.005, z: 0.005}
   m_VibrationDurationMs: 300
   m_VibrationIntensity: 1
   m_RestDurationSeconds: 30

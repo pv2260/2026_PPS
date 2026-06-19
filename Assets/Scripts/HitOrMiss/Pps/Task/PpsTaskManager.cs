@@ -1,13 +1,11 @@
 using System;
 using System.Collections;
-using System.IO;
-using System.Text;
 using UnityEngine;
 
 namespace HitOrMiss.Pps
 {
     /// <summary>
-    /// Runs PPS trials and records trial-level data.
+    /// Runs PPS trials and emits trial-level events.
     ///
     /// Current responsibilities:
     /// - Run individual trials
@@ -15,11 +13,11 @@ namespace HitOrMiss.Pps
     /// - Trigger vibrotactile stimulation
     /// - Capture participant responses
     /// - Emit EEG/event markers
-    /// - Write CSV output
+    /// - Emit TrialStarted / TrialCompleted events
     ///
-    /// Note:
-    /// In the refactored architecture, higher-level experiment flow
-    /// should move out of this class into PPSAppController.
+    /// Persistence is handled by <see cref="HitOrMiss.TaskLogger"/>, which the
+    /// PpsAppController wires up at session start by subscribing to
+    /// TrialCompleted. This class no longer owns any files or folders.
     /// </summary>
     public class PpsTaskManager : MonoBehaviour
     {
@@ -92,21 +90,6 @@ namespace HitOrMiss.Pps
         // Random number generator used for inter-trial intervals.
         private System.Random m_ItiRng;
 
-        // CSV logging state. Layout mirrors Task 2's TaskLogger:
-        // one folder per session with metadata.json, setup.json,
-        // sub-{id}_session-{n}_task1_trials.csv, plus progress.json on pause
-        // and sub-{id}_session-{n}_task1_session.json on EndLogging.
-        private StreamWriter m_CsvWriter;
-        private string m_CsvPath;
-        private string m_SessionDir;
-        private string m_SetupJsonPath;
-        private string m_MetadataJsonPath;
-        private string m_FinalJsonPath;
-        private string m_LoggingSubjectId;
-        private SessionMetadata m_LoggingMetadata;
-        private int m_TrialsLoggedThisSession;
-        public string SessionDirectory => m_SessionDir;
-
         // External systems can subscribe to these events to react to trial start/end.
         public event Action<PpsTrialDefinition> TrialStarted;
         public event Action<PpsTrialResult> TrialCompleted;
@@ -117,6 +100,8 @@ namespace HitOrMiss.Pps
         // looming animation; participants wait at most one trial after the
         // clinician hits pause.
         bool m_Paused;
+
+        bool m_AbortCurrentRunRequested;
 
         /// <summary>True if the session was paused via PauseBlock and has
         /// not yet been resumed.</summary>
@@ -135,6 +120,12 @@ namespace HitOrMiss.Pps
             m_MarkerEmitter?.Emit("pps_block_paused");
             BlockPaused?.Invoke();
             Debug.Log("[PpsTaskManager] Paused.");
+        }
+
+        public void RequestAbortCurrentRun()
+        {
+            m_AbortCurrentRunRequested = true;
+            Debug.Log("[PpsTaskManager] Abort current RunTrials requested.");
         }
 
         /// <summary>Resumes from a paused trial loop. Input is re-enabled and
@@ -211,8 +202,6 @@ namespace HitOrMiss.Pps
 
             if (m_InputSource != null)
                 m_InputSource.ResponseReceived -= OnResponseReceived;
-
-            EndLogging();
         }
 
         /// <summary>
@@ -260,165 +249,33 @@ namespace HitOrMiss.Pps
         }
 
         /// <summary>
-        /// Starts CSV logging and enables participant input.
+        /// Enables participant input and emits the session-start marker.
+        /// Replaces the previous CSV-owning BeginLogging — persistence now
+        /// lives in <see cref="HitOrMiss.TaskLogger"/>, wired by
+        /// PpsAppController.
         /// </summary>
-        /// <summary>
-        /// Back-compat overload. Builds default metadata for the subject id
-        /// and delegates to the metadata-aware BeginLogging.
-        /// </summary>
-        public void BeginLogging(string subjectId)
-            => BeginLogging(subjectId, SessionMetadata.CreateDefault(subjectId));
-
-        /// <summary>
-        /// Opens a per-session folder under Application.persistentDataPath/Logs,
-        /// writes metadata.json + setup.json, and starts streaming trial rows to
-        /// sub-{id}_session-{n}_task1_trials.csv. Layout matches what Task 2's
-        /// TaskLogger produces so the browser SPA's session list and the analysis
-        /// pipeline can treat both tasks the same way.
-        /// </summary>
-        public void BeginLogging(string subjectId, SessionMetadata metadata)
+        public void BeginSession()
         {
-            if (m_TaskAsset == null)
-            {
-                Debug.LogError("[PpsTaskManager] Cannot begin logging. No PpsTaskAsset assigned.");
-                return;
-            }
-
-            if (string.IsNullOrWhiteSpace(subjectId))
-                subjectId = "P000";
-
-            // Stamp authoritative ids onto the metadata snapshot so the
-            // setup.json and trial rows agree with the folder name.
-            if (string.IsNullOrEmpty(metadata.participantId))
-                metadata.participantId = subjectId;
-            if (string.IsNullOrEmpty(metadata.sessionId))
-                metadata.sessionId = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-            if (string.IsNullOrEmpty(metadata.sessionDate))
-                metadata.sessionDate = DateTime.Now.ToString("yyyy-MM-dd");
-
-            // Capture Task 1 asset parameters in the snapshot so analysts can
-            // tell exactly which protocol ran.
-            metadata.PopulateFromPpsTaskAsset(m_TaskAsset);
-
-            m_LoggingSubjectId = subjectId;
-            m_LoggingMetadata = metadata;
-            m_TrialsLoggedThisSession = 0;
-
-            // var root = Path.Combine(Application.persistentDataPath, "Logs");
-            // m_SessionDir = Path.Combine(root, $"{subjectId}_{metadata.sessionId}");
-            string m_SessionDir = Path.Combine(
-                Directory.GetCurrentDirectory(),
-                "Logger",
-                $"{subjectId}_{metadata.sessionId}"
-            );
-            Directory.CreateDirectory(m_SessionDir);
-
-            string idSlug = subjectId.Replace(" ", "_");
-            int sn = metadata.sessionNumber > 0 ? metadata.sessionNumber : 1;
-            m_CsvPath          = Path.Combine(m_SessionDir, $"sub-{idSlug}_session-{sn}_task1_trials.csv");
-            m_SetupJsonPath    = Path.Combine(m_SessionDir, $"sub-{idSlug}_session-{sn}_setup.json");
-            m_FinalJsonPath    = Path.Combine(m_SessionDir, $"sub-{idSlug}_session-{sn}_task1_session.json");
-            m_MetadataJsonPath = Path.Combine(m_SessionDir, "metadata.json");
-
-            File.WriteAllText(m_SetupJsonPath, metadata.ToSetupJson(), Encoding.UTF8);
-            File.WriteAllText(m_MetadataJsonPath, JsonUtility.ToJson(metadata, true), Encoding.UTF8);
-
-            m_CsvWriter = new StreamWriter(m_CsvPath, false, Encoding.UTF8);
-            m_CsvWriter.WriteLine(PpsTrialResult.CsvHeader);
-            m_CsvWriter.Flush();
-
             m_MarkerEmitter?.Emit("pps_session_start");
             m_InputSource?.Enable();
-
-            Debug.Log($"[PpsTaskManager] Session folder: {m_SessionDir}");
-            Debug.Log($"[PpsTaskManager] Trials CSV:     {m_CsvPath}");
         }
 
         /// <summary>
-        /// Writes a progress snapshot to <c>progress.json</c> in the active
-        /// session folder. Called by PPSAppController.PauseSession so an
-        /// interrupted session can be inspected or resumed later.
+        /// Disables participant input and emits the session-end marker.
         /// </summary>
-        public void FlushProgress()
-        {
-            if (string.IsNullOrEmpty(m_SessionDir)) return;
-
-            m_CsvWriter?.Flush();
-
-            string progressPath = Path.Combine(m_SessionDir, "progress.json");
-            string json = JsonUtility.ToJson(new PpsProgressSnapshot
-            {
-                participantId      = m_LoggingSubjectId,
-                sessionId          = m_LoggingMetadata.sessionId,
-                timestamp          = DateTime.Now.ToString("o"),
-                currentBlockIndex  = m_CurrentBlockIndex,
-                nextTrialIndex     = m_TrialsCompletedInBlock,
-                trialsLogged       = m_TrialsLoggedThisSession,
-            }, true);
-            File.WriteAllText(progressPath, json, Encoding.UTF8);
-
-            Debug.Log($"[PpsTaskManager] Progress snapshot: {progressPath}");
-        }
-
-        /// <summary>
-        /// Closes the trials CSV and writes the consolidated session.json.
-        /// </summary>
-        public void EndLogging()
+        public void EndSession()
         {
             m_MarkerEmitter?.Emit("pps_session_end");
             m_InputSource?.Disable();
-
-            if (m_CsvWriter != null)
-            {
-                m_CsvWriter.Dispose();
-                m_CsvWriter = null;
-            }
-
-            if (!string.IsNullOrEmpty(m_FinalJsonPath))
-            {
-                string json = JsonUtility.ToJson(new PpsSessionLog
-                {
-                    metadata    = m_LoggingMetadata,
-                    timestamp   = DateTime.Now.ToString("o"),
-                    totalTrials = m_TrialsLoggedThisSession,
-                    trialsCsv   = Path.GetFileName(m_CsvPath ?? ""),
-                }, true);
-                File.WriteAllText(m_FinalJsonPath, json, Encoding.UTF8);
-            }
-
-            m_SessionDir = null;
-            m_FinalJsonPath = null;
         }
 
-        [Serializable]
-        struct PpsProgressSnapshot
-        {
-            public string participantId;
-            public string sessionId;
-            public string timestamp;
-            public int currentBlockIndex;
-            public int nextTrialIndex;
-            public int trialsLogged;
-        }
-
-        [Serializable]
-        struct PpsSessionLog
-        {
-            public SessionMetadata metadata;
-            public string timestamp;
-            public int totalTrials;
-            public string trialsCsv;
-        }
-
-        // FLORE TRIGGER
         public void SetMarkerEmitter(EegMarkerEmitter emitter)
         {
             m_MarkerEmitter = emitter;
         }
-        //
 
         /// <summary>
-        /// Runs a sequence of trials with an inter-trial interval after each trial.
+        /// Runs a sequence of trials with an inter-trial interval before every trial.
         ///
         /// In the future, PPSAppController should call this or RunOneTrial
         /// as part of the higher-level experiment flow.
@@ -434,6 +291,8 @@ namespace HitOrMiss.Pps
         /// </summary>
         public IEnumerator RunTrials(PpsTrialDefinition[] trials, int blockIndex)
         {
+            
+
             if (m_TaskAsset == null)
             {
                 Debug.LogError("[PpsTaskManager] Cannot run trials. No PpsTaskAsset assigned.");
@@ -448,6 +307,8 @@ namespace HitOrMiss.Pps
 
             Initialize();
 
+            m_AbortCurrentRunRequested = false;
+
             if (trials == null)
                 yield break;
 
@@ -459,28 +320,49 @@ namespace HitOrMiss.Pps
 
             foreach (var trial in trials)
             {
-                // Pause checkpoint between trials. PauseBlock disabled input
-                // already; here we just hold the loop until ResumeBlock flips
-                // m_Paused back off.
-                while (m_Paused) yield return null;
-
-                yield return RunOneTrial(trial);
-                m_TrialsCompletedInBlock++;
-
-                // Wait a randomized inter-trial interval before the next trial.
-                // Frame-by-frame loop instead of WaitForSeconds so a pause hit
-                // during the ITI freezes the ITI clock and survives a resume.
+                // ------------------------------------------------------------
+                // ITI BEFORE EVERY TRIAL
+                // ------------------------------------------------------------
                 float iti = NextItiSeconds();
                 float elapsedIti = 0f;
+
                 while (elapsedIti < iti)
                 {
-                    if (m_Paused)
+                    if (m_AbortCurrentRunRequested)
+                        yield break;
+
+                    while (m_Paused)
                     {
-                        while (m_Paused) yield return null;
+                        if (m_AbortCurrentRunRequested)
+                            yield break;
+
+                        yield return null;
                     }
+
                     elapsedIti += Time.deltaTime;
                     yield return null;
                 }
+
+                // ------------------------------------------------------------
+                // Trial starts only AFTER the ITI has completed
+                // ------------------------------------------------------------
+                while (m_Paused)
+                {
+                    if (m_AbortCurrentRunRequested)
+                        yield break;
+
+                    yield return null;
+                }
+
+                if (m_AbortCurrentRunRequested)
+                    yield break;
+
+                yield return RunOneTrial(trial);
+
+                if (m_AbortCurrentRunRequested)
+                    yield break;
+
+                m_TrialsCompletedInBlock++;
             }
         }
 
@@ -540,6 +422,19 @@ namespace HitOrMiss.Pps
             m_FirstResponseTime = double.NaN;
             m_Responded = false;
 
+            // Use the longest speed duration as the common trial duration.
+            // Fast trials keep their true timing, but wait at the end so that
+            // fast and slow trials have the same total duration.
+            float matchedTrialDuration = Mathf.Max(
+                m_TaskAsset.DurationFor(PpsSpeed.Fast),
+                m_TaskAsset.DurationFor(PpsSpeed.Slow)
+            );
+
+            // This marks the beginning of the trial timing window.
+            // For visual/VT trials, this is the looming onset.
+            // For tactile-only trials, this is the start of the matched timing window.
+            double trialTimingStart = Time.timeAsDouble;
+
             // Stores the time at which the looming stimulus reaches each distance stage.
             // Index corresponds to DistanceStage enum values.
             // Stores the time at which the looming stimulus reaches each distance stage.
@@ -581,13 +476,43 @@ namespace HitOrMiss.Pps
                 // FLORE TRIGGERS
                 // m_MarkerEmitter?.Emit("pps_loom_onset", trial.trialId);
                 // Emit trial-start marker for EEG/event synchronization.
+                // int triggerCode = TriggerEncoder.EncodeTask1(
+                //     ToTask1TrialType(trial.modality),
+                //     ToTactilePosition(trial.modality, trial.vibrationStage),
+                //     ToTask1Speed(trial.speed),
+                //     ToTask1Width(trial.width)
+                // );
+                // m_MarkerEmitter?.Emit("pps_loom_onset",  extra: triggerCode.ToString());
+
                 int triggerCode = TriggerEncoder.EncodeTask1(
-                    ToTask1TrialType(trial.modality),
-                    ToTactilePosition(trial.modality, trial.vibrationStage),
-                    ToTask1Speed(trial.speed),
-                    ToTask1Width(trial.width)
+                    trial.vibrationStage.ToString(),
+                    trial.modality switch
+                    {
+                        PpsModality.VisualOnly  => TriggerEncoder.Task1TrialType.VisualOnly,
+                        PpsModality.TactileOnly => TriggerEncoder.Task1TrialType.VibrotactileOnly,
+                        PpsModality.Both        => TriggerEncoder.Task1TrialType.Both,
+                        _                       => TriggerEncoder.Task1TrialType.VisualOnly
+                    },
+                    trial.width switch
+                    {
+                        PpsWidth.Narrow => TriggerEncoder.Task1Width.Narrow,
+                        PpsWidth.Wide   => TriggerEncoder.Task1Width.Wide,
+                        _               => TriggerEncoder.Task1Width.Narrow
+                    },
+                    trial.speed switch
+                    {
+                        PpsSpeed.Slow => TriggerEncoder.Task1Speed.Slow,
+                        PpsSpeed.Fast => TriggerEncoder.Task1Speed.Fast,
+                        _             => TriggerEncoder.Task1Speed.Slow
+                    }
                 );
-                m_MarkerEmitter?.Emit("pps_loom_onset",  extra: triggerCode.ToString());
+
+                m_MarkerEmitter?.Emit(
+                    "pps_trial_start",
+                    trial.trialId,
+                    trial.modality.ToString(),
+                    extra: triggerCode.ToString()
+                );
 
                 bool vibFired = false;
 
@@ -620,6 +545,28 @@ namespace HitOrMiss.Pps
                         FireVibration(trial, stage);
                     }
                 });
+            }
+
+            // ------------------------------------------------------------
+            // EEG alignment padding
+            // ------------------------------------------------------------
+            // Fast trials finish earlier than slow trials. We do not delay
+            // the onset or the vibration. Instead, we wait at the end so
+            // every trial has the same total duration before moving on.
+            float elapsedTrialTime = (float)(Time.timeAsDouble - trialTimingStart);
+            float paddingTime = Mathf.Max(0f, matchedTrialDuration - elapsedTrialTime);
+
+            if (paddingTime > 0f)
+            {
+                Debug.Log(
+                    $"[PPS EEG PADDING] trial={trial.trialId} | " +
+                    $"speed={trial.speed} | " +
+                    $"elapsed={elapsedTrialTime:F3}s | " +
+                    $"padding={paddingTime:F3}s | " +
+                    $"matchedDuration={matchedTrialDuration:F3}s"
+                );
+
+                yield return new WaitForSeconds(paddingTime);
             }
 
             // Store stage-crossing times in the result.
@@ -658,10 +605,9 @@ namespace HitOrMiss.Pps
                 }
             }
 
-                        // Finalize response timing and reaction-time data.
-            result.vibrationFiredTime = m_VibrationFiredTime;
+ 
             result.responseTime = m_FirstResponseTime;
-            result.responded = m_Responded;
+ 
 
             result.reactionTimeMs =
                 m_Responded && !double.IsNaN(m_VibrationFiredTime)
@@ -690,11 +636,6 @@ namespace HitOrMiss.Pps
                 bool miss = vibrationTrial && !m_Responded;  // will always be false here now
                 bool falseAlarm = (!vibrationTrial && m_Responded) ||
                                 (vibrationTrial && respondedBeforeVibration);
-
-                if (hit)
-                    m_Feedback.FlashGreen();
-                else if (miss || falseAlarm)
-                    m_Feedback.FlashRed();
             }
             // Finalize response timing and reaction-time data.
             result.vibrationFiredTime = m_VibrationFiredTime;
@@ -738,14 +679,6 @@ namespace HitOrMiss.Pps
                     (!vibrationTrial && m_Responded) ||
                     (vibrationTrial && respondedBeforeVibration);
 
-                if (hit)
-                {
-                    m_Feedback.FlashGreen();
-                }
-                else if (miss || falseAlarm)
-                {
-                    m_Feedback.FlashRed();
-                }
             }
 
 
@@ -766,15 +699,15 @@ namespace HitOrMiss.Pps
             );
 
             // Emit trial-end marker.
-            m_MarkerEmitter?.Emit("pps_trial_end", extra: m_Responded ? "62" : "63");
+            // m_MarkerEmitter?.Emit("pps_trial_end", extra: m_Responded ? "62" : "63");
 
             // Stop accepting responses after the trial is finished.
             m_CaptureResponses = false;
             m_CurrentTrialIsPractice = false;
             m_VibrationHasFired = false;
 
-            // Save and broadcast the completed result.
-            WriteCsvRow(result);
+            // Broadcast the completed result. Persistence happens via the
+            // subscribed TaskLogger; this class does not own any files.
             TrialCompleted?.Invoke(result);
         }
 
@@ -804,7 +737,9 @@ namespace HitOrMiss.Pps
 
             // FLORE TRIGGERS
             // m_MarkerEmitter?.Emit("pps_vib_fired", trial.trialId, extra: stage.ToString());
-            m_MarkerEmitter?.Emit("pps_vib_fired");
+            // m_MarkerEmitter?.Emit("pps_vib_fired_trigger");
+            // m_MarkerEmitter?.Emit("pps_vib_fired");
+            m_MarkerEmitter?.Emit("pps_vib_fired", trial.trialId, extra: stage.ToString());
         }
 
         /// <summary>
@@ -855,24 +790,6 @@ namespace HitOrMiss.Pps
 
 
         /// <summary>
-        /// Writes one trial result to the CSV file. Practice trials
-        /// (isPractice == true or blockIndex &lt; 0) are skipped so the
-        /// main-task CSV matches the analysis pipeline's expectations.
-        /// </summary>
-        private void WriteCsvRow(PpsTrialResult result)
-        {
-            if (m_CsvWriter == null)
-                return;
-
-            if (result.definition.isPractice || result.definition.blockIndex < 0)
-                return;
-
-            m_CsvWriter.WriteLine(result.ToCsvRow());
-            m_CsvWriter.Flush();
-            m_TrialsLoggedThisSession++;
-        }
-
-        /// <summary>
         /// Formats a time value for readable debug output.
         /// </summary>
         private static string FormatTime(double value)
@@ -888,101 +805,101 @@ namespace HitOrMiss.Pps
             return float.IsNaN(value) ? "NA" : value.ToString("F1");
         }
         
-        private static TriggerEncoder.Task1TrialType ToTask1TrialType(PpsModality modality)
-        {
-            switch (modality)
-            {
-                case PpsModality.VisualOnly:
-                    return TriggerEncoder.Task1TrialType.VisualOnly;
+    //     private static TriggerEncoder.Task1TrialType ToTask1TrialType(PpsModality modality)
+    //     {
+    //         switch (modality)
+    //         {
+    //             case PpsModality.VisualOnly:
+    //                 return TriggerEncoder.Task1TrialType.VisualOnly;
 
-                case PpsModality.TactileOnly:
-                    return TriggerEncoder.Task1TrialType.VibrotactileOnly;
+    //             case PpsModality.TactileOnly:
+    //                 return TriggerEncoder.Task1TrialType.VibrotactileOnly;
 
-                case PpsModality.Both:
-                    return TriggerEncoder.Task1TrialType.VisualAndVibrotactile;
+    //             case PpsModality.Both:
+    //                 return TriggerEncoder.Task1TrialType.VisualAndVibrotactile;
 
-                default:
-                    throw new ArgumentOutOfRangeException(
-                        nameof(modality),
-                        modality,
-                        "Unknown PPS modality."
-                    );
-            }
-        }
+    //             default:
+    //                 throw new ArgumentOutOfRangeException(
+    //                     nameof(modality),
+    //                     modality,
+    //                     "Unknown PPS modality."
+    //                 );
+    //         }
+    //     }
 
-        private static TriggerEncoder.TactilePosition ToTactilePosition(
-            PpsModality modality,
-            DistanceStage stage
-        )
-        {
-            // Visual-only trials should not have a tactile / vibration distance marker.
-            if (modality == PpsModality.VisualOnly)
-                return TriggerEncoder.TactilePosition.None;
+    //     private static TriggerEncoder.TactilePosition ToTactilePosition(
+    //         PpsModality modality,
+    //         DistanceStage stage
+    //     )
+    //     {
+    //         // Visual-only trials should not have a tactile / vibration distance marker.
+    //         if (modality == PpsModality.VisualOnly)
+    //             return TriggerEncoder.TactilePosition.None;
 
-            switch (stage)
-            {
-                case DistanceStage.D1:
-                    return TriggerEncoder.TactilePosition.D1;
+    //         switch (stage)
+    //         {
+    //             case DistanceStage.D1:
+    //                 return TriggerEncoder.TactilePosition.D1;
 
-                case DistanceStage.D2:
-                    return TriggerEncoder.TactilePosition.D2;
+    //             case DistanceStage.D2:
+    //                 return TriggerEncoder.TactilePosition.D2;
 
-                case DistanceStage.D3:
-                    return TriggerEncoder.TactilePosition.D3;
+    //             case DistanceStage.D3:
+    //                 return TriggerEncoder.TactilePosition.D3;
 
-                case DistanceStage.D4:
-                    return TriggerEncoder.TactilePosition.D4;
+    //             case DistanceStage.D4:
+    //                 return TriggerEncoder.TactilePosition.D4;
 
-                case DistanceStage.D5:
-                    return TriggerEncoder.TactilePosition.D5;
+    //             case DistanceStage.D5:
+    //                 return TriggerEncoder.TactilePosition.D5;
 
-                case DistanceStage.D6:
-                    return TriggerEncoder.TactilePosition.D6;
+    //             case DistanceStage.D6:
+    //                 return TriggerEncoder.TactilePosition.D6;
 
-                case DistanceStage.D7:
-                    return TriggerEncoder.TactilePosition.D7;
+    //             case DistanceStage.D7:
+    //                 return TriggerEncoder.TactilePosition.D7;
 
-                default:
-                    return TriggerEncoder.TactilePosition.None;
-            }
-        }
+    //             default:
+    //                 return TriggerEncoder.TactilePosition.None;
+    //         }
+    //     }
 
-        private static TriggerEncoder.Task1Speed ToTask1Speed(PpsSpeed speed)
-        {
-            switch (speed)
-            {
-                case PpsSpeed.Slow:
-                    return TriggerEncoder.Task1Speed.Slow;
+    //     private static TriggerEncoder.Task1Speed ToTask1Speed(PpsSpeed speed)
+    //     {
+    //         switch (speed)
+    //         {
+    //             case PpsSpeed.Slow:
+    //                 return TriggerEncoder.Task1Speed.Slow;
 
-                case PpsSpeed.Fast:
-                    return TriggerEncoder.Task1Speed.Fast;
+    //             case PpsSpeed.Fast:
+    //                 return TriggerEncoder.Task1Speed.Fast;
 
-                default:
-                    throw new ArgumentOutOfRangeException(
-                        nameof(speed),
-                        speed,
-                        "Unknown PPS speed."
-                    );
-            }
-        }
+    //             default:
+    //                 throw new ArgumentOutOfRangeException(
+    //                     nameof(speed),
+    //                     speed,
+    //                     "Unknown PPS speed."
+    //                 );
+    //         }
+    //     }
 
-        private static TriggerEncoder.Task1Width ToTask1Width(PpsWidth width)
-        {
-            switch (width)
-            {
-                case PpsWidth.Narrow:
-                    return TriggerEncoder.Task1Width.Narrow;
+    //     private static TriggerEncoder.Task1Width ToTask1Width(PpsWidth width)
+    //     {
+    //         switch (width)
+    //         {
+    //             case PpsWidth.Narrow:
+    //                 return TriggerEncoder.Task1Width.Narrow;
 
-                case PpsWidth.Wide:
-                    return TriggerEncoder.Task1Width.Wide;
+    //             case PpsWidth.Wide:
+    //                 return TriggerEncoder.Task1Width.Wide;
 
-                default:
-                    throw new ArgumentOutOfRangeException(
-                        nameof(width),
-                        width,
-                        "Unknown PPS width."
-                    );
-            }
-        }
+    //             default:
+    //                 throw new ArgumentOutOfRangeException(
+    //                     nameof(width),
+    //                     width,
+    //                     "Unknown PPS width."
+    //                 );
+    //         }
+    //     }
     }
 }

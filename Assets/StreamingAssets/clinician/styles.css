@@ -35,7 +35,7 @@ header {
 
 .status-block { display: flex; gap: 10px; align-items: center; }
 
-.conn-pill, .phase-pill {
+.conn-pill, .phase-pill, .rec-pill {
   padding: 4px 10px;
   border-radius: 999px;
   font-size: 12px;
@@ -46,6 +46,36 @@ header {
 .phase-pill        { background: var(--panel-2); color: var(--muted); }
 .phase-pill.running { background: #1d3142; color: var(--accent); }
 .phase-pill.paused  { background: #3d2c1f; color: var(--warn); }
+.rec-pill          { background: #5a1414; color: #ff9a9a; letter-spacing: 0.5px; animation: rec-blink 1.4s ease-in-out infinite; }
+@keyframes rec-blink {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.4; }
+}
+
+.waiting-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 12px auto;
+  padding: 12px 18px;
+  max-width: 900px;
+  background: #2a2014;
+  color: #f0c98a;
+  border: 1px solid #4a3617;
+  border-radius: 10px;
+  font-size: 14px;
+}
+.waiting-spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid #4a3617;
+  border-top-color: #f0c98a;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
 
 nav.tabs {
   display: flex;

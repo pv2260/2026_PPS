@@ -3,6 +3,18 @@ using System;
 namespace HitOrMiss
 {
     /// <summary>
+    /// Which task a session belongs to. Drives file naming
+    /// (sub-{id}_session-{n}_task1_* vs task2_*) and which parameter block
+    /// is included in setup.json so each task's recorded parameters stay
+    /// isolated from changes made to the other task afterwards.
+    /// </summary>
+    public enum TaskKind
+    {
+        Task1Pps,
+        Task2HitOrMiss,
+    }
+
+    /// <summary>
     /// Per-session metadata captured by the clinician on the New Session form.
     /// Serialized as <c>setup.json</c> in each session folder using the
     /// nested schema from the spec (subject / session / equipment /
@@ -41,7 +53,10 @@ namespace HitOrMiss
 
         // Task config snapshot — Task 1 (PPS)
         public int task1NumberOfBlocks;
-        public int task1TrialsPerBlock;
+        public int task1TrialsPerBlock;            // Derived: VT + V + T
+        public int task1VtTrialsPerBlock;          // Visuotactile (loom + vibration)
+        public int task1VisualOnlyTrialsPerBlock;  // Loom only, no vibration
+        public int task1TactileOnlyTrialsPerBlock; // Vibration only, no loom
         public float task1BreakDurationSeconds;
         public float task1NarrowOffsetCm;
         public float task1WideOffsetCm;
@@ -89,6 +104,9 @@ namespace HitOrMiss
 
                 task1NumberOfBlocks = 4,
                 task1TrialsPerBlock = 40,
+                task1VtTrialsPerBlock = 28,
+                task1VisualOnlyTrialsPerBlock = 6,
+                task1TactileOnlyTrialsPerBlock = 6,
                 task1BreakDurationSeconds = 30f,
                 task1NarrowOffsetCm = 5f,
                 task1WideOffsetCm = 15f,
@@ -137,6 +155,9 @@ namespace HitOrMiss
             if (asset == null) return;
             task1NumberOfBlocks = asset.BlockCount;
             task1TrialsPerBlock = asset.TrialsPerBlock;
+            task1VtTrialsPerBlock = asset.VtTrialsPerBlock;
+            task1VisualOnlyTrialsPerBlock = asset.VisualOnlyTrialsPerBlock;
+            task1TactileOnlyTrialsPerBlock = asset.TactileOnlyTrialsPerBlock;
             task1BreakDurationSeconds = asset.RestDurationSeconds;
             // Narrow = shoulder width itself (0 cm offset from shoulder).
             // Wide   = shoulder width + WideOffsetMeters (cm).
@@ -165,16 +186,33 @@ namespace HitOrMiss
             DbsStatus.Off => "off",
             _             => "na",
         };
-
+    }
         
         
         /*
         /// <summary>
-        /// Renders the metadata as the spec's nested setup.json structure.
-        /// Hand-formatted JSON so JsonUtility's flat layout doesn't constrain
-        /// the schema. Indentation is 2 spaces.
+        /// Renders the metadata as the spec's nested setup.json structure for
+        /// the given task. Only the active task's parameter block is included
+        /// so a setup.json written by a Task 1 session never embeds Task 2
+        /// settings (and vice versa). That isolation is what prevents later
+        /// edits to one task's defaults from appearing in the other task's
+        /// historical session records.
         /// </summary>
-        public string ToSetupJson()
+        public string ToSetupJson(TaskKind activeTask)
+        {
+            bool includeTask1 = activeTask == TaskKind.Task1Pps;
+            bool includeTask2 = activeTask == TaskKind.Task2HitOrMiss;
+            return BuildSetupJson(includeTask1, includeTask2);
+        }
+
+        /// <summary>
+        /// Back-compat overload. Writes both task1_parameters and
+        /// task2_parameters blocks; use the <see cref="ToSetupJson(TaskKind)"/>
+        /// overload to keep per-task data isolated.
+        /// </summary>
+        public string ToSetupJson() => BuildSetupJson(true, true);
+
+        string BuildSetupJson(bool includeTask1, bool includeTask2)
         {
             string Esc(string s) => string.IsNullOrEmpty(s) ? "" : s.Replace("\\", "\\\\").Replace("\"", "\\\"");
             string ArrJson(string[] a)
@@ -216,129 +254,16 @@ namespace HitOrMiss
             sb.AppendLine($"    \"heart_rate_band\": {B(heartRateBandEnabled)},");
             sb.AppendLine($"    \"eye_tracking\": {B(eyeTrackingEnabled)}");
             sb.AppendLine("  },");
-            sb.AppendLine("  \"task1_parameters\": {");
-            sb.AppendLine($"    \"number_of_blocks\": {task1NumberOfBlocks},");
-            sb.AppendLine($"    \"trials_per_block\": {task1TrialsPerBlock},");
-            sb.AppendLine($"    \"break_duration_seconds\": {task1BreakDurationSeconds},");
-            sb.AppendLine($"    \"narrow_offset_cm\": {task1NarrowOffsetCm},");
-            sb.AppendLine($"    \"wide_offset_cm\": {task1WideOffsetCm},");
-            sb.AppendLine($"    \"looming_speeds\": {ArrJson(task1LoomingSpeeds)},");
-            sb.AppendLine($"    \"practice_vt_only_trials\": {task1PracticeVtOnlyTrials},");
-            sb.AppendLine($"    \"practice_vt_visual_trials\": {task1PracticeVtVisualTrials}");
-            sb.AppendLine("  },");
-            sb.AppendLine("  \"task2_parameters\": {");
-            sb.AppendLine($"    \"number_of_blocks\": {task2NumberOfBlocks},");
-            sb.AppendLine($"    \"trials_per_block\": {task2TrialsPerBlock},");
-            sb.AppendLine($"    \"break_duration_seconds\": {task2BreakDurationSeconds},");
-            sb.AppendLine($"    \"hit_offset_cm\": {task2HitOffsetCm},");
-            sb.AppendLine($"    \"near_miss_offset_cm\": {task2NearMissOffsetCm},");
-            sb.AppendLine($"    \"miss_offset_cm\": {task2MissOffsetCm},");
-            sb.AppendLine($"    \"ball_speeds\": {ArrJson(task2BallSpeeds)}");
-            sb.AppendLine("  },");
-        /*
-        OLD MECHANISM — COMMENTED OUT INTENTIONALLY.
 
-        Previously, setup.json always wrote both task1_parameters and
-        task2_parameters, regardless of which task was launched.
-
-        This made Task 1 session files contain Task 2 configuration,
-        and Task 2 session files contain Task 1 configuration.
-
-        That behavior is now replaced by the task-specific mechanism below.
-        */
-
-        /// <summary>
-        /// Renders the metadata as the spec's nested setup.json structure.
-        /// Hand-formatted JSON so JsonUtility's flat layout does not constrain
-        /// the schema.
-        ///
-        /// NEW MECHANISM:
-        /// This overload writes only the parameter block for the task that is
-        /// actually being launched.
-        ///
-        /// Examples:
-        /// - taskName = "task1" writes task1_parameters only.
-        /// - taskName = "task2" writes task2_parameters only.
-        ///
-        /// This prevents Task 1 setup files from containing Task 2 parameters,
-        /// and prevents Task 2 setup files from containing Task 1 parameters.
-        /// </summary>
-        public string ToSetupJson(string taskName)
-        {
-            string Esc(string s) =>
-                string.IsNullOrEmpty(s)
-                    ? ""
-                    : s.Replace("\\", "\\\\").Replace("\"", "\\\"");
-
-            string ArrJson(string[] a)
-            {
-                if (a == null || a.Length == 0)
-                    return "[]";
-
-                var parts = new System.Text.StringBuilder("[");
-                for (int i = 0; i < a.Length; i++)
-                {
-                    if (i > 0)
-                        parts.Append(", ");
-
-                    parts.Append('"').Append(Esc(a[i])).Append('"');
-                }
-
-                parts.Append(']');
-                return parts.ToString();
-            }
-
-            string B(bool v) => v ? "true" : "false";
-
-            string normalizedTaskName = string.IsNullOrEmpty(taskName)
-                ? ""
-                : taskName.Trim().ToLowerInvariant();
-
-            bool writeTask1 =
-                normalizedTaskName == "task1" ||
-                normalizedTaskName == "pps";
-
-            bool writeTask2 =
-                normalizedTaskName == "task2" ||
-                normalizedTaskName == "hitormiss" ||
-                normalizedTaskName == "hit_or_miss";
-
-            var sb = new System.Text.StringBuilder();
-
-            sb.AppendLine("{");
-
-            sb.AppendLine("  \"subject\": {");
-            sb.AppendLine($"    \"subject_id\": \"{Esc(participantId)}\",");
-            sb.AppendLine($"    \"age_years\": {ageYears},");
-            sb.AppendLine($"    \"dominant_hand\": \"{dominantHand.ToString().ToLowerInvariant()}\",");
-            sb.AppendLine($"    \"height_cm\": {heightCm},");
-            sb.AppendLine($"    \"shoulder_width_cm\": {shoulderWidthCm},");
-            sb.AppendLine($"    \"group\": \"{Esc(subjectGroup)}\",");
-            sb.AppendLine($"    \"has_DBS\": {B(hasDbs)}");
-            sb.AppendLine("  },");
-
-            sb.AppendLine("  \"session\": {");
-            sb.AppendLine($"    \"session_number\": {sessionNumber},");
-            sb.AppendLine($"    \"session_id\": \"{Esc(sessionId)}\",");
-            sb.AppendLine($"    \"session_date\": \"{Esc(sessionDate)}\",");
-            sb.AppendLine($"    \"session_type\": \"{SessionTypeCode}\",");
-            sb.AppendLine($"    \"dbs_status\": \"{DbsStatusCode}\",");
-            sb.AppendLine($"    \"clinician_initials\": \"{Esc(clinicianInitials)}\",");
-            sb.AppendLine($"    \"language\": \"{Esc(language)}\"");
-            sb.AppendLine("  },");
-
-            sb.AppendLine("  \"equipment\": {");
-            sb.AppendLine($"    \"EEG\": {B(eegEnabled)},");
-            sb.AppendLine($"    \"EMG\": {B(emgEnabled)},");
-            sb.AppendLine($"    \"heart_rate_band\": {B(heartRateBandEnabled)},");
-            sb.AppendLine($"    \"eye_tracking\": {B(eyeTrackingEnabled)}");
-            sb.AppendLine("  },");
-
-            if (writeTask1)
+            if (includeTask1)
             {
                 sb.AppendLine("  \"task1_parameters\": {");
                 sb.AppendLine($"    \"number_of_blocks\": {task1NumberOfBlocks},");
                 sb.AppendLine($"    \"trials_per_block\": {task1TrialsPerBlock},");
+
+                sb.AppendLine($"    \"vt_trials_per_block\": {task1VtTrialsPerBlock},");
+                sb.AppendLine($"    \"visual_only_trials_per_block\": {task1VisualOnlyTrialsPerBlock},");
+                sb.AppendLine($"    \"tactile_only_trials_per_block\": {task1TactileOnlyTrialsPerBlock},");
                 sb.AppendLine($"    \"break_duration_seconds\": {task1BreakDurationSeconds},");
                 sb.AppendLine($"    \"narrow_offset_cm\": {task1NarrowOffsetCm},");
                 sb.AppendLine($"    \"wide_offset_cm\": {task1WideOffsetCm},");
@@ -347,7 +272,7 @@ namespace HitOrMiss
                 sb.AppendLine($"    \"practice_vt_visual_trials\": {task1PracticeVtVisualTrials}");
                 sb.AppendLine("  },");
             }
-            else if (writeTask2)
+            if (includeTask2)
             {
                 sb.AppendLine("  \"task2_parameters\": {");
                 sb.AppendLine($"    \"number_of_blocks\": {task2NumberOfBlocks},");
@@ -357,12 +282,6 @@ namespace HitOrMiss
                 sb.AppendLine($"    \"near_miss_offset_cm\": {task2NearMissOffsetCm},");
                 sb.AppendLine($"    \"miss_offset_cm\": {task2MissOffsetCm},");
                 sb.AppendLine($"    \"ball_speeds\": {ArrJson(task2BallSpeeds)}");
-                sb.AppendLine("  },");
-            }
-            else
-            {
-                sb.AppendLine("  \"task_parameters\": {");
-                sb.AppendLine($"    \"warning\": \"Unknown taskName '{Esc(taskName)}'. No task-specific parameters were written.\"");
                 sb.AppendLine("  },");
             }
 

@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace HitOrMiss.Pps
 {
-    public class PPSAppController : MonoBehaviour
+    public class PpsAppController : MonoBehaviour
     {
         [Header("Input")]
         [SerializeField] private KeyboardCommandInput m_KeyboardInput;
@@ -16,7 +16,11 @@ namespace HitOrMiss.Pps
         [SerializeField] private PpsTaskAsset m_TaskAsset;
 
         [Header("Logging")]
+        [SerializeField] TaskLogger m_TaskLogger;
         [SerializeField] EegMarkerEmitter m_EegMarkerEmitter;
+
+        // Cached delegate so we can unsubscribe with the same reference.
+        System.Action<PpsTrialResult> m_LoggerTrialHandler;
 
         [Header("Visuals")]
         [SerializeField] FixationCrossController m_FixationCross;
@@ -37,6 +41,12 @@ namespace HitOrMiss.Pps
         SessionMetadata m_SessionMetadata;
         bool m_SessionMetadataSet;
 
+        // Runtime-only clone of m_TaskAsset that carries the clinician form's
+        // overrides (block count, per-modality trial counts, ITI, etc). Lives
+        // for the duration of one session; destroyed on EndSession / Stop.
+        PpsTaskAsset m_SessionAsset;
+        PpsTaskAsset Asset => m_SessionAsset != null ? m_SessionAsset : m_TaskAsset;
+
         Coroutine m_SessionCoroutine;
         private bool m_Running;
         private bool m_StopRequested;
@@ -54,6 +64,16 @@ namespace HitOrMiss.Pps
         public event System.Action SessionEnded;
         public event System.Action SessionPaused;
         public event System.Action SessionResumed;
+        /// <summary>Fires the moment the TaskLogger actually opens the
+        /// per-session folder (i.e. real CSV recording begins). Useful so the
+        /// clinician UI can flip a "REC" indicator only when data is being
+        /// written, not during the practice phase.</summary>
+        public event System.Action RecordingStarted;
+
+        /// <summary>True while the TaskLogger is open and the main blocks are
+        /// being recorded. False during practice and intro panels.</summary>
+        public bool IsRecording => m_TaskLogger != null && m_TaskLogger.IsSessionOpen;
+        private bool m_RestartCurrentBlockRequested;
 
         /// <summary>
         /// Asks the running task to wind down at the next checkpoint.
@@ -107,9 +127,27 @@ namespace HitOrMiss.Pps
                 m_SessionMetadataSet = true;
                 Debug.Log("[PPSAppController] No metadata set; using defaults derived from the task asset.");
             }
-            else
+            // NOTE: when metadata IS already set (clinician form), we do NOT
+            // overwrite it from the asset. The form values are the source of
+            // truth; they get pushed INTO the asset clone below.
+
+            // Apply form overrides onto a session-local clone so the on-disk
+            // PpsTaskAsset stays untouched. The clone is what the TaskManager
+            // and PpsTrialGenerator read for block count, trial counts, ITI,
+            // wide offset, etc.
+            if (m_TaskAsset != null)
             {
-                m_SessionMetadata.PopulateFromPpsTaskAsset(m_TaskAsset);
+                m_SessionAsset = m_TaskAsset.CreateSessionClone();
+                m_SessionAsset.ApplyTask1SessionOverrides(m_SessionMetadata);
+                if (m_TaskManager != null) m_TaskManager.TaskAsset = m_SessionAsset;
+
+                Debug.Log("[PPSAppController] Session asset clone applied. " +
+                          $"BlockCount={m_SessionAsset.BlockCount}, " +
+                          $"VT={m_SessionAsset.VtTrialsPerBlock}, " +
+                          $"V={m_SessionAsset.VisualOnlyTrialsPerBlock}, " +
+                          $"T={m_SessionAsset.TactileOnlyTrialsPerBlock}, " +
+                          $"Break={m_SessionAsset.RestDurationSeconds}s, " +
+                          $"WideOffset={m_SessionAsset.WideOffsetMeters}m");
             }
 
             m_StopRequested = false;
@@ -121,7 +159,11 @@ namespace HitOrMiss.Pps
             if (!m_Running || m_TaskManager == null || m_TaskManager.IsPaused) return;
 
             m_TaskManager.PauseBlock();
-            m_TaskManager.FlushProgress();
+
+            // Progress snapshot now lives in the shared TaskLogger; uses the
+            // task manager's current block/trial cursor.
+            m_TaskLogger?.Flush(m_TaskManager.CurrentBlockIndex, m_TaskManager.TrialsCompletedInBlock);
+
             m_EegMarkerEmitter?.Emit("pps_session_paused");
             SessionPaused?.Invoke();
             Debug.Log("[PPSAppController] Session paused.");
@@ -135,6 +177,43 @@ namespace HitOrMiss.Pps
             m_EegMarkerEmitter?.Emit("pps_session_resumed");
             SessionResumed?.Invoke();
             Debug.Log("[PPSAppController] Session resumed.");
+        }
+        
+        public void RequestParticipantPause()
+        {
+            Debug.Log("[PPS APP] Participant pause requested.");
+            PauseSession();
+        }
+
+        public void ResumeFromParticipantPauseNextTrial()
+        {
+            Debug.Log("[PPS APP] Resume from participant pause.");
+
+            ResumeSession();
+        }
+
+        public void RestartCurrentBlockFromParticipantPause()
+        {
+            Debug.Log("[PPS APP] Restart current block from participant pause.");
+
+            m_RestartCurrentBlockRequested = true;
+
+            if (m_TaskManager != null)
+                m_TaskManager.RequestAbortCurrentRun();
+
+            ResumeSession();
+        }
+
+        public void StopTaskFromParticipantPause()
+        {
+            Debug.Log("[PPS APP] Stop task from participant pause.");
+
+            m_StopRequested = true;
+
+            if (m_TaskManager != null)
+                m_TaskManager.RequestAbortCurrentRun();
+
+            ResumeSession();
         }
 
         private IEnumerator Start()
@@ -181,11 +260,34 @@ namespace HitOrMiss.Pps
                 else
                     Debug.Log("[PPSAppController] EegMarkerEmitter auto-wired.");
             }
+
+            if (m_TaskLogger == null)
+            {
+                m_TaskLogger = FindAnyObjectByType<TaskLogger>();
+                if (m_TaskLogger == null)
+                    Debug.LogWarning("[PPSAppController] No TaskLogger in scene. Trial data will NOT be written to disk.");
+                else
+                    Debug.Log("[PPSAppController] TaskLogger auto-wired.");
+            }
         }
 
         private IEnumerator RunSessionInternal()
         {
             // EEG marker session
+            if (m_EegMarkerEmitter == null)
+            {
+                m_EegMarkerEmitter = FindAnyObjectByType<EegMarkerEmitter>();
+
+                if (m_EegMarkerEmitter == null)
+                {
+                    Debug.LogWarning("[PPSAppController] No EegMarkerEmitter found in the scene. EEG markers will be disabled.");
+                }
+                else
+                {
+                    Debug.Log("[PPSAppController] Found EegMarkerEmitter automatically.");
+                }
+            }
+
             if (m_EegMarkerEmitter != null)
             {
                 string sessionId = !string.IsNullOrEmpty(m_SessionMetadata.sessionId)
@@ -233,10 +335,10 @@ namespace HitOrMiss.Pps
             // {blocksCount}, {currentBlock}, {totalBlocks}, or {breakTime}
             // resolves correctly from the first screen onward.
             m_Ui.SetTokens(
-                blocksCount:   m_TaskAsset.BlockCount,
+                blocksCount:   Asset.BlockCount,
                 currentBlock:  0,
-                totalBlocks:   m_TaskAsset.BlockCount,
-                breakSeconds:  m_TaskAsset.RestDurationSeconds
+                totalBlocks:   Asset.BlockCount,
+                breakSeconds:  Asset.RestDurationSeconds
             );
 
             yield return m_Ui.ShowWelcomeAndWait();
@@ -255,7 +357,7 @@ namespace HitOrMiss.Pps
             if (StopWasRequested()) { yield return StopExperiment(); yield break; }
 
             Debug.Log("[PPS] Starting VT-only practice.");
-            yield return m_TaskManager.RunTrials(PpsTrialGenerator.GenerateVTOnlyPractice(m_TaskAsset));
+            yield return m_TaskManager.RunTrials(PpsTrialGenerator.GenerateVTOnlyPractice(Asset));
             if (StopWasRequested()) { yield return StopExperiment(); yield break; }
 
             // ---- Practice 2: visual + tactile ----
@@ -263,7 +365,7 @@ namespace HitOrMiss.Pps
             if (StopWasRequested()) { yield return StopExperiment(); yield break; }
 
             Debug.Log("[PPS] Starting VT+Visual practice.");
-            yield return m_TaskManager.RunTrials(PpsTrialGenerator.GenerateVTVisualPractice(m_TaskAsset));
+            yield return m_TaskManager.RunTrials(PpsTrialGenerator.GenerateVTVisualPractice(Asset));
             if (StopWasRequested()) { yield return StopExperiment(); yield break; }
 
             yield return m_Ui.ShowNoFeedbackAndWait();
@@ -272,32 +374,70 @@ namespace HitOrMiss.Pps
             yield return m_Ui.ShowReadyToStartAndWait();
             if (StopWasRequested()) { yield return StopExperiment(); yield break; }
 
-            m_TaskManager.BeginLogging(ParticipantId, m_SessionMetadata);
-
-            for (int blockIndex = 0; blockIndex < m_TaskAsset.BlockCount; blockIndex++)
+            // Logging: open the shared TaskLogger with TaskKind.Task1Pps so
+            // file names, setup.json, and session.json all carry the task1
+            // layout. PpsTaskManager only emits TrialCompleted; the logger
+            // owns the disk.
+            if (m_TaskLogger != null)
             {
-                m_Ui.SetTokens(
-                    blocksCount:  m_TaskAsset.BlockCount,
-                    currentBlock: blockIndex + 1,
-                    totalBlocks:  m_TaskAsset.BlockCount,
-                    breakSeconds: m_TaskAsset.RestDurationSeconds
-                );
+                m_TaskLogger.ParticipantId = ParticipantId;
+                // Do NOT PopulateFromPpsTaskAsset here — that would overwrite the
+                // clinician-form values that drove the session asset clone.
+                m_TaskLogger.SetMetadata(m_SessionMetadata);
+                m_TaskLogger.BeginSession(TaskKind.Task1Pps, Asset.TaskName);
 
-                yield return m_Ui.ShowBlockCounterAndWait(blockIndex, m_TaskAsset.BlockCount);
-                if (StopWasRequested()) { yield return StopExperiment(); yield break; }
+                m_LoggerTrialHandler = m_TaskLogger.LogTrial;
+                m_TaskManager.TrialCompleted += m_LoggerTrialHandler;
 
-                PpsTrialDefinition[] trials = m_TaskAsset.GenerateBlock(blockIndex);
-                yield return m_TaskManager.RunTrials(trials, blockIndex);
-                if (StopWasRequested()) { yield return StopExperiment(); yield break; }
+                Debug.Log("================================");
+                Debug.Log($"[PpsAppController] RECORDING STARTED -> {m_TaskLogger.SessionDirectory}");
+                Debug.Log("================================");
+                RecordingStarted?.Invoke();
+            }
 
-                if (blockIndex < m_TaskAsset.BlockCount - 1)
+            m_TaskManager.BeginSession();
+
+            for (int blockIndex = 0; blockIndex < Asset.BlockCount; blockIndex++)
+            {
+                bool blockCompleted = false;
+
+                while (!blockCompleted)
                 {
-                    yield return m_Ui.ShowBreakAndWait(m_TaskAsset.RestDurationSeconds);
+                    m_RestartCurrentBlockRequested = false;
+
+                    m_Ui.SetTokens(
+                        blocksCount:  Asset.BlockCount,
+                        currentBlock: blockIndex + 1,
+                        totalBlocks:  Asset.BlockCount,
+                        breakSeconds: Asset.RestDurationSeconds
+                    );
+
+                    yield return m_Ui.ShowBlockCounterAndWait(blockIndex, Asset.BlockCount);
+                    if (StopWasRequested()) { yield return StopExperiment(); yield break; }
+
+                    PpsTrialDefinition[] trials = Asset.GenerateBlock(blockIndex);
+
+                    yield return m_TaskManager.RunTrials(trials, blockIndex);
+
+                    if (StopWasRequested()) { yield return StopExperiment(); yield break; }
+
+                    if (m_RestartCurrentBlockRequested)
+                    {
+                        Debug.Log($"[PPS APP] Restarting block {blockIndex + 1}.");
+                        continue;
+                    }
+
+                    blockCompleted = true;
+                }
+
+                if (blockIndex < Asset.BlockCount - 1)
+                {
+                    yield return m_Ui.ShowBreakAndWait(Asset.RestDurationSeconds);
                     if (StopWasRequested()) { yield return StopExperiment(); yield break; }
                 }
             }
 
-            m_TaskManager.EndLogging();
+            CloseLoggingSession();
 
             if (m_ClinicianPanel != null) m_ClinicianPanel.ExitTaskMode();
 
@@ -307,6 +447,35 @@ namespace HitOrMiss.Pps
             m_Ui.HideStandingCross();
 
             yield return m_Ui.ShowEndAndWait("Task 1 complete.\n\nThank you.");
+        }
+
+        /// <summary>
+        /// Unsubscribes the logger from TrialCompleted, closes the session
+        /// folder, and restores the original PpsTaskAsset on the task manager
+        /// (destroying the runtime clone). Safe to call multiple times.
+        /// </summary>
+        void CloseLoggingSession()
+        {
+            m_TaskManager.EndSession();
+
+            if (m_TaskLogger != null)
+            {
+                if (m_LoggerTrialHandler != null)
+                {
+                    m_TaskManager.TrialCompleted -= m_LoggerTrialHandler;
+                    m_LoggerTrialHandler = null;
+                }
+                m_TaskLogger.EndSession();
+            }
+
+            // Hand the manager back the on-disk asset and dispose of the
+            // session clone so we don't leak ScriptableObjects across runs.
+            if (m_SessionAsset != null)
+            {
+                if (m_TaskManager != null) m_TaskManager.TaskAsset = m_TaskAsset;
+                Destroy(m_SessionAsset);
+                m_SessionAsset = null;
+            }
         }
 
         private bool StopWasRequested()
@@ -319,8 +488,7 @@ namespace HitOrMiss.Pps
         {
             Debug.Log("[PPSAppController] Stop requested. Ending task.");
 
-            if (m_TaskManager != null)
-                m_TaskManager.EndLogging();
+            CloseLoggingSession();
 
             if (m_ClinicianPanel != null) m_ClinicianPanel.ExitTaskMode();
 
