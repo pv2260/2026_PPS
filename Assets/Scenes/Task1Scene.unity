@@ -11145,8 +11145,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HitOrMiss.EegMarkerEmitter
   m_ParticipantId: P000
-  m_UseSerialBridge: 1
-  m_ComPort: COM8
+  m_UseSerialBridge: 0
+  m_ComPort: 
   m_BaudRate: 115200
   m_TriggerDuration: 0.01
 --- !u!4 &624187189
@@ -28529,9 +28529,8 @@ MonoBehaviour:
       resterons \xE0 proximit\xE9 si vous avez besoin de quoi que ce soit.\\n\xCAtes-vous
       pr\xEAt(e) \xE0 commencer ?"
   - textTarget: {fileID: 623462703}
-    english: 'Block {currentBlock} / {totalBlocks}
-      Insole Check: Raise and
-      lower your left foot, then your right foot.'
+    english: 'Block {currentBlock} / {totalBlocks} Insole Check: Raise and lower
+      your left foot, then your right foot.'
     french: "Bloc {currentBlock} / {totalBlocks}\n\nV\xE9rification des semelles
       :Levez puis posez le pied gauche, puis le pied droit."
   - textTarget: {fileID: 1532550668}

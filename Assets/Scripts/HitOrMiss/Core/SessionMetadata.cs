@@ -186,18 +186,16 @@ namespace HitOrMiss
             DbsStatus.Off => "off",
             _             => "na",
         };
-    }
+    
         
-        
-        /*
-        /// <summary>
-        /// Renders the metadata as the spec's nested setup.json structure for
-        /// the given task. Only the active task's parameter block is included
-        /// so a setup.json written by a Task 1 session never embeds Task 2
-        /// settings (and vice versa). That isolation is what prevents later
-        /// edits to one task's defaults from appearing in the other task's
-        /// historical session records.
-        /// </summary>
+        // /// <summary>
+        // /// Renders the metadata as the spec's nested setup.json structure for
+        // /// the given task. Only the active task's parameter block is included
+        // /// so a setup.json written by a Task 1 session never embeds Task 2
+        // /// settings (and vice versa). That isolation is what prevents later
+        // /// edits to one task's defaults from appearing in the other task's
+        // /// historical session records.
+        // /// </summary>
         public string ToSetupJson(TaskKind activeTask)
         {
             bool includeTask1 = activeTask == TaskKind.Task1Pps;
@@ -294,16 +292,16 @@ namespace HitOrMiss
             return sb.ToString();
         }
 
-        /// <summary>
-        /// Backward-compatible fallback.
-        ///
-        /// NOTE:
-        /// Prefer calling ToSetupJson(taskName) from TaskLogger so setup.json
-        /// contains only the parameters for the launched task.
-        /// </summary>
-        public string ToSetupJson()
-        {
-            return ToSetupJson("");
-        }
+        // /// <summary>
+        // /// Backward-compatible fallback.
+        // ///
+        // /// NOTE:
+        // /// Prefer calling ToSetupJson(taskName) from TaskLogger so setup.json
+        // /// contains only the parameters for the launched task.
+        // /// </summary>
+        // public string ToSetupJson()
+        // {
+        //     return ToSetupJson("");
+        // }
     }
 }

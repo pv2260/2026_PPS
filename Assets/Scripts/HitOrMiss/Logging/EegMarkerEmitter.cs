@@ -16,7 +16,7 @@ namespace HitOrMiss
 
         [Header("Arduino Serial Trigger")]
         [Tooltip("Enable to send trigger bytes over serial to an Arduino")]
-        [SerializeField] bool m_UseSerialBridge = true;
+        [SerializeField] bool m_UseSerialBridge = false;
 
         [Tooltip("COM port the Arduino is on, e.g. COM8 on Windows")]
         [SerializeField] string m_ComPort = "COM8";
