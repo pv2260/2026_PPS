@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.IO.Ports;
 using UnityEngine;
 
 namespace HitOrMiss
@@ -18,7 +20,14 @@ namespace HitOrMiss
         [Tooltip("Enable to send trigger bytes over serial to an Arduino")]
         [SerializeField] bool m_UseSerialBridge = false;
 
-        [Tooltip("COM port the Arduino is on, e.g. COM8 on Windows")]
+        [Tooltip("If true, the inspector COM port is only a hint. At every session start, the emitter " +
+                 "rescans the OS-reported port list and uses the first port that actually opens (preferring " +
+                 "the hint if it's present). This avoids the headache of a stale COM number persisting " +
+                 "after the Arduino is unplugged + replugged on a different USB port.")]
+        [SerializeField] bool m_AutoDetectPort = true;
+
+        [Tooltip("COM port the Arduino is on, e.g. COM8 on Windows. When AutoDetect is on, this is a hint " +
+                 "tried first; when off, this port is used as-is.")]
         [SerializeField] string m_ComPort = "COM8";
 
         [Tooltip("Baud rate — must match the Arduino sketch")]
@@ -26,6 +35,12 @@ namespace HitOrMiss
 
         [Tooltip("How long the trigger byte is held before sending 0. 0.01 = 10 ms.")]
         [SerializeField] float m_TriggerDuration = 0.01f;
+
+        // Port that was actually opened this session. NOT serialized — so a
+        // runtime resolution never overwrites the inspector hint on disk.
+        // Available for logs/diagnostics.
+        [System.NonSerialized] string m_ResolvedComPort = "";
+        public string ResolvedComPort => m_ResolvedComPort;
 
         StreamWriter m_CsvWriter;
         string m_LogPath;
@@ -152,7 +167,64 @@ namespace HitOrMiss
                 return;
 
             m_Arduino = gameObject.AddComponent<ArduinoTrigger>();
-            m_Arduino.Open(m_ComPort, m_BaudRate);
+            m_ResolvedComPort = "";
+
+            if (!m_AutoDetectPort)
+            {
+                if (m_Arduino.Open(m_ComPort, m_BaudRate))
+                {
+                    m_ResolvedComPort = m_ComPort;
+                    Debug.Log($"[EegMarkerEmitter] Arduino opened on {m_ComPort} (auto-detect off).");
+                }
+                else
+                {
+                    Debug.LogWarning($"[EegMarkerEmitter] Arduino did NOT open on {m_ComPort} (auto-detect off). Trigger pulses will be skipped.");
+                }
+                return;
+            }
+
+            // Auto-detect: build a candidate list with the inspector hint
+            // first (if it's currently present in the OS port list), then
+            // every other port the OS reports. Try each until one opens.
+            // This avoids the "I unplugged the Arduino, replugged on a
+            // different USB port, and now COM8 is stale" problem completely.
+            string[] osPorts;
+            try { osPorts = SerialPort.GetPortNames(); }
+            catch (Exception e)
+            {
+                Debug.LogWarning($"[EegMarkerEmitter] SerialPort.GetPortNames failed: {e.Message}");
+                osPorts = Array.Empty<string>();
+            }
+
+            var candidates = new List<string>(osPorts.Length + 1);
+            if (!string.IsNullOrEmpty(m_ComPort) && Array.Exists(osPorts, p => string.Equals(p, m_ComPort, StringComparison.OrdinalIgnoreCase)))
+                candidates.Add(m_ComPort);
+            foreach (var p in osPorts)
+            {
+                if (!candidates.Contains(p, StringComparer.OrdinalIgnoreCase))
+                    candidates.Add(p);
+            }
+
+            if (candidates.Count == 0)
+            {
+                Debug.LogWarning("[EegMarkerEmitter] No serial ports detected by the OS. Arduino trigger disabled this session.");
+                return;
+            }
+
+            Debug.Log($"[EegMarkerEmitter] Auto-detecting Arduino across {candidates.Count} port(s): " +
+                      string.Join(", ", candidates));
+
+            foreach (var candidate in candidates)
+            {
+                if (m_Arduino.Open(candidate, m_BaudRate))
+                {
+                    m_ResolvedComPort = candidate;
+                    Debug.Log($"[EegMarkerEmitter] Arduino opened on {candidate}.");
+                    return;
+                }
+            }
+
+            Debug.LogWarning("[EegMarkerEmitter] Auto-detect tried every available port and none opened. Trigger pulses will be skipped this session.");
         }
 
         void CloseSerialPort()

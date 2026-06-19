@@ -214,6 +214,59 @@ namespace HitOrMiss.Pps
             m_RightLed.gameObject.SetActive(true);
 
             IsRunning = true;
+
+            // ---- Warm-up phase ----
+            // Before the timed loom (D7 -> D1) starts, glide the LEDs from a
+            // farther pre-position toward D7. Gives the brain time to perceive
+            // the lights before the stage-scoring window begins, so the very
+            // first vibration trigger at D7 doesn't catch the participant
+            // staring at an empty void. No onStageEnter callback fires during
+            // this phase — it is purely visual lead-in, not a measured stage.
+            float warmupDuration = asset.WarmupDurationSeconds;
+            float warmupDistance = asset.WarmupDistanceMeters;
+            bool doWarmup =
+                warmupDuration > 0f
+                && warmupDistance > asset.LoomStartDistance
+                && (start - end).sqrMagnitude > 0.0001f;
+
+            if (doWarmup)
+            {
+                // Direction from D1 (near) back toward D7 (far), normalized.
+                Vector3 backDir = (start - end).normalized;
+                float extra = warmupDistance - asset.LoomStartDistance;
+                Vector3 warmupOrigin = start + backDir * extra;
+
+                Quaternion warmupRotation =
+                    Quaternion.LookRotation((end - start).normalized, Vector3.up);
+                Vector3 warmupScale = asset.ScaleAtD7;
+                Vector3 sideDir = Vector3.right;
+
+                Debug.Log(
+                    $"[LOOM WARMUP] from {warmupOrigin} -> {start} | " +
+                    $"distance={extra:F2}m | duration={warmupDuration:F2}s"
+                );
+
+                float warmupElapsed = 0f;
+                while (warmupElapsed < warmupDuration)
+                {
+                    warmupElapsed += Time.deltaTime;
+                    float wt = Mathf.Clamp01(warmupElapsed / warmupDuration);
+                    Vector3 warmupCenter = Vector3.Lerp(warmupOrigin, start, wt);
+
+                    m_LeftLed.position  = warmupCenter - sideDir * (separation * 0.5f);
+                    m_RightLed.position = warmupCenter + sideDir * (separation * 0.5f);
+                    m_LeftLed.rotation  = warmupRotation;
+                    m_RightLed.rotation = warmupRotation;
+                    m_LeftLed.localScale  = warmupScale;
+                    m_RightLed.localScale = warmupScale;
+
+                    if (m_LeftCore  != null) m_LeftCore.localScale  = CompensateCoreScale(warmupScale);
+                    if (m_RightCore != null) m_RightCore.localScale = CompensateCoreScale(warmupScale);
+
+                    yield return null;
+                }
+            }
+
             CurrentStage = DistanceStage.D7;
             onStageEnter?.Invoke(DistanceStage.D7);
 

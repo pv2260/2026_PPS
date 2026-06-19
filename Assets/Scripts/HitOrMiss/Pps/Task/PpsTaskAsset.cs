@@ -72,6 +72,19 @@ namespace HitOrMiss.Pps
         [Tooltip("Number of equally spaced distance stages, including start and end. Use 7 for D7..D1.")]
         [SerializeField, Min(2)] int m_DistanceStageCount = 7;
 
+        [Header("Loom warm-up (pre-D7 visibility)")]
+
+        [Tooltip("Distance in meters at which the lights first APPEAR, before drifting in to the loom start. " +
+                 "Must be > LoomStartDistance to be visible as a warm-up. The participant sees the LEDs glow " +
+                 "from this far point and drift closer until D7, which is when stage scoring + vibration timing " +
+                 "begins. Pure visual cue; not a measured stage.")]
+        [SerializeField, Min(0.01f)] float m_WarmupDistanceMeters = 4.0f;
+
+        [Tooltip("Seconds spent gliding the lights from WarmupDistance to LoomStartDistance (D7). 0 disables " +
+                 "the warm-up phase. ~0.5-1.0 s is enough for the brain to register their existence before " +
+                 "the timed stages start. Time added BEFORE the loom duration, not inside it.")]
+        [SerializeField, Min(0f)] float m_WarmupDurationSeconds = 0.6f;
+
         [Header("Scale growth (looming cue)")]
 
         [Tooltip("Scale of the looming lights at the farthest stage.")]
@@ -139,6 +152,9 @@ namespace HitOrMiss.Pps
         public float LoomStartDistance => m_LoomStartDistance;
         public float LoomEndDistance => m_LoomEndDistance;
         public int DistanceStageCount => m_DistanceStageCount;
+
+        public float WarmupDistanceMeters => m_WarmupDistanceMeters;
+        public float WarmupDurationSeconds => m_WarmupDurationSeconds;
 
         public Vector3 ScaleAtD7 => m_ScaleAtD7;
 

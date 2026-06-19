@@ -10,10 +10,25 @@ namespace HitOrMiss
     {
         SerialPort m_SerialPort;
 
-        public void Open(string comPort, int baudRate)
+        /// <summary>
+        /// Tries to open the given COM port. Returns true on success so the
+        /// caller can iterate through candidates when auto-detecting the
+        /// Arduino instead of crashing on the first miss.
+        /// </summary>
+        public bool Open(string comPort, int baudRate)
         {
-            m_SerialPort = new SerialPort(comPort, baudRate);
-            m_SerialPort.Open();
+            try
+            {
+                m_SerialPort = new SerialPort(comPort, baudRate);
+                m_SerialPort.Open();
+                return true;
+            }
+            catch (System.Exception e)
+            {
+                Debug.Log($"[ArduinoTrigger] {comPort} did not open: {e.Message}");
+                m_SerialPort = null;
+                return false;
+            }
         }
 
         public void SendTrigger(byte value, float duration)
