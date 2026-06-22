@@ -216,11 +216,21 @@ namespace HitOrMiss
                 }
                 if (reachedImpact)
                 {
-                    SpawnSplat(m_BodyImpactPos);
+                    // Choose splat origin based on the impact mode:
+                    //   ImpactDistance > 0: spawn at the ball's current world
+                    //     position — that's where the actual collision was
+                    //     detected, so the splat sits in front of the player
+                    //     at the configured distance (e.g. 2 m forward).
+                    //   ImpactDistance == 0: legacy body-plane behaviour —
+                    //     spawn at m_BodyImpactPos which is in the player's
+                    //     own plane (Z = 0 relative to player).
+                    Vector3 splatOrigin = m_ImpactDistance > 0f ? pos : m_BodyImpactPos;
+                    SpawnSplat(splatOrigin);
                     m_SplatFired = true;
                     // Hit-class: the splash IS the end of the ball's journey.
                     // Despawn now so it doesn't continue past the participant.
-                    Debug.Log($"[TrajectoryObjectController] Hit-class splat — despawning ball at impact. trial={TrialId}");
+                    Debug.Log($"[TrajectoryObjectController] Hit-class splat — despawning ball at impact. trial={TrialId} " +
+                              $"splatPos={splatOrigin} (distToPlayer={Vector3.Distance(splatOrigin, m_PlayerPos):F2}m)");
                     IsComplete = true;
                     m_Active = false;
                     Despawn();

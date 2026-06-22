@@ -28,7 +28,6 @@ namespace HitOrMiss
         [SerializeField] Button m_EndSessionButton;
 
         [Header("Localization")]
-        [SerializeField] string m_BodyKey = "task_end_body";
         [TextArea(2, 4)]
         [SerializeField] string m_BodyFallback = "You are all done. Thank you for your participation.";
 

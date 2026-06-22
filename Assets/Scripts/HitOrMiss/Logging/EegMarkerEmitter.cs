@@ -201,7 +201,7 @@ namespace HitOrMiss
                 candidates.Add(m_ComPort);
             foreach (var p in osPorts)
             {
-                if (!candidates.Contains(p, StringComparer.OrdinalIgnoreCase))
+                if (!candidates.Exists(c => string.Equals(c, p, StringComparison.OrdinalIgnoreCase)))
                     candidates.Add(p);
             }
 

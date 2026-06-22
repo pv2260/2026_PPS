@@ -58,7 +58,6 @@ namespace HitOrMiss
         [SerializeField] ControllerButtonInput m_ControllerInput;
         [SerializeField] KeyboardCommandInput m_KeyboardInput;
         [SerializeField] HandPinchInput m_HandPinchInput;
-        [SerializeField] InputMode m_InputMode = InputMode.Controller;
 
         [Header("Logging")]
         [SerializeField] TaskLogger m_TaskLogger;

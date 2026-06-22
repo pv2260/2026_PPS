@@ -38,9 +38,6 @@ namespace HitOrMiss
         string m_SetupJsonPath;
         string m_FinalJsonPath;
 
-    // Pam: Added this variable to choose between tasks
-        string m_TaskName = "";
-
         StreamWriter m_TrialsWriter;
 
         // Each task has its own in-memory trial list because the schemas
