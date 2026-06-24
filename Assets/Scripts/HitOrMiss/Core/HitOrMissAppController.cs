@@ -94,7 +94,7 @@ namespace HitOrMiss
         [SerializeField] Color m_ForcedIdleColor      = new Color(0.8f, 0.8f, 0.8f, 1f);
         [SerializeField] Color m_ForcedLeftFillColor  = new Color(0.20f, 0.45f, 1.00f, 1f);
         [SerializeField] Color m_ForcedRightFillColor = new Color(1.00f, 0.55f, 0.10f, 1f);
-        [SerializeField] float m_ForcedFlashSeconds = 0.5f;
+        //[SerializeField] float m_ForcedFlashSeconds = 0.5f;
 
         // ---- Ball demo (passive) ----
         [Header("Ball demo (2 passive trials)")]
@@ -113,10 +113,10 @@ namespace HitOrMiss
         [Header("Shared practice feedback")]
         [Tooltip("Briefly shown on no-response trials (TaskManager.TooSlow event). Auto-hides.")]
         [SerializeField] TaskPopupPanel m_TooSlowPanel;
-        [Tooltip("Visual feedback indicator. Practice mode → green/red. Main task → neutral.")]
+        //[Tooltip("Visual feedback indicator. Practice mode → green/red. Main task → neutral.")]
         [SerializeField] ResponseIndicator m_ResponseIndicator;
-        [Tooltip("Fullscreen green/red flash, fired on every trial judgement during practice. Leave empty to disable.")]
-        [SerializeField] FullScreenFlash m_FullScreenFlash;
+        //[Tooltip("Fullscreen green/red flash, fired on every trial judgement during practice. Leave empty to disable.")]
+        //[SerializeField] FullScreenFlash m_FullScreenFlash;
 
         // ---- Post-practice + main task ----
         [Header("Post-practice (before block 1)")]
@@ -486,13 +486,13 @@ namespace HitOrMiss
                             lastCorrect = j.result == TrialResult.Correct;
 
                             // Green/red flash based on correctness (unchanged).
-                            if (m_FullScreenFlash != null)
-                            {
-                                if (j.result == TrialResult.Correct)
-                                    m_FullScreenFlash.FlashCorrect();
-                                else
-                                    m_FullScreenFlash.FlashIncorrect();
-                            }
+                            //if (m_FullScreenFlash != null)
+                           // {
+                             //   if (j.result == TrialResult.Correct)
+                              //      m_FullScreenFlash.FlashCorrect();
+                               // else
+                               //     m_FullScreenFlash.FlashIncorrect();
+                            //}
 
                             // ALSO show the Too Slow panel if the response was past halfway.
                             // (A no-response timeout already fires the TooSlow event separately.)
@@ -609,7 +609,7 @@ namespace HitOrMiss
             if (m_ResponseIndicator != null)
                 m_ResponseIndicator.Show(expected, true);
 
-            yield return new WaitForSeconds(m_ForcedFlashSeconds);
+           // yield return new WaitForSeconds(m_ForcedFlashSeconds);
             panel.Hide();
         }
 

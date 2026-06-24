@@ -1,0 +1,9 @@
+﻿subject_id,session_number,block_number,trial_number,trial_type,correct_response,previous_speed,current_speed,speed_sequence,transition_status,trajectory_offset_cm,trial_trigger_code,response_trigger_code,trigger_timestamp,participant_response,reaction_time_ms,accuracy,trial_interrupted,timestamp
+P000,1,1,1,near_hit,MISS,none,slow,start-slow,start,34.59,0,0,0.0000,HIT,1531.16,0,0,2026-06-24T09:56:30.4886680+02:00
+P000,1,1,2,near_miss,MISS,slow,slow,slow-slow,repetition,-49.58,0,0,0.0000,HIT,7601.69,0,0,2026-06-24T09:56:50.0357963+02:00
+P000,1,1,3,clear_hit,HIT,slow,slow,slow-slow,repetition,7.50,0,0,0.0000,HIT,7044.04,1,0,2026-06-24T09:57:03.1098489+02:00
+P000,1,1,4,near_hit,MISS,slow,slow,slow-slow,repetition,44.45,0,0,0.0000,HIT,2185.84,0,0,2026-06-24T09:57:11.9509906+02:00
+P000,1,1,5,near_hit,MISS,slow,fast,slow-fast,transition,42.24,0,0,0.0000,MISS,1253.24,1,0,2026-06-24T09:57:24.8449794+02:00
+P000,1,1,6,near_hit,MISS,fast,fast,fast-fast,repetition,-38.07,0,0,0.0000,MISS,1211.27,1,0,2026-06-24T09:57:30.9148854+02:00
+P000,1,1,7,clear_miss,MISS,fast,fast,fast-fast,repetition,-75.86,0,0,0.0000,MISS,752.09,1,0,2026-06-24T09:57:36.5265789+02:00
+P000,1,1,8,near_miss,MISS,fast,fast,fast-fast,repetition,49.88,0,0,0.0000,MISS,918.90,1,0,2026-06-24T09:57:42.7210497+02:00

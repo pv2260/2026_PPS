@@ -28,7 +28,7 @@ namespace HitOrMiss
 
         [Tooltip("COM port the Arduino is on, e.g. COM8 on Windows. When AutoDetect is on, this is a hint " +
                  "tried first; when off, this port is used as-is.")]
-        [SerializeField] string m_ComPort = "COM8";
+        [SerializeField] string m_ComPort = "COM7";
 
         [Tooltip("Baud rate — must match the Arduino sketch")]
         [SerializeField] int m_BaudRate = 115200;
@@ -281,7 +281,7 @@ namespace HitOrMiss
                 // Task 1 - PPS
                 case "pps_session_start": return 140;
                 case "pps_session_end": return 141;
-                case "pps_vib_fired": return 201;
+                case "pps_vib_fired": return 64;
                 case "pps_response": return 63;
                 case "pps_block_paused": return 142;
                 case "pps_block_resumed": return 143;

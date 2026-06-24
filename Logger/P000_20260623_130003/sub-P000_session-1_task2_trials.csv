@@ -1,0 +1,3 @@
+﻿subject_id,session_number,block_number,trial_number,trial_type,correct_response,previous_speed,current_speed,speed_sequence,transition_status,trajectory_offset_cm,trial_trigger_code,response_trigger_code,trigger_timestamp,participant_response,reaction_time_ms,accuracy,trial_interrupted,timestamp
+P000,1,1,1,near_hit,MISS,none,slow,start-slow,start,-36.39,0,0,0.0000,HIT,3104.22,0,0,2026-06-23T13:02:24.8268635+02:00
+P000,1,1,2,clear_hit,HIT,slow,slow,slow-slow,repetition,0.00,0,0,0.0000,HIT,2339.14,1,0,2026-06-23T13:02:37.6629571+02:00

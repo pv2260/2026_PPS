@@ -24,10 +24,10 @@ namespace HitOrMiss
     /// </summary>
     public class TrajectoryObjectController : MonoBehaviour
     {
-        [Header("Shadow")]
-        [SerializeField] GameObject m_ShadowPrefab;
-        [Tooltip("World Y of the ground plane for shadow projection")]
-        [SerializeField] float m_GroundY = 0f;
+        //[Header("Shadow")]
+        //[SerializeField] GameObject m_ShadowPrefab;
+        //[Tooltip("World Y of the ground plane for shadow projection")]
+        //[SerializeField] float m_GroundY = 0f;
 
         [Header("Pinch feedback (side panels)")]
         [Tooltip("Child GameObject shown when the participant gives a LEFT pinch (Hit). Should display YES on blue.")]
@@ -59,7 +59,7 @@ namespace HitOrMiss
         [Tooltip("Restrict splat to trials whose expected response is Hit (Hit and NearHit categories). Miss-class trials (NearMiss, ClearMiss) pass through without bursting.")]
         [SerializeField] bool m_SplatOnlyOnHitClass = true;
 
-        Transform m_Shadow;
+        //Transform m_Shadow;
         TrialDefinition m_Trial;
         float m_StartTime;
         float m_Duration;
@@ -149,7 +149,7 @@ namespace HitOrMiss
 
             ResetPanelsToDefault();
 
-            CreateShadow(diameter);
+            //CreateShadow(diameter);
             SetVisible(false);
             m_Active = false;
             IsComplete = false;
@@ -184,7 +184,7 @@ namespace HitOrMiss
             Vector3 pos = Vector3.Lerp(m_StartPos, m_EndPos, t);
 
             transform.position = pos;
-            UpdateShadow(pos);
+            //UpdateShadow(pos);
 
             // Detect when the ball crosses the player plane (the plane through
             // the player's position perpendicular to the player's forward axis).
@@ -247,7 +247,7 @@ namespace HitOrMiss
                 m_PassedPlayerPlane = true;
                 if (m_LeftPanel  != null) m_LeftPanel.SetActive(false);
                 if (m_RightPanel != null) m_RightPanel.SetActive(false);
-                if (m_Shadow != null) m_Shadow.gameObject.SetActive(false);
+                //if (m_Shadow != null) m_Shadow.gameObject.SetActive(false);
             }
 
             // Reached the overshoot endpoint — clean up entirely. Despawn the
@@ -451,7 +451,7 @@ namespace HitOrMiss
             var driver = go.AddComponent<SplatLifetime>();
             driver.Init(m_SplatLifetime, m_SplatPeakSize);
         }
-
+/* 
         void CreateShadow(float diameter)
         {
             if (m_ShadowPrefab != null)
@@ -488,31 +488,31 @@ namespace HitOrMiss
                 shadowGo.transform.SetParent(transform.parent);
                 m_Shadow = shadowGo.transform;
             }
-        }
+        } */
 
-        void UpdateShadow(Vector3 ballPos)
-        {
-            if (m_Shadow == null) return;
+       // void UpdateShadow(Vector3 ballPos)
+       // {
+        //    if (m_Shadow == null) return;
             // Once the ball has crossed the player plane the shadow has been
             // hidden by the plane-crossing branch above; bail early so we
             // don't re-show it via scale updates.
-            if (m_PassedPlayerPlane) return;
+        //    if (m_PassedPlayerPlane) return;
 
-            m_Shadow.position = new Vector3(ballPos.x, m_GroundY + 0.01f, ballPos.z);
+         //   m_Shadow.position = new Vector3(ballPos.x, m_GroundY + 0.01f, ballPos.z);
 
-            float height = Mathf.Max(ballPos.y - m_GroundY, 0.1f);
-            float scaleFactor = Mathf.Clamp(1f / (height * 0.5f + 0.5f), 0.3f, 1.5f);
-            float baseDiam = m_Trial.ballDiameter > 0 ? m_Trial.ballDiameter : 0.175f;
-            m_Shadow.localScale = new Vector3(baseDiam * 1.2f * scaleFactor, 0.005f, baseDiam * 1.2f * scaleFactor);
+        //    float height = Mathf.Max(ballPos.y - m_GroundY, 0.1f);
+        //    float scaleFactor = Mathf.Clamp(1f / (height * 0.5f + 0.5f), 0.3f, 1.5f);
+        //    float baseDiam = m_Trial.ballDiameter > 0 ? m_Trial.ballDiameter : 0.175f;
+        //    m_Shadow.localScale = new Vector3(baseDiam * 1.2f * scaleFactor, 0.005f, baseDiam * 1.2f * scaleFactor);
 
-            m_Shadow.gameObject.SetActive(m_Active && !IsComplete);
-        }
+       //     m_Shadow.gameObject.SetActive(m_Active && !IsComplete);
+       // }
 
         void SetVisible(bool visible)
         {
             var renderers = GetComponentsInChildren<Renderer>();
             foreach (var r in renderers) r.enabled = visible;
-            if (m_Shadow != null) m_Shadow.gameObject.SetActive(visible);
+            //if (m_Shadow != null) m_Shadow.gameObject.SetActive(visible);
         }
 
         public void Despawn()
@@ -521,7 +521,7 @@ namespace HitOrMiss
             IsComplete = true;
             if (m_LeftPanel  != null) m_LeftPanel.SetActive(false);
             if (m_RightPanel != null) m_RightPanel.SetActive(false);
-            if (m_Shadow != null) Destroy(m_Shadow.gameObject);
+            //if (m_Shadow != null) Destroy(m_Shadow.gameObject);
             Destroy(gameObject);
         }
     }

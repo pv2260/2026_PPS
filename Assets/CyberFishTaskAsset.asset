@@ -1,0 +1,59 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 39ab5a3de6d8e6746a1399b7745da31e, type: 3}
+  m_Name: CyberFishTaskAsset
+  m_EditorClassIdentifier: Assembly-CSharp::HitOrMiss.Cybersickness.CyberBugTaskAsset
+  m_TaskName: Cyber Bug Prediction Task
+  m_BlockCount: 1
+  m_MissTrialsPerBlock: 10
+  m_ContactSplashTrialsPerBlock: 10
+  m_StartDistance: 5
+  m_ContactDistance: 0.45
+  m_PassBehindDistance: 1.2
+  m_MissLateralOffset: 0.55
+  m_SlowSpeed: 1.25
+  m_FastSpeed: 1.75
+  m_ItiSeconds: 0.5
+  m_BreakDurationSeconds: 5
+  m_IntroText: 'In this task, a bug will approach you.
+
+
+    Sometimes it will clearly
+    miss you.
+
+    Sometimes it will touch you and splash.
+
+
+    Your task is to
+    predict whether the bug will touch you.'
+  m_ControllerGuideText: 'Use the triggers to answer:
+
+
+    LEFT trigger = YES
+
+    RIGHT
+    trigger = NO
+
+
+    You will answer the question:
+
+
+    Will the bug touch you?'
+  m_ReadyText: 'Ready?
+
+
+    Watch the bug carefully and answer before it reaches
+    you.'
+  m_OutroText: 'The task is complete.
+
+
+    Thank you.'

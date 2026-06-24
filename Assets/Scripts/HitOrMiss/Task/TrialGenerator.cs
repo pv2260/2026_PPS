@@ -128,7 +128,7 @@ namespace HitOrMiss
             var trials = new List<TrialDefinition>(total);
             
             if (clearHits   > 0) trials.AddRange(GenerateCategory(TrialCategory.ClearHit,  SemanticCommand.Hit,  clearHits,   asset.SpawnDistance, asset.BallDiameter, asset, scale));
-            if (nearHits    > 0) trials.AddRange(GenerateCategory(TrialCategory.NearHit,   SemanticCommand.Hit,  nearHits,    asset.SpawnDistance, asset.BallDiameter, asset, scale));
+            if (nearHits > 0) trials.AddRange(GenerateCategory(TrialCategory.NearHit, SemanticCommand.Miss, nearHits, asset.SpawnDistance, asset.BallDiameter, asset, scale));            
             if (nearMisses  > 0) trials.AddRange(GenerateCategory(TrialCategory.NearMiss,  SemanticCommand.Miss, nearMisses,  asset.SpawnDistance, asset.BallDiameter, asset, scale));
             if (clearMisses > 0) trials.AddRange(GenerateCategory(TrialCategory.ClearMiss, SemanticCommand.Miss, clearMisses, asset.SpawnDistance, asset.BallDiameter, asset, scale));
 
@@ -157,29 +157,29 @@ namespace HitOrMiss
 
             var trials = new List<TrialDefinition>(perCat * 4);
             trials.AddRange(GenerateCategory(TrialCategory.ClearHit,  SemanticCommand.Hit,  perCat, spawnDistance, ballDiameter, asset, scale));
-            trials.AddRange(GenerateCategory(TrialCategory.NearHit,   SemanticCommand.Hit,  perCat, spawnDistance, ballDiameter, asset, scale));
-            trials.AddRange(GenerateCategory(TrialCategory.NearMiss,  SemanticCommand.Miss, perCat, spawnDistance, ballDiameter, asset, scale));
+            trials.AddRange(GenerateCategory(TrialCategory.NearHit,   SemanticCommand.Miss, perCat, spawnDistance, ballDiameter, asset, scale));            trials.AddRange(GenerateCategory(TrialCategory.NearMiss,  SemanticCommand.Miss, perCat, spawnDistance, ballDiameter, asset, scale));
             trials.AddRange(GenerateCategory(TrialCategory.ClearMiss, SemanticCommand.Miss, perCat, spawnDistance, ballDiameter, asset, scale));
 
             ShuffleNoConsecutive(trials);
             AssignIds(trials, blockIndex);
-            AssignSpeedsByGroupPattern(trials, asset.SpeedGroupPatterns, asset.FastSpeed, asset.SlowSpeed);
+            AssignSpeedsBySwitchSchedule(trials, asset.FastSpeed, asset.SlowSpeed);
             AssignRunMetadata(trials);
+            ForceRunStartsNearBoundary(trials, spawnDistance, ballDiameter, asset, scale);
             AssignTrajectoryDescriptors(trials);
 
             return trials.ToArray();
         }
 
         /// <summary>
-        /// Builds <paramref name="count"/> trials of the given category. The
-        /// lateral offset of each trial is anchored on the participant's
-        /// shoulder edge (not their center), so the bands stay perceptually
-        /// meaningful regardless of body size:
-        ///   • ClearHit  — magnitude 0 (dead-center on torso).
-        ///   • NearHit   — 0 to (shoulderHalf × 0.7) inside the shoulder line.
-        ///   • NearMiss  — shoulderHalf + ballRadius + 0..10 cm outside.
-        ///   • ClearMiss — shoulderHalf + ballRadius + 20..35 cm outside.
-        /// Side (left vs right of the body) is randomized 50/50.
+        /// The category is encoded by the final lateral offset, anchored on the
+        /// participant's shoulder edge. Offset is defined relative to the nearest
+        /// edge of the ball:
+        ///   • ClearHit  — ball overlaps the body boundary.
+        ///   • NearHit   — ball passes just outside the shoulder edge by 1–15 cm.
+        ///   • NearMiss  — ball passes outside the shoulder edge by 15–30 cm.
+        ///   • ClearMiss — ball passes outside the shoulder edge by 30–60 cm.
+        /// Because Unity positions the ball by its center, the ball radius is added
+        /// internally when converting edge-based offsets into center coordinates.
         /// </summary>
         static List<TrialDefinition> GenerateCategory(TrialCategory category,
             SemanticCommand expected, int count,
@@ -195,60 +195,104 @@ namespace HitOrMiss
             float shoulderHalfM = participantShoulderM * 0.5f;
             float ballRadiusM = ballDiameter * 0.5f;
 
-            for (int i = 0; i < count; i++)
+            
+
+
+                for (int i = 0; i < count; i++)
+        {
+            /// The category is encoded by the final lateral offset, anchored on the
+            /// participant's shoulder edge. Offset is defined relative to the nearest
+            /// edge of the ball:
+            ///   • ClearHit  — ball overlaps the body boundary.
+            ///   • NearHit   — ball passes just outside the shoulder edge by 1–15 cm.
+            ///   • NearMiss  — ball passes outside the shoulder edge by 15–30 cm.
+            ///   • ClearMiss — ball passes outside the shoulder edge by 30–60 cm.
+            /// Because Unity positions the ball by its center, the ball radius is added
+            /// internally when converting edge-based offsets into center coordinates.
+            float edgeGapFromShoulderM = 0f;
+            float offsetFromShoulderEdgeM = 0f;
+
+            switch (category)
             {
-                float magnitude;
-                switch (category)
-                {
-                    case TrialCategory.ClearHit:
-                        // Anywhere within the participant's full shoulder
-                        // reach — randomized per trial so the ball doesn't
-                        // always land dead-center. Side (left/right of body
-                        // midline) is then picked 50/50 below, so the final
-                        // lateral spans the full ±shoulderHalfM range.
-                        magnitude = Random.Range(0f, shoulderHalfM);
-                        break;
+                case TrialCategory.ClearHit:
+                    /*
+                    * Clear hit:
+                    * The ball overlaps the body boundary.
+                    * Negative edge gap means overlap.
+                    */
+                    edgeGapFromShoulderM = -Random.Range(0.01f, 0.15f);
+                    offsetFromShoulderEdgeM = edgeGapFromShoulderM - ballRadiusM;
+                    break;
 
-                    case TrialCategory.NearHit:
-                        // Inside the shoulder line by up to 70% of half-shoulder width.
-                        // Kept tighter than ClearHit so the two Hit categories
-                        // still produce visibly different ball paths on average.
-                        magnitude = Random.Range(0f, shoulderHalfM * 0.7f);
-                        break;
+                case TrialCategory.NearHit:
+                    /*
+                    * Near hit:
+                    * Almost hits, but does NOT hit.
+                    * The ball edge clears the shoulder by 1–15 cm.
+                    */
+                    edgeGapFromShoulderM = Random.Range(0.01f, 0.15f);
+                    offsetFromShoulderEdgeM = ballRadiusM + edgeGapFromShoulderM;
+                    break;
 
-                    case TrialCategory.NearMiss:
-                        // Ball center 0–10 cm past the shoulder edge, with ball radius
-                        // added so the ball's near edge is already past the body line.
-                        // Visually: "would have grazed, but cleanly missed."
-                        magnitude = shoulderHalfM + ballRadiusM + Random.Range(0f, 0.10f);
-                        break;
+                case TrialCategory.NearMiss:
+                    /*
+                    * Near miss:
+                    * Misses by a moderate margin.
+                    * The ball edge clears the shoulder by 15–30 cm.
+                    */
+                    edgeGapFromShoulderM = Random.Range(0.15f, 0.30f);
+                    offsetFromShoulderEdgeM = ballRadiusM + edgeGapFromShoulderM;
+                    break;
 
-                    case TrialCategory.ClearMiss:
-                        // 20–35 cm clear of the shoulder edge (plus ball radius).
-                        // Visually unambiguous miss.
-                        magnitude = shoulderHalfM + ballRadiusM + Random.Range(0.20f, 0.35f);
-                        break;
-
-                    default:
-                        magnitude = 0f;
-                        break;
-                }
-
-                float side = Random.value > 0.5f ? 1f : -1f;
-                float lateral = magnitude * side;
-
-                result.Add(new TrialDefinition
-                {
-                    category = category,
-                    spawnDistance = spawnDistance,
-                    finalLateralOffset = lateral,
-                    speed = 0f, // assigned later by group pattern
-                    ballDiameter = ballDiameter,
-                    expectedResponse = expected,
-                });
+                case TrialCategory.ClearMiss:
+                    /*
+                    * Clear miss:
+                    * Obvious miss.
+                    * The ball edge clears the shoulder by 30–60 cm.
+                    */
+                    edgeGapFromShoulderM = Random.Range(0.30f, 0.60f);
+                    offsetFromShoulderEdgeM = ballRadiusM + edgeGapFromShoulderM;
+                    break;
             }
-            return result;
+
+            /*
+            * Convert shoulder-edge-relative offset into the Unity coordinate.
+            *
+            * shoulderHalfM = distance from body midline to shoulder edge.
+            * offsetFromShoulderEdgeM:
+            *   negative = inward, toward body center
+            *   positive = outward, away from body
+            *
+            * final ball-center magnitude from body midline:
+            */
+            float magnitude = shoulderHalfM + offsetFromShoulderEdgeM;
+            magnitude = Mathf.Max(0f, magnitude);
+
+            // Randomly assign left/right side.
+            float side = Random.value > 0.5f ? 1f : -1f;
+
+            // This is the actual Unity lateral coordinate relative to body midline.
+            float lateral = magnitude * side;
+
+            result.Add(new TrialDefinition
+            {
+                category = category,
+                spawnDistance = spawnDistance,
+                finalLateralOffset = lateral,
+                speed = 0f, // assigned later by group pattern
+                ballDiameter = ballDiameter,
+                expectedResponse = expected,
+
+                // Add this field to TrialDefinition if you want to log/analyze
+                // the continuous experimental offset directly.
+                shoulderEdgeOffsetM = offsetFromShoulderEdgeM,
+                shoulderEdgeGapM = edgeGapFromShoulderM,
+                
+            });
         }
+
+        return result;
+    }
 
         /// <summary>
         /// Shuffle so no two consecutive trials share a category. Greedy fix-up after Fisher–Yates.
@@ -360,6 +404,97 @@ namespace HitOrMiss
         }
 
         /// <summary>
+        /// Assigns slow/fast speeds using the switch schedule:
+        ///   1. Start at a randomly chosen speed.
+        ///   2. Hold each run for at least 3 trials.
+        ///   3. From the fourth trial onward, switch with probability 0.5 before each trial.
+        ///   4. Redraw any run longer than 9 trials.
+        /// </summary>
+        static void AssignSpeedsBySwitchSchedule(
+            List<TrialDefinition> trials,
+            float fastSpeed,
+            float slowSpeed)
+        {
+            if (trials == null || trials.Count == 0)
+                return;
+
+            float currentSpeed = Random.value > 0.5f ? fastSpeed : slowSpeed;
+
+            int trialIdx = 0;
+
+            while (trialIdx < trials.Count)
+            {
+                int remaining = trials.Count - trialIdx;
+                int runLength = DrawSwitchScheduleRunLength(remaining);
+
+                for (int i = 0; i < runLength && trialIdx < trials.Count; i++)
+                {
+                    var t = trials[trialIdx];
+                    t.speed = currentSpeed;
+                    trials[trialIdx] = t;
+                    trialIdx++;
+                }
+
+                // Alternate speed at the next run.
+                currentSpeed = Mathf.Approximately(currentSpeed, fastSpeed)
+                    ? slowSpeed
+                    : fastSpeed;
+            }
+        }
+
+        /// <summary>
+        /// Draws one run length for the switch schedule.
+        /// Minimum intended run length is 3.
+        /// From trial 4 onward, the run continues with probability 0.5
+        /// and switches with probability 0.5 before the next trial.
+        /// Runs longer than 9 are rejected and redrawn.
+        /// </summary>
+        static int DrawSwitchScheduleRunLength(int remainingTrials)
+        {
+            if (remainingTrials <= 0)
+                return 0;
+
+            if (remainingTrials <= 3)
+                return remainingTrials;
+
+            while (true)
+            {
+                int runLength = 3;
+
+                while (true)
+                {
+                    // If adding another trial would exceed 9, reject/redraw.
+                    if (runLength >= 9)
+                        break;
+
+                    // From the fourth trial onward:
+                    // switch with p = 0.5 before the next trial.
+                    bool switchBeforeNextTrial = Random.value < 0.5f;
+
+                    if (switchBeforeNextTrial)
+                        break;
+
+                    runLength++;
+                }
+
+                // Redraw any run longer than 9.
+                if (runLength > 9)
+                    continue;
+
+                runLength = Mathf.Min(runLength, remainingTrials);
+
+                // Avoid leaving a final tiny run of 1–2 trials.
+                // If only 1 or 2 trials would remain, absorb them into this run
+                // as long as the run does not exceed the maximum length.
+                int leftover = remainingTrials - runLength;
+                if (leftover > 0 && leftover < 3 && runLength + leftover <= 9)
+                    runLength += leftover;
+
+                return runLength;
+            }
+        }
+
+        /// <summary>
         /// Synthesizes a stable <c>trajectoryId</c> string and approach angle
         /// for each trial. The id encodes category + side + lateral-offset bin
         /// so trials sharing a shape group together in analysis. The angle is
@@ -382,6 +517,69 @@ namespace HitOrMiss
                     t.trajectoryAngleDeg = 0f;
 
                 trials[i] = t;
+            }
+        }
+
+        /// <summary>
+        /// Forces the first trial of every speed run to be near-boundary.
+        /// About half are NearHit and half are NearMiss.
+        /// This is done after run metadata is assigned, so run-start trials
+        /// are identified using trialInRun == 1.
+        /// </summary>
+        static void ForceRunStartsNearBoundary(
+            List<TrialDefinition> trials,
+            float spawnDistance,
+            float ballDiameter,
+            TrajectoryTaskAsset asset,
+            float shoulderScale)
+        {
+            if (trials == null || trials.Count == 0)
+                return;
+
+            int runStartCount = 0;
+
+            for (int i = 0; i < trials.Count; i++)
+            {
+                if (trials[i].trialInRun != 1)
+                    continue;
+
+                bool useNearHit = runStartCount % 2 == 0;
+
+                // Add a little randomness so the sequence is not perfectly alternating.
+                if (Random.value > 0.5f)
+                    useNearHit = !useNearHit;
+
+                TrialCategory desiredCategory = useNearHit
+                    ? TrialCategory.NearHit
+                    : TrialCategory.NearMiss;
+
+                SemanticCommand desiredResponse = SemanticCommand.Miss;
+
+                // Generate one fresh near-boundary trajectory with jittered offset.
+                var replacement = GenerateCategory(
+                    desiredCategory,
+                    desiredResponse,
+                    1,
+                    spawnDistance,
+                    ballDiameter,
+                    asset,
+                    shoulderScale
+                )[0];
+
+                var t = trials[i];
+
+                t.category = replacement.category;
+                t.finalLateralOffset = replacement.finalLateralOffset;
+                t.ballDiameter = replacement.ballDiameter;
+                t.expectedResponse = replacement.expectedResponse;
+
+                // Only keep this if you added shoulderEdgeOffsetM to TrialDefinition.
+                t.shoulderEdgeOffsetM = replacement.shoulderEdgeOffsetM;
+                t.shoulderEdgeGapM = replacement.shoulderEdgeGapM;
+
+                trials[i] = t;
+
+                runStartCount++;
             }
         }
 

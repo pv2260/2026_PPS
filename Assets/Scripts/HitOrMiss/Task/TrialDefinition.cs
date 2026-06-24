@@ -37,6 +37,12 @@ namespace HitOrMiss
         [Tooltip("Signed lateral offset from the player at the trajectory's end (meters; sign chooses side)")]
         public float finalLateralOffset;
 
+        [Tooltip("Signed ball-center offset from the participant's shoulder edge (meters). Positive = outside body; negative = inside body.")]
+        public float shoulderEdgeOffsetM;
+
+        [Tooltip("Signed gap between the nearest edge of the ball and the shoulder edge (meters). Positive = ball clears the body; negative = ball overlaps the body.")]
+        public float shoulderEdgeGapM;
+
         [Tooltip("Peak lateral bow of the arc at the midpoint (meters; always curves outward, away from the player)")]
         public float curveMagnitude;
 
