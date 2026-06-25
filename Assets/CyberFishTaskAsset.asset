@@ -14,16 +14,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HitOrMiss.Cybersickness.CyberBugTaskAsset
   m_TaskName: Cyber Bug Prediction Task
   m_BlockCount: 1
-  m_MissTrialsPerBlock: 10
+  m_MissTrialsPerBlock: 4
   m_ContactSplashTrialsPerBlock: 10
-  m_StartDistance: 5
+  m_StartDistance: 10
   m_ContactDistance: 0.45
   m_PassBehindDistance: 1.2
   m_MissLateralOffset: 0.55
   m_SlowSpeed: 1.25
   m_FastSpeed: 1.75
-  m_ItiSeconds: 0.5
-  m_BreakDurationSeconds: 5
+  m_ItiSeconds: 0.2
+  m_BreakDurationSeconds: 2
   m_IntroText: 'In this task, a bug will approach you.
 
 

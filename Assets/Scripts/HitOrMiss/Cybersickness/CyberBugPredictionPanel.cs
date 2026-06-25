@@ -11,73 +11,78 @@ namespace HitOrMiss.Cybersickness
 
         [Header("Text")]
         [SerializeField] TMP_Text m_QuestionText;
-        [SerializeField] TMP_Text m_LeftText;
-        [SerializeField] TMP_Text m_RightText;
+        [SerializeField] TMP_Text m_YesText;
+        [SerializeField] TMP_Text m_NoText;
 
-        [Header("Side panels")]
-        [SerializeField] Image m_LeftPanel;
-        [SerializeField] Image m_RightPanel;
+        [Header("Panels")]
+        [SerializeField] Image m_YesPanelImage;
+        [SerializeField] Image m_NoPanelImage;
 
         [Header("Colors")]
-        [SerializeField] Color m_NormalColor = new Color(1f, 1f, 1f, 0.20f);
-        [SerializeField] Color m_SelectedColor = new Color(1f, 1f, 1f, 0.75f);
+        [SerializeField] Color m_NormalColor = Color.white;
+        [SerializeField] Color m_SelectedColor = Color.green;
 
         void Awake()
         {
-            if (m_Root == null)
-                m_Root = gameObject;
-
             Hide();
         }
 
-        public void ShowQuestion(string question = "Will the bug touch you?")
+        public void ShowQuestion(string question)
         {
             if (m_Root != null)
                 m_Root.SetActive(true);
+            else
+                gameObject.SetActive(true);
 
             if (m_QuestionText != null)
                 m_QuestionText.text = question;
 
-            if (m_LeftText != null)
-                m_LeftText.text = "YES";
+            if (m_YesText != null)
+                m_YesText.text = "YES";
 
-            if (m_RightText != null)
-                m_RightText.text = "NO";
+            if (m_NoText != null)
+                m_NoText.text = "NO";
 
-            ClearSelection();
-        }
-
-        public void Hide()
-        {
-            if (m_Root != null)
-                m_Root.SetActive(false);
+            ResetColors();
         }
 
         public void HighlightYes()
         {
-            if (m_LeftPanel != null)
-                m_LeftPanel.color = m_SelectedColor;
+            Debug.LogError("[PREDICTION PANEL] YES highlighted.");
 
-            if (m_RightPanel != null)
-                m_RightPanel.color = m_NormalColor;
+            ResetColors();
+
+            if (m_YesPanelImage != null)
+                m_YesPanelImage.color = m_SelectedColor;
         }
 
         public void HighlightNo()
         {
-            if (m_LeftPanel != null)
-                m_LeftPanel.color = m_NormalColor;
+            Debug.LogError("[PREDICTION PANEL] NO highlighted.");
 
-            if (m_RightPanel != null)
-                m_RightPanel.color = m_SelectedColor;
+            ResetColors();
+
+            if (m_NoPanelImage != null)
+                m_NoPanelImage.color = m_SelectedColor;
         }
 
-        public void ClearSelection()
+        public void Hide()
         {
-            if (m_LeftPanel != null)
-                m_LeftPanel.color = m_NormalColor;
+            ResetColors();
 
-            if (m_RightPanel != null)
-                m_RightPanel.color = m_NormalColor;
+            if (m_Root != null)
+                m_Root.SetActive(false);
+            else
+                gameObject.SetActive(false);
+        }
+
+        void ResetColors()
+        {
+            if (m_YesPanelImage != null)
+                m_YesPanelImage.color = m_NormalColor;
+
+            if (m_NoPanelImage != null)
+                m_NoPanelImage.color = m_NormalColor;
         }
     }
 }

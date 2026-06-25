@@ -1,5 +1,6 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace HitOrMiss.Cybersickness
 {
@@ -20,31 +21,47 @@ namespace HitOrMiss.Cybersickness
         [SerializeField] string m_ParticipantId = "P000";
 
         [Header("Cyber popup GameObjects")]
-        [SerializeField] GameObject m_ControllerIntroPanel;
-        [SerializeField] GameObject m_IntroPanel;
-        [SerializeField] GameObject m_ControllerGuidePanel;
-        [SerializeField] GameObject m_PracticeYesPanel;
-        [SerializeField] GameObject m_PracticeNoPanel;
-        [SerializeField] GameObject m_ReadyPanel;
-        [SerializeField] GameObject m_BreakPanel;
-        [SerializeField] GameObject m_EndPanel;
+        [SerializeField] GameObject m_PracticeIntroPopup;
+        [SerializeField] GameObject m_TriggerDemoPopup;
+        [SerializeField] GameObject m_ResponseMappingPopup;
+        [SerializeField] GameObject m_ApproachIntroPopup;
+        [SerializeField] GameObject m_IntroTaskPopup;
+        [SerializeField] GameObject m_ControllerGuidePopup;
+        [SerializeField] GameObject m_PracticeYesPopup;
 
-        [Header("Controller intro")]
-        [SerializeField] CyberControllerIntroDemo m_ControllerIntroDemo;
-        [SerializeField] float m_ControllerIntroAdvanceDelay = 0.6f;
+        [FormerlySerializedAs("m_PracticeNoPPopup")]
+        [SerializeField] GameObject m_PracticeNoPopup;
 
+        [SerializeField] GameObject m_ReadyPopup;
+        [SerializeField] GameObject m_BreakPopup;
+        [SerializeField] GameObject m_EndPopup;
+
+        [Header("Instruction demos")]
+        [FormerlySerializedAs("m_ControllerIntroDemo")]
+        [SerializeField] CyberControllerIntroDemo m_TriggerDemo;
+
+        [SerializeField] CyberResponseMappingDemo m_ResponseMappingDemo;
+        [SerializeField] CyberApproachIntroDemo m_ApproachIntroDemo;
+
+        [Header("Timing")]
+        [SerializeField] float m_TriggerDemoAdvanceDelay = 0.6f;
+        [SerializeField] float m_ResponseMappingAdvanceDelay = 0.6f;
+        [SerializeField] float m_ApproachIntroFallbackSeconds = 4.0f;
 
         Coroutine m_SessionCoroutine;
 
         bool m_WaitingForPanelAdvance;
+
         bool m_PracticeWaiting;
         CyberYesNoResponse m_PracticeReceived;
 
-        bool m_ControllerIntroDemoStarted;
-        bool m_ControllerIntroCompleted;
-        bool m_ControllerIntroWaiting;
-        bool m_ControllerIntroLeftPressed;
-        bool m_ControllerIntroRightPressed;
+        bool m_TriggerDemoWaiting;
+        bool m_TriggerDemoLeftPressed;
+        bool m_TriggerDemoRightPressed;
+
+        bool m_ResponseMappingWaiting;
+        bool m_ResponseMappingLeftPressed;
+        bool m_ResponseMappingRightPressed;
 
         public bool IsRunning { get; private set; }
 
@@ -91,6 +108,9 @@ namespace HitOrMiss.Cybersickness
                 return;
             }
 
+            if (m_WelcomePanel != null)
+                m_WelcomePanel.SetActive(false);
+
             IsRunning = true;
 
             m_TaskManager.SetTaskAsset(m_TaskAsset);
@@ -111,14 +131,23 @@ namespace HitOrMiss.Cybersickness
 
         IEnumerator RunSession()
         {
-            Debug.LogError("[CYBER FLOW] Showing Controller Intro.");
-            yield return RunControllerIntro();
+            Debug.LogError("[CYBER FLOW] Showing Practice Intro.");
+            yield return ShowPanelAndWait(m_PracticeIntroPopup);
 
-            Debug.LogError("[CYBER FLOW] Showing Intro.");
-            yield return ShowPanelAndWait(m_IntroPanel);
+            Debug.LogError("[CYBER FLOW] Showing Trigger Demo.");
+            yield return RunTriggerDemo();
+
+            Debug.LogError("[CYBER FLOW] Showing Response Mapping.");
+            yield return RunResponseMappingDemo();
+
+            Debug.LogError("[CYBER FLOW] Showing Approach Intro.");
+            yield return RunApproachIntroDemo();
+
+            Debug.LogError("[CYBER FLOW] Showing Task Intro.");
+            yield return ShowPanelAndWait(m_IntroTaskPopup);
 
             Debug.LogError("[CYBER FLOW] Showing Controller Guide.");
-            yield return ShowPanelAndWait(m_ControllerGuidePanel);
+            yield return ShowPanelAndWait(m_ControllerGuidePopup);
 
             Debug.LogError("[CYBER FLOW] Practice YES.");
             yield return RunPracticeYes();
@@ -127,7 +156,7 @@ namespace HitOrMiss.Cybersickness
             yield return RunPracticeNo();
 
             Debug.LogError("[CYBER FLOW] Showing Ready.");
-            yield return ShowPanelAndWait(m_ReadyPanel);
+            yield return ShowPanelAndWait(m_ReadyPopup);
 
             for (int b = 0; b < m_TaskAsset.BlockCount; b++)
             {
@@ -139,11 +168,13 @@ namespace HitOrMiss.Cybersickness
                     yield return null;
 
                 if (b < m_TaskAsset.BlockCount - 1)
-                    yield return ShowPanelAndWait(m_BreakPanel);
+                    yield return ShowPanelAndWait(m_BreakPopup);
             }
 
-            yield return ShowPanelAndWait(m_EndPanel);
+            Debug.LogError("[CYBER FLOW] Showing End.");
+            yield return ShowPanelAndWait(m_EndPopup);
 
+            m_SessionCoroutine = null;
             EndSession();
         }
 
@@ -169,51 +200,102 @@ namespace HitOrMiss.Cybersickness
             panel.SetActive(false);
         }
 
-        IEnumerator RunControllerIntro()
+        IEnumerator RunTriggerDemo()
         {
             HideAllPanels();
 
-            if (m_ControllerIntroPanel == null)
+            if (m_TriggerDemoPopup == null)
             {
-                Debug.LogError("[CYBER FLOW] ControllerIntroPanel is not assigned.");
+                Debug.LogError("[CYBER FLOW] TriggerDemoPopup is not assigned.");
                 yield break;
             }
 
-            Debug.LogError("[CYBER FLOW] Activating ControllerIntroPanel.");
+            Debug.LogError("[CYBER FLOW] Activating TriggerDemoPopup.");
 
-            ForceActivateHierarchy(m_ControllerIntroPanel);
+            ForceActivateHierarchy(m_TriggerDemoPopup);
 
-            m_ControllerIntroDemoStarted = false;
-            m_ControllerIntroCompleted = false;
-            m_ControllerIntroLeftPressed = false;
-            m_ControllerIntroRightPressed = false;
+            m_TriggerDemoWaiting = true;
+            m_TriggerDemoLeftPressed = false;
+            m_TriggerDemoRightPressed = false;
 
-            if (m_ControllerIntroDemo != null)
-                m_ControllerIntroDemo.ShowBeforeStart();
+            if (m_TriggerDemo != null)
+                m_TriggerDemo.ResetDemo();
+            else
+                Debug.LogError("[CYBER FLOW] TriggerDemo component is not assigned.");
 
-            while (!m_ControllerIntroCompleted)
+            while (m_TriggerDemoWaiting)
                 yield return null;
 
-            yield return new WaitForSeconds(m_ControllerIntroAdvanceDelay);
+            yield return new WaitForSeconds(m_TriggerDemoAdvanceDelay);
 
-            m_ControllerIntroPanel.SetActive(false);
+            m_TriggerDemoPopup.SetActive(false);
         }
 
-        public void StartControllerIntroDemo()
+        IEnumerator RunResponseMappingDemo()
         {
-            Debug.LogError("[CONTROLLER INTRO] StartControllerIntroDemo clicked.");
+            HideAllPanels();
 
-            m_ControllerIntroDemoStarted = true;
-            m_ControllerIntroLeftPressed = false;
-            m_ControllerIntroRightPressed = false;
-            m_ControllerIntroCompleted = false;
+            if (m_ResponseMappingPopup == null)
+            {
+                Debug.LogError("[CYBER FLOW] ResponseMappingPopup is not assigned.");
+                yield break;
+            }
 
-            if (m_ControllerIntroDemo != null)
-                m_ControllerIntroDemo.BeginDemo();
+            Debug.LogError("[CYBER FLOW] Activating ResponseMappingPopup.");
+
+            ForceActivateHierarchy(m_ResponseMappingPopup);
+
+            m_ResponseMappingWaiting = true;
+            m_ResponseMappingLeftPressed = false;
+            m_ResponseMappingRightPressed = false;
+
+            if (m_ResponseMappingDemo != null)
+                m_ResponseMappingDemo.ResetDemo();
+            else
+                Debug.LogError("[CYBER FLOW] ResponseMappingDemo component is not assigned.");
+
+            while (m_ResponseMappingWaiting)
+                yield return null;
+
+            yield return new WaitForSeconds(m_ResponseMappingAdvanceDelay);
+
+            m_ResponseMappingPopup.SetActive(false);
+        }
+
+        IEnumerator RunApproachIntroDemo()
+        {
+            HideAllPanels();
+
+            if (m_ApproachIntroPopup == null)
+            {
+                Debug.LogError("[CYBER FLOW] ApproachIntroPopup is not assigned.");
+                yield break;
+            }
+
+            Debug.LogError("[CYBER FLOW] Activating ApproachIntroPopup.");
+
+            ForceActivateHierarchy(m_ApproachIntroPopup);
+
+            if (m_ApproachIntroDemo != null)
+            {
+                m_ApproachIntroDemo.PlayDemo();
+
+                while (!m_ApproachIntroDemo.Finished)
+                    yield return null;
+            }
+            else
+            {
+                Debug.LogWarning("[CYBER FLOW] ApproachIntroDemo component is not assigned. Using fallback wait.");
+                yield return new WaitForSeconds(m_ApproachIntroFallbackSeconds);
+            }
+
+            m_ApproachIntroPopup.SetActive(false);
         }
 
         void ForceActivateHierarchy(GameObject obj)
         {
+            if (obj == null) return;
+
             Transform t = obj.transform;
 
             while (t != null)
@@ -230,17 +312,6 @@ namespace HitOrMiss.Cybersickness
         public void AdvanceCurrentPanel()
         {
             Debug.LogError("[CYBER FLOW] AdvanceCurrentPanel clicked.");
-
-            // Special case: controller intro panel is waiting for left + right trigger.
-            // This allows the Continue button to advance it too.
-            if (m_ControllerIntroWaiting)
-            {
-                Debug.LogError("[CYBER FLOW] Advancing Controller Intro panel.");
-                m_ControllerIntroWaiting = false;
-                return;
-            }
-
-            // Normal popup panels.
             m_WaitingForPanelAdvance = false;
         }
 
@@ -248,8 +319,13 @@ namespace HitOrMiss.Cybersickness
         {
             HideAllPanels();
 
-            if (m_PracticeYesPanel != null)
-                ForceActivateHierarchy(m_PracticeYesPanel);
+            if (m_PracticeYesPopup == null)
+            {
+                Debug.LogError("[CYBER FLOW] PracticeYesPopup is not assigned.");
+                yield break;
+            }
+
+            ForceActivateHierarchy(m_PracticeYesPopup);
 
             m_PracticeReceived = CyberYesNoResponse.None;
             m_PracticeWaiting = true;
@@ -258,9 +334,7 @@ namespace HitOrMiss.Cybersickness
                 yield return null;
 
             m_PracticeWaiting = false;
-
-            if (m_PracticeYesPanel != null)
-                m_PracticeYesPanel.SetActive(false);
+            m_PracticeYesPopup.SetActive(false);
 
             yield return new WaitForSeconds(0.3f);
         }
@@ -269,8 +343,13 @@ namespace HitOrMiss.Cybersickness
         {
             HideAllPanels();
 
-            if (m_PracticeNoPanel != null)
-                ForceActivateHierarchy(m_PracticeNoPanel);
+            if (m_PracticeNoPopup == null)
+            {
+                Debug.LogError("[CYBER FLOW] PracticeNoPopup is not assigned.");
+                yield break;
+            }
+
+            ForceActivateHierarchy(m_PracticeNoPopup);
 
             m_PracticeReceived = CyberYesNoResponse.None;
             m_PracticeWaiting = true;
@@ -279,37 +358,43 @@ namespace HitOrMiss.Cybersickness
                 yield return null;
 
             m_PracticeWaiting = false;
-
-            if (m_PracticeNoPanel != null)
-                m_PracticeNoPanel.SetActive(false);
+            m_PracticeNoPopup.SetActive(false);
 
             yield return new WaitForSeconds(0.3f);
         }
 
         public void PracticePressYes()
         {
+            Debug.LogError("[APP INPUT] PracticePressYes called.");
 
-                    if (m_ControllerIntroDemoStarted && !m_ControllerIntroCompleted)
-        {
-            Debug.LogError("[CONTROLLER INTRO] LEFT trigger detected.");
-
-            m_ControllerIntroLeftPressed = true;
-            m_ControllerIntroDemo?.LeftTriggerPressed();
-
-            if (m_ControllerIntroLeftPressed && m_ControllerIntroRightPressed)
-                m_ControllerIntroCompleted = true;
-
-            return;
-        }
-            if (m_ControllerIntroWaiting)
+            if (m_TriggerDemoWaiting)
             {
-                Debug.LogError("[CONTROLLER INTRO] LEFT trigger pressed.");
+                Debug.LogError("[TRIGGER DEMO] LEFT trigger pressed.");
 
-                m_ControllerIntroLeftPressed = true;
-                m_ControllerIntroDemo?.LeftTriggerPressed();
+                m_TriggerDemoLeftPressed = true;
+                m_TriggerDemo?.LeftTriggerPressed();
 
-                if (m_ControllerIntroLeftPressed && m_ControllerIntroRightPressed)
-                    m_ControllerIntroWaiting = false;
+                if (m_TriggerDemoLeftPressed && m_TriggerDemoRightPressed)
+                {
+                    Debug.LogError("[TRIGGER DEMO] Both triggers pressed. Advancing.");
+                    m_TriggerDemoWaiting = false;
+                }
+
+                return;
+            }
+
+            if (m_ResponseMappingWaiting)
+            {
+                Debug.LogError("[RESPONSE MAPPING] LEFT trigger = YES.");
+
+                m_ResponseMappingLeftPressed = true;
+                m_ResponseMappingDemo?.LeftPressed();
+
+                if (m_ResponseMappingLeftPressed && m_ResponseMappingRightPressed)
+                {
+                    Debug.LogError("[RESPONSE MAPPING] Both mappings pressed. Advancing.");
+                    m_ResponseMappingWaiting = false;
+                }
 
                 return;
             }
@@ -324,27 +409,36 @@ namespace HitOrMiss.Cybersickness
 
         public void PracticePressNo()
         {
-                        if (m_ControllerIntroDemoStarted && !m_ControllerIntroCompleted)
+            Debug.LogError("[APP INPUT] PracticePressNo called.");
+
+            if (m_TriggerDemoWaiting)
             {
-                Debug.LogError("[CONTROLLER INTRO] RIGHT trigger detected.");
+                Debug.LogError("[TRIGGER DEMO] RIGHT trigger pressed.");
 
-                m_ControllerIntroRightPressed = true;
-                m_ControllerIntroDemo?.RightTriggerPressed();
+                m_TriggerDemoRightPressed = true;
+                m_TriggerDemo?.RightTriggerPressed();
 
-                if (m_ControllerIntroLeftPressed && m_ControllerIntroRightPressed)
-                    m_ControllerIntroCompleted = true;
+                if (m_TriggerDemoLeftPressed && m_TriggerDemoRightPressed)
+                {
+                    Debug.LogError("[TRIGGER DEMO] Both triggers pressed. Advancing.");
+                    m_TriggerDemoWaiting = false;
+                }
 
                 return;
             }
-            if (m_ControllerIntroWaiting)
+
+            if (m_ResponseMappingWaiting)
             {
-                Debug.LogError("[CONTROLLER INTRO] RIGHT trigger pressed.");
+                Debug.LogError("[RESPONSE MAPPING] RIGHT trigger = NO.");
 
-                m_ControllerIntroRightPressed = true;
-                m_ControllerIntroDemo?.RightTriggerPressed();
+                m_ResponseMappingRightPressed = true;
+                m_ResponseMappingDemo?.RightPressed();
 
-                if (m_ControllerIntroLeftPressed && m_ControllerIntroRightPressed)
-                    m_ControllerIntroWaiting = false;
+                if (m_ResponseMappingLeftPressed && m_ResponseMappingRightPressed)
+                {
+                    Debug.LogError("[RESPONSE MAPPING] Both mappings pressed. Advancing.");
+                    m_ResponseMappingWaiting = false;
+                }
 
                 return;
             }
@@ -397,15 +491,18 @@ namespace HitOrMiss.Cybersickness
         }
 
         void HideAllPanels()
-        {   
-            if (m_ControllerIntroPanel != null) m_ControllerIntroPanel.SetActive(false);
-            if (m_IntroPanel != null) m_IntroPanel.SetActive(false);
-            if (m_ControllerGuidePanel != null) m_ControllerGuidePanel.SetActive(false);
-            if (m_PracticeYesPanel != null) m_PracticeYesPanel.SetActive(false);
-            if (m_PracticeNoPanel != null) m_PracticeNoPanel.SetActive(false);
-            if (m_ReadyPanel != null) m_ReadyPanel.SetActive(false);
-            if (m_BreakPanel != null) m_BreakPanel.SetActive(false);
-            if (m_EndPanel != null) m_EndPanel.SetActive(false);
+        {
+            if (m_PracticeIntroPopup != null) m_PracticeIntroPopup.SetActive(false);
+            if (m_TriggerDemoPopup != null) m_TriggerDemoPopup.SetActive(false);
+            if (m_ResponseMappingPopup != null) m_ResponseMappingPopup.SetActive(false);
+            if (m_ApproachIntroPopup != null) m_ApproachIntroPopup.SetActive(false);
+            if (m_IntroTaskPopup != null) m_IntroTaskPopup.SetActive(false);
+            if (m_ControllerGuidePopup != null) m_ControllerGuidePopup.SetActive(false);
+            if (m_PracticeYesPopup != null) m_PracticeYesPopup.SetActive(false);
+            if (m_PracticeNoPopup != null) m_PracticeNoPopup.SetActive(false);
+            if (m_ReadyPopup != null) m_ReadyPopup.SetActive(false);
+            if (m_BreakPopup != null) m_BreakPopup.SetActive(false);
+            if (m_EndPopup != null) m_EndPopup.SetActive(false);
         }
     }
 }

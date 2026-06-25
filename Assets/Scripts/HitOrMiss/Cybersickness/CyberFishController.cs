@@ -90,12 +90,9 @@ namespace HitOrMiss.Cybersickness
 
             Vector3 eyePosition = m_PlayerAnchor.position;
 
-            Transform directionAnchor = m_SpawnOrigin != null
-                ? m_SpawnOrigin
-                : m_PlayerAnchor;
+            // Use the participant's head/camera direction.
+            Transform directionAnchor = m_PlayerAnchor;
 
-            // Use SpawnOrigin forward if assigned.
-            // This prevents the fish from appearing in random places when the subject turns their head.
             Vector3 forward = directionAnchor.forward;
             forward.y = 0f;
 
@@ -111,32 +108,38 @@ namespace HitOrMiss.Cybersickness
                 right = Vector3.right;
 
             right.Normalize();
-            
+
             Vector3 verticalOffset = Vector3.up * m_VerticalOffsetMeters;
 
-            // Start centered and clearly in front.
+            // Fish starts in front of the participant.
+            float startDistance = Mathf.Clamp(trial.startDistance, 2.0f, 4.0f);
+            float contactDistance = Mathf.Clamp(trial.contactDistance, 0.35f, 1.0f);
+
+            // Keep the miss offset visible but not huge.
+            float missOffset = Mathf.Clamp(Mathf.Abs(trial.lateralOffset), 0.35f, 0.90f);
+
             Vector3 startPosition =
                 eyePosition +
-                forward * trial.startDistance +
+                forward * startDistance +
                 verticalOffset;
 
             Vector3 endPosition;
 
             if (trial.willTouch)
             {
-                // YES trial: fish swims toward the participant.
+                // YES trial: fish comes toward the participant.
                 endPosition =
                     eyePosition +
-                    forward * trial.contactDistance +
+                    forward * contactDistance +
                     verticalOffset;
             }
             else
             {
-                // NO trial: fish approaches, then ends to the side while still visible.
+                // NO trial: fish comes toward the participant but passes to the side.
                 endPosition =
                     eyePosition +
-                    forward * trial.contactDistance +
-                    right * trial.lateralOffset +
+                    forward * contactDistance +
+                    right * missOffset +
                     verticalOffset;
             }
 
@@ -154,6 +157,8 @@ namespace HitOrMiss.Cybersickness
             );
 
             m_CurrentFish.transform.localScale = Vector3.one * m_FishScale;
+
+            Debug.LogError($"[FISH DEBUG] Spawned fish active={m_CurrentFish.activeSelf} position={m_CurrentFish.transform.position} scale={m_CurrentFish.transform.localScale}");
 
             StartCoroutine(SwimFish(trial, startPosition, endPosition, forward));
         }
@@ -230,7 +235,7 @@ namespace HitOrMiss.Cybersickness
             m_Running = false;
             m_Finished = true;
         }
-
+        
         IEnumerator ShowBubble(Vector3 fishEndPosition, Vector3 forward)
         {
             if (m_BubblePrefab == null)
@@ -239,48 +244,85 @@ namespace HitOrMiss.Cybersickness
                 yield break;
             }
 
-            Vector3 bubblePosition =
+            int bubbleCount = 8;
+
+            GameObject[] bubbles = new GameObject[bubbleCount];
+            Vector3[] startPositions = new Vector3[bubbleCount];
+            Vector3[] startScales = new Vector3[bubbleCount];
+            Vector3[] endScales = new Vector3[bubbleCount];
+            float[] riseSpeeds = new float[bubbleCount];
+
+            Vector3 baseBubblePosition =
                 fishEndPosition +
                 forward * m_BubbleForwardOffset +
                 Vector3.up * m_BubbleVerticalOffset;
 
-            m_CurrentBubble = Instantiate(
-                m_BubblePrefab,
-                bubblePosition,
-                Quaternion.identity,
-                m_SpawnParent
-            );
+            Vector3 right = Vector3.Cross(Vector3.up, forward).normalized;
 
-            m_CurrentBubble.transform.localScale = Vector3.one * m_BubbleScale;
+            if (right.sqrMagnitude < 0.0001f)
+                right = Vector3.right;
 
-            if (m_PlayerAnchor != null)
-                m_CurrentBubble.transform.LookAt(m_PlayerAnchor.position);
+            for (int i = 0; i < bubbleCount; i++)
+            {
+                float sideJitter = Random.Range(-0.18f, 0.18f);
+                float upJitter = Random.Range(-0.05f, 0.15f);
+                float forwardJitter = Random.Range(-0.08f, 0.08f);
+
+                Vector3 bubblePosition =
+                    baseBubblePosition +
+                    right * sideJitter +
+                    Vector3.up * upJitter +
+                    forward * forwardJitter;
+
+                bubbles[i] = Instantiate(
+                    m_BubblePrefab,
+                    bubblePosition,
+                    Quaternion.identity,
+                    m_SpawnParent
+                );
+
+                float randomScale = Random.Range(0.6f, 1.3f) * m_BubbleScale;
+
+                bubbles[i].transform.localScale = Vector3.one * randomScale;
+
+                if (m_PlayerAnchor != null)
+                    bubbles[i].transform.LookAt(m_PlayerAnchor.position);
+
+                startPositions[i] = bubblePosition;
+                startScales[i] = bubbles[i].transform.localScale;
+                endScales[i] = startScales[i] * Random.Range(1.3f, 2.0f);
+                riseSpeeds[i] = Random.Range(m_BubbleUpSpeed * 0.7f, m_BubbleUpSpeed * 1.5f);
+            }
 
             float elapsed = 0f;
 
-            Vector3 startScale = m_CurrentBubble.transform.localScale;
-            Vector3 endScale = startScale * 1.6f;
-
             while (elapsed < m_BubbleLifetime)
             {
-                if (m_CurrentBubble == null)
-                    yield break;
-
                 elapsed += Time.deltaTime;
 
                 float t = Mathf.Clamp01(elapsed / m_BubbleLifetime);
 
-                m_CurrentBubble.transform.position +=
-                    Vector3.up * m_BubbleUpSpeed * Time.deltaTime;
+                for (int i = 0; i < bubbleCount; i++)
+                {
+                    if (bubbles[i] == null)
+                        continue;
 
-                m_CurrentBubble.transform.localScale =
-                    Vector3.Lerp(startScale, endScale, t);
+                    bubbles[i].transform.position =
+                        startPositions[i] +
+                        Vector3.up * riseSpeeds[i] * elapsed;
+
+                    bubbles[i].transform.localScale =
+                        Vector3.Lerp(startScales[i], endScales[i], t);
+                }
 
                 yield return null;
             }
 
-            if (m_CurrentBubble != null)
-                Destroy(m_CurrentBubble);
+            for (int i = 0; i < bubbleCount; i++)
+            {
+                if (bubbles[i] != null)
+                    Destroy(bubbles[i]);
+            }
 
             m_CurrentBubble = null;
         }
