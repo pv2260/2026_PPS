@@ -38928,7 +38928,7 @@ MonoBehaviour:
   m_FixationCross: {fileID: 0}
   m_StandingCross: {fileID: 0}
   m_ClinicianPanel: {fileID: 0}
-  m_SubjectIdFallback: 
+  m_SubjectIdFallback: 25-09-PAMELA-1
   m_AutoStartOnPlay: 1
 --- !u!1 &9041478014344155232
 GameObject:

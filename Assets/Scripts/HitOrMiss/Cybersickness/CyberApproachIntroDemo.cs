@@ -10,12 +10,25 @@ namespace HitOrMiss.Cybersickness
         [SerializeField] Transform m_PlayerAnchor;
         [SerializeField] Transform m_SpawnParent;
 
-        [Header("Motion")]
+        [Header("Approach path")]
         [SerializeField] float m_StartDistance = 3.0f;
         [SerializeField] float m_EndDistance = 0.7f;
         [SerializeField] float m_Duration = 3.0f;
         [SerializeField] float m_VerticalOffset = -0.1f;
         [SerializeField] float m_AnimalScale = 1.0f;
+
+        [Header("Bounce")]
+        [SerializeField] float m_BounceAmplitude = 0.12f;
+        [SerializeField] float m_BounceFrequency = 2.2f;
+
+        [Header("Side sway")]
+        [SerializeField] float m_SwayAmplitude = 0.08f;
+        [SerializeField] float m_SwayFrequency = 1.2f;
+
+        [Header("Rotation polish")]
+        [SerializeField] float m_WiggleYawAmplitude = 8f;
+        [SerializeField] float m_WiggleYawFrequency = 2.5f;
+        [SerializeField] float m_ModelYawOffset = 180f;
 
         GameObject m_CurrentAnimal;
         Coroutine m_DemoCoroutine;
@@ -64,17 +77,25 @@ namespace HitOrMiss.Cybersickness
 
             forward.Normalize();
 
-            Vector3 verticalOffset = Vector3.up * m_VerticalOffset;
+            Vector3 right = m_PlayerAnchor.right;
+            right.y = 0f;
+
+            if (right.sqrMagnitude < 0.0001f)
+                right = Vector3.right;
+
+            right.Normalize();
+
+            Vector3 baseOffset = Vector3.up * m_VerticalOffset;
 
             Vector3 startPosition =
                 eyePosition +
                 forward * m_StartDistance +
-                verticalOffset;
+                baseOffset;
 
             Vector3 endPosition =
                 eyePosition +
                 forward * m_EndDistance +
-                verticalOffset;
+                baseOffset;
 
             m_CurrentAnimal = Instantiate(
                 m_AnimalPrefab,
@@ -96,20 +117,44 @@ namespace HitOrMiss.Cybersickness
                 float t = Mathf.Clamp01(elapsed / m_Duration);
                 float smoothT = Mathf.SmoothStep(0f, 1f, t);
 
+                Vector3 basePosition = Vector3.Lerp(startPosition, endPosition, smoothT);
+
+                float bounce =
+                    Mathf.Sin(elapsed * Mathf.PI * 2f * m_BounceFrequency) * m_BounceAmplitude;
+
+                float sway =
+                    Mathf.Sin(elapsed * Mathf.PI * 2f * m_SwayFrequency) * m_SwayAmplitude;
+
+                Vector3 animatedPosition =
+                    basePosition +
+                    Vector3.up * bounce +
+                    right * sway;
+
                 if (m_CurrentAnimal != null)
                 {
-                    m_CurrentAnimal.transform.position =
-                        Vector3.Lerp(startPosition, endPosition, smoothT);
+                    m_CurrentAnimal.transform.position = animatedPosition;
 
                     if (direction.sqrMagnitude > 0.0001f)
-                        m_CurrentAnimal.transform.rotation =
+                    {
+                        Quaternion lookRotation =
                             Quaternion.LookRotation(direction, Vector3.up);
+
+                        lookRotation *= Quaternion.Euler(0f, m_ModelYawOffset, 0f);
+
+                        float wiggleYaw =
+                            Mathf.Sin(elapsed * Mathf.PI * 2f * m_WiggleYawFrequency)
+                            * m_WiggleYawAmplitude;
+
+                        Quaternion wiggleRotation = Quaternion.Euler(0f, wiggleYaw, 0f);
+
+                        m_CurrentAnimal.transform.rotation = lookRotation * wiggleRotation;
+                    }
                 }
 
                 yield return null;
             }
 
-            yield return new WaitForSeconds(0.4f);
+            yield return new WaitForSeconds(0.35f);
 
             ClearAnimal();
 
