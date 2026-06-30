@@ -43,7 +43,7 @@ namespace HitOrMiss.Cybersickness
         [SerializeField] float m_FastSpeed = 2.4f;
 
         [Header("Timing")]
-        [SerializeField] float m_ItiSeconds = 1.5f;
+        [SerializeField] float m_ItiSeconds = 2.0f;
         [SerializeField] float m_BreakDurationSeconds = 30f;
 
         [Header("Instruction text - English")]
