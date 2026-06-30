@@ -166,18 +166,18 @@ namespace HitOrMiss
         /// <summary>Task 1 trial row. Skips practice trials.</summary>
         public void LogTrial(HitOrMiss.Pps.PpsTrialResult result)
         {
-            if (!m_SessionOpen) return;
             if (m_TaskKind != TaskKind.Task1Pps)
             {
-                Debug.LogWarning("[TaskLogger] LogTrial(PpsTrialResult) called during a Task 2 session. Ignored.");
+                Debug.LogWarning($"TaskLogger received Task1/PPS result while configured for {m_TaskKind}");
                 return;
             }
 
-            if (result.definition.isPractice || result.definition.blockIndex < 0)
-                return;
-
             m_Task1Results.Add(result);
-            m_TrialsWriter.WriteLine(result.ToCsvRow());
+
+            m_TrialsWriter.WriteLine(
+                result.ToCsvRow(m_Metadata.participantId, m_Metadata.sessionNumber)
+            );
+
             m_TrialsWriter.Flush();
         }
 

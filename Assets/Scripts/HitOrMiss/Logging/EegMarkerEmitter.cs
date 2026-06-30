@@ -276,48 +276,48 @@ namespace HitOrMiss
             switch (eventCode)
             {
                 // Trigger Test
-                case "test_trigger": return 191;
+                case "test_trigger":                return 61;
 
                 // Task 1 - PPS
-                case "pps_session_start": return 140;
-                case "pps_session_end": return 141;
-                case "pps_vib_fired": return 64;
-                case "pps_response": return 63;
-                case "pps_block_paused": return 142;
-                case "pps_block_resumed": return 143;
-                case "pps_session_paused": return 144;
+                case "pps_session_start":           return 61;
+                case "pps_session_end":             return 61;
+                case "pps_vib_fired":               return 127;
+                case "pps_response":                return 62;
+                case "pps_block_paused":            return 61;
+                case "pps_block_resumed":           return 61;
+                case "pps_session_paused":          return 61;
 
                 // Task 2 - Session
-                case "session_start": return 130;
-                case "phase_intro": return 131;
-                case "phase_practice": return 132;
-                case "phase_rest": return 133;
-                case "phase_outro": return 134;
-                case "session_paused": return 135;
-                case "session_resumed": return 136;
-                case "session_end": return 137;
+                case "session_start":               return 50;
+                case "phase_intro":                 return 51;
+                case "phase_practice":              return 52;
+                case "phase_rest":                  return 53;
+                case "phase_outro":                 return 54;
+                case "session_paused":              return 55;
+                case "session_resumed":             return 56;
+                case "session_end":                 return 57;
 
                 // Task 2 - Blocks
-                case "phase_block": return 25;
-                case "trial_block_start": return 26;
-                case "block_restart": return 27;
-                case "block_paused": return 28;
-                case "trial_timeout": return 29;
-                case "block_end": return 30;
-                case "trial_too_slow": return 31;
-                case "phase_controller_practice": return 32;
-                case "phase_ball_demo": return 33;
-                case "phase_easy_practice": return 34;
-                case "phase_difficult_practice": return 35;
+                case "phase_block":                 return 25;
+                case "trial_block_start":           return 26;
+                case "block_restart":               return 27;
+                case "block_paused":                return 28;
+                case "trial_timeout":               return 29;
+                case "block_end":                   return 30;
+                case "trial_too_slow":              return 31;
+                case "phase_controller_practice":   return 32;
+                case "phase_ball_demo":             return 33;
+                case "phase_easy_practice":         return 34;
+                case "phase_difficult_practice":    return 35;
 
                 // Controller responses
-                case "controller_left": return 40;
-                case "controller_right": return 41;
-                case "trial_no_response": return 42;
+                case "controller_left":             return 40;
+                case "controller_right":            return 41;
+                case "trial_no_response":           return 42;
 
                 default:
-                    Debug.LogWarning($"[ArduinoTrigger] Unknown event: '{eventCode}' → 159");
-                    return 159;
+                    Debug.LogWarning($"[ArduinoTrigger] Unknown event: '{eventCode}' → 61");
+                    return 61;
             }
         }
     }

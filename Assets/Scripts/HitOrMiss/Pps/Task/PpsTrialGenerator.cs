@@ -68,12 +68,12 @@ namespace HitOrMiss.Pps
                     {
                         foreach (var width in Widths)
                         {
-                            trials.Add(PpsTrialDefinition.CreateBoth(
-                                blockIndex,
-                                speed,
-                                width,
-                                stage
-                            ));
+                           trials.Add(PpsTrialDefinition.CreateBoth(
+                            blockIndex,
+                            speed,
+                            width,
+                            stage
+                        ));
                         }
                     }
                 }
@@ -96,12 +96,12 @@ namespace HitOrMiss.Pps
                 {
                     foreach (var width in Widths)
                     {
-                        trials.Add(PpsTrialDefinition.CreateTactileOnly(
-                            blockIndex,
-                            speed,
-                            width,
-                            stage
-                        ));
+                    trials.Add(PpsTrialDefinition.CreateTactileOnly(
+                        blockIndex,
+                        speed,
+                        width,
+                        stage
+                    ));
                     }
                 }
             }
@@ -123,11 +123,11 @@ namespace HitOrMiss.Pps
                 {
                     foreach (var width in Widths)
                     {
-                        trials.Add(PpsTrialDefinition.CreateVisualOnly(
-                            blockIndex,
-                            speed,
-                            width
-                        ));
+                    trials.Add(PpsTrialDefinition.CreateVisualOnly(
+                        blockIndex,
+                        speed,
+                        width
+                    ));
                     }
                 }
             }
@@ -290,7 +290,10 @@ namespace HitOrMiss.Pps
             for (int i = 0; i < trials.Count; i++)
             {
                 var t = trials[i];
+
                 t.trialId = $"{prefix}_T{i + 1:D2}";
+                t.trialIndex = i;
+
                 trials[i] = t;
             }
         }

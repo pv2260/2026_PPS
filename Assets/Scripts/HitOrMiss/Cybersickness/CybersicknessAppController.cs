@@ -1,4 +1,5 @@
 using System.Collections;
+using TMPro;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -69,12 +70,99 @@ namespace HitOrMiss.Cybersickness
         {
             HideAllPanels();
 
+            ApplyTaskLanguage();
+
             if (m_WelcomePanel != null)
                 m_WelcomePanel.SetActive(true);
 
             if (m_TaskManager != null && m_TaskAsset != null)
                 m_TaskManager.SetTaskAsset(m_TaskAsset);
         }
+
+        public void SwitchLanguage()
+{
+    if (m_TaskAsset == null)
+    {
+        Debug.LogWarning("[CYBER LANGUAGE] Cannot switch language. Task asset is not assigned.");
+        return;
+    }
+
+    m_TaskAsset.ToggleLanguage();
+
+    Debug.LogError($"[CYBER LANGUAGE] Switched to: {m_TaskAsset.CurrentLanguage}");
+
+    ApplyTaskLanguage();
+}
+
+void ApplyTaskLanguage()
+{
+    if (m_TaskAsset == null)
+        return;
+
+    SetPopupText(m_PracticeIntroPopup, m_TaskAsset.PracticeIntroText);
+
+    SetPopupText(m_TriggerDemoPopup, m_TaskAsset.TriggerDemoText);
+    SendDemoText(m_TriggerDemo, m_TaskAsset.TriggerDemoText);
+
+    SetPopupText(m_ResponseMappingPopup, m_TaskAsset.ResponseMappingText);
+    SendDemoText(m_ResponseMappingDemo, m_TaskAsset.ResponseMappingText);
+
+    SetPopupText(m_ApproachIntroPopup, m_TaskAsset.ApproachIntroText);
+    SendDemoText(m_ApproachIntroDemo, m_TaskAsset.ApproachIntroText);
+
+    SetPopupText(m_IntroTaskPopup, m_TaskAsset.IntroTaskText);
+    SetPopupText(m_ControllerGuidePopup, m_TaskAsset.ControllerGuideText);
+
+    SetPopupText(m_ReadyPopup, m_TaskAsset.ReadyText);
+    SetPopupText(m_EndPopup, m_TaskAsset.OutroText);
+}
+
+    void SetPopupText(GameObject popupObject, string text)
+    {
+        if (popupObject == null)
+            return;
+
+        if (string.IsNullOrEmpty(text))
+            return;
+
+        CyberTaskPopupPanel popupPanel =
+            popupObject.GetComponent<CyberTaskPopupPanel>();
+
+        if (popupPanel != null)
+            popupPanel.SetText(text);
+
+        TMP_Text[] textObjects =
+            popupObject.GetComponentsInChildren<TMP_Text>(true);
+
+        TMP_Text targetText = null;
+
+        foreach (TMP_Text textObject in textObjects)
+        {
+            if (textObject.name == "BodyText")
+            {
+                targetText = textObject;
+                break;
+            }
+        }
+
+        if (targetText == null && textObjects.Length > 0)
+            targetText = textObjects[0];
+
+        if (targetText != null)
+            targetText.text = text;
+    }
+
+    void SendDemoText(MonoBehaviour demo, string text)
+    {
+        if (demo == null)
+            return;
+
+        demo.SendMessage(
+            "SetDemoText",
+            text,
+            SendMessageOptions.DontRequireReceiver
+        );
+    }
 
         public void StartFromWelcomeButton()
         {
@@ -125,7 +213,8 @@ namespace HitOrMiss.Cybersickness
                 m_EegMarkerEmitter.BeginSession(sessionId);
                 m_EegMarkerEmitter.Emit("cyberfish_session_start", extra: m_ParticipantId);
             }
-
+            
+            ApplyTaskLanguage();
             m_SessionCoroutine = StartCoroutine(RunSession());
         }
 

@@ -138,7 +138,7 @@ namespace HitOrMiss.Cybersickness
             }
             else
             {
-                yield return new WaitForSeconds(0.2f);
+                yield return new WaitForSeconds(0.5f);
             }
 
             if (m_PredictionPanel != null)
@@ -207,7 +207,7 @@ namespace HitOrMiss.Cybersickness
             m_ResponseTime = Time.timeAsDouble;
 
             if (m_PredictionPanel != null)
-                m_PredictionPanel.HighlightYes();
+                m_PredictionPanel.ShowResponseTextOnly("YES");
 
             m_EegMarkerEmitter?.Emit("cyberbug_response_yes");
         }
@@ -221,7 +221,7 @@ namespace HitOrMiss.Cybersickness
             m_ResponseTime = Time.timeAsDouble;
 
             if (m_PredictionPanel != null)
-                m_PredictionPanel.HighlightNo();
+                m_PredictionPanel.ShowResponseTextOnly("NO");
 
             m_EegMarkerEmitter?.Emit("cyberbug_response_no");
         }

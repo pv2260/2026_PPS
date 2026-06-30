@@ -21,6 +21,12 @@ namespace HitOrMiss.Cybersickness
             ResetDemo();
         }
 
+        public void SetDemoText(string text)
+        {
+            if (m_InstructionText != null)
+                m_InstructionText.text = text;
+        }
+
         public void ResetDemo()
         {
             if (m_InstructionText != null)

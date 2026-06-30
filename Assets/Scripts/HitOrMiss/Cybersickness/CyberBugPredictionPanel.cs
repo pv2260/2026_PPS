@@ -60,6 +60,38 @@ namespace HitOrMiss.Cybersickness
             PlaceInFrontOfPlayer();
         }
 
+        public void ShowResponseTextOnly(string responseText)
+    {
+        Debug.LogError($"[PREDICTION PANEL] ShowResponseTextOnly: {responseText}");
+
+        if (m_Root != null)
+            m_Root.SetActive(true);
+        else
+            gameObject.SetActive(true);
+
+        m_IsVisible = true;
+
+        PlaceInFrontOfPlayer();
+
+        if (m_QuestionText != null)
+        {
+            m_QuestionText.text = responseText;
+            SetQuestionAlpha(1f);
+        }
+
+        if (m_YesText != null)
+            m_YesText.text = "";
+
+        if (m_NoText != null)
+            m_NoText.text = "";
+
+        if (m_YesPanelImage != null)
+            m_YesPanelImage.gameObject.SetActive(false);
+
+        if (m_NoPanelImage != null)
+            m_NoPanelImage.gameObject.SetActive(false);
+    }
+
         public void ShowQuestion(string question)
         {
             Debug.LogError("[PREDICTION PANEL] ShowQuestion called.");
@@ -84,6 +116,14 @@ namespace HitOrMiss.Cybersickness
 
             if (m_NoText != null)
                 m_NoText.text = "NO";
+
+            if (m_YesPanelImage != null)
+                m_YesPanelImage.gameObject.SetActive(true);
+
+            if (m_NoPanelImage != null)
+                m_NoPanelImage.gameObject.SetActive(true);
+
+            ResetVisuals();
 
             ResetVisuals();
         }

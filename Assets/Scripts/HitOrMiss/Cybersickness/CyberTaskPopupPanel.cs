@@ -18,12 +18,15 @@ namespace HitOrMiss.Cybersickness
         [SerializeField] TMP_Text m_BodyText;
         [SerializeField] Button m_ContinueButton;
         [SerializeField] TMP_Text m_ContinueButtonLabel;
+        [SerializeField] Button m_BackButton;
+        [SerializeField] TMP_Text m_BackButtonLabel;
 
         [Header("Text")]
         [TextArea(3, 10)]
         [SerializeField] string m_BodyFallback = "";
 
         [SerializeField] string m_ButtonLabel = "Continue";
+        [SerializeField] string m_BackButtonLabelText = "Back";
 
         [Header("Behavior")]
         [SerializeField] CyberPopupBehavior m_Behavior = CyberPopupBehavior.WaitForAdvance;
@@ -36,6 +39,7 @@ namespace HitOrMiss.Cybersickness
 
         bool m_AdvanceRequested;
         bool m_IsRunning;
+        bool m_BackRequested;
 
         public bool IsRunning => m_IsRunning;
         public string BodyFallback => m_BodyFallback;
@@ -49,6 +53,12 @@ namespace HitOrMiss.Cybersickness
             {
                 m_ContinueButton.onClick.RemoveListener(Advance);
                 m_ContinueButton.onClick.AddListener(Advance);
+            }
+
+            if (m_BackButton != null)
+            {
+                m_BackButton.onClick.RemoveListener(Back);
+                m_BackButton.onClick.AddListener(Back);
             }
 
             Hide();
@@ -65,6 +75,12 @@ namespace HitOrMiss.Cybersickness
                 Input.GetKeyDown(KeyCode.KeypadEnter))
             {
                 Advance();
+            }
+
+            if (Input.GetKeyDown(KeyCode.Escape) ||
+                Input.GetKeyDown(KeyCode.Backspace))
+            {
+                Back();
             }
         }
 
@@ -83,6 +99,7 @@ namespace HitOrMiss.Cybersickness
         {
             SetText(text);
             SetButtonLabel(m_ButtonLabel);
+            SetBackButtonLabel(m_BackButtonLabelText);
 
             if (m_Behavior == CyberPopupBehavior.WaitForAdvance)
                 yield return ShowAndWaitForAdvance();
@@ -90,12 +107,20 @@ namespace HitOrMiss.Cybersickness
                 yield return ShowForSeconds(m_AutoAdvanceSeconds);
         }
 
+        public void SetBackButtonLabel(string label)
+        {
+            if (m_BackButtonLabel != null)
+                m_BackButtonLabel.text = label;
+        }
+
         IEnumerator ShowAndWaitForAdvance()
         {
             m_AdvanceRequested = false;
+            m_BackRequested = false;
+
             Show();
 
-            while (!m_AdvanceRequested)
+            while (!m_AdvanceRequested && !m_BackRequested)
                 yield return null;
 
             Hide();
@@ -137,10 +162,15 @@ namespace HitOrMiss.Cybersickness
             }
 
             m_IsRunning = true;
-
             if (m_ContinueButton != null)
             {
                 m_ContinueButton.gameObject.SetActive(
+                    m_Behavior == CyberPopupBehavior.WaitForAdvance);
+            }
+
+            if (m_BackButton != null)
+            {
+                m_BackButton.gameObject.SetActive(
                     m_Behavior == CyberPopupBehavior.WaitForAdvance);
             }
         }
@@ -153,7 +183,6 @@ namespace HitOrMiss.Cybersickness
             if (m_Root == null)
                 m_Root = gameObject;
 
-            // Only hide the popup itself, not the Canvas or PopupPanel parent.
             m_Root.SetActive(false);
         }
 
@@ -174,6 +203,23 @@ namespace HitOrMiss.Cybersickness
             if (!m_IsRunning) return;
 
             m_AdvanceRequested = true;
+        }
+
+        public void Back()
+        {
+            if (!m_IsRunning) return;
+
+            m_BackRequested = true;
+        }
+
+        public void BackFromController()
+        {
+            Back();
+        }
+
+        public void ForceBack()
+        {
+            Back();
         }
 
         public void ContinueFromController()

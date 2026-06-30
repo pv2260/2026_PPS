@@ -397,6 +397,7 @@ namespace HitOrMiss.Pps
         {
             // Create an empty result object and fill it during the trial.
             var result = PpsTrialResult.Empty(trial);
+            result.trialStartTime = Time.timeAsDouble;
             result.vibrationDeviceName = m_Output != null ? m_Output.DeviceName : "None";
 
             m_CurrentTrialIsPractice = trial.isPractice;
@@ -720,6 +721,9 @@ namespace HitOrMiss.Pps
         private void FireVibration(PpsTrialDefinition trial, DistanceStage stage)
         {
             m_VibrationHasFired = true;
+
+                if (double.IsNaN(m_VibrationFiredTime))
+                m_VibrationFiredTime = Time.timeAsDouble;
 
             Debug.Log("========== VIBRATION SENT ==========");
 

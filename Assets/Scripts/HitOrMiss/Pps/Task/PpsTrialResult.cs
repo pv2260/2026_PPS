@@ -3,15 +3,14 @@ using System;
 namespace HitOrMiss.Pps
 {
     /// <summary>
-    /// Scored result for one PPS trial. Written to CSV with the schema specified
-    /// in the VR Development Brief (trial, block, sensory_condition, position,
-    /// speed, width, stimulus_onset_ms, position_D{4..1}_ms, vibrotactile_onset_ms,
-    /// response_time_ms, response_made).
+    /// Scored result for one PPS trial. Written to CSV with PPS timing schema.
     /// </summary>
     [Serializable]
     public struct PpsTrialResult
     {
         public PpsTrialDefinition definition;
+        /// <summary>Time.timeAsDouble at the beginning of the trial.</summary>
+        public double trialStartTime;
 
         /// <summary>Time.timeAsDouble at loom onset. NaN for T trials (no visual stimulus).</summary>
         public double loomOnsetTime;
@@ -41,6 +40,7 @@ namespace HitOrMiss.Pps
         public static PpsTrialResult Empty(PpsTrialDefinition def) => new()
         {
             definition = def,
+            trialStartTime = double.NaN,
             loomOnsetTime = double.NaN,
             crossingD7Time = double.NaN,
             crossingD6Time = double.NaN,
@@ -59,42 +59,63 @@ namespace HitOrMiss.Pps
         static string MsOrBlank(double timeSeconds) =>
             double.IsNaN(timeSeconds) ? "" : (timeSeconds * 1000.0).ToString("F3");
 
-        public string ToCsvRow()
+        static string F1OrBlank(float value) =>
+            float.IsNaN(value) ? "" : value.ToString("F1", System.Globalization.CultureInfo.InvariantCulture);
+
+        static string Esc(string s) =>
+            string.IsNullOrEmpty(s) ? "" : s.Replace(",", ";");
+
+        public string ToCsvRow(string subjectId, int sessionNumber)
         {
-            string sensory = definition.modality switch
+            string trialType = definition.modality switch
             {
                 PpsModality.Both        => "VT",
                 PpsModality.VisualOnly  => "V",
                 PpsModality.TactileOnly => "T",
-                _ => "?",
+                _ => "?"
             };
+
             string position = definition.vibrationStage == DistanceStage.None
                 ? ""
                 : definition.vibrationStage.ToString();
 
+            string timestamp = DateTime.Now.ToString("o");
+
             return string.Join(",",
-                definition.trialId,
-                (definition.blockIndex + 1).ToString(),
-                sensory,
-                position,
+                Esc(subjectId),
+                sessionNumber.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                (definition.blockIndex + 1).ToString(System.Globalization.CultureInfo.InvariantCulture),
+                (definition.trialIndex + 1).ToString(System.Globalization.CultureInfo.InvariantCulture),
+
+                trialType,
+                responded ? "1" : "0",
+
                 definition.speed.ToString().ToLowerInvariant(),
                 definition.width.ToString().ToLowerInvariant(),
+                position,
+
+                MsOrBlank(trialStartTime),
                 MsOrBlank(loomOnsetTime),
-                MsOrBlank(crossingD7Time),
-                MsOrBlank(crossingD6Time),
-                MsOrBlank(crossingD5Time),
                 MsOrBlank(crossingD4Time),
                 MsOrBlank(crossingD3Time),
                 MsOrBlank(crossingD2Time),
                 MsOrBlank(crossingD1Time),
                 MsOrBlank(vibrationFiredTime),
                 MsOrBlank(responseTime),
-                responded ? "True" : "False");
+                F1OrBlank(reactionTimeMs),
+
+                Esc(vibrationDeviceName),
+                "0",
+                timestamp
+            );
         }
 
         public const string CsvHeader =
-            "trial,block,sensory_condition,position,speed,width," +
-            "stimulus_onset_ms,position_D7_ms, position_D6_ms, position_D5_ms, position_D4_ms,position_D3_ms,position_D2_ms,position_D1_ms," +
-            "vibrotactile_onset_ms,response_time_ms,response_made";
+            "subject_id,session_number,block_number,trial_number," +
+            "trial_type,response_made," +
+            "current_speed,width,distance_level," +
+            "trial_start_ms,stimulus_onset_ms,position_D4_ms,position_D3_ms,position_D2_ms,position_D1_ms," +
+            "vibrotactile_onset_ms,response_time_ms,reaction_time_ms," +
+            "vibration_device,trial_interrupted,timestamp";
     }
 }

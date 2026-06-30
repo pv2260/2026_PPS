@@ -16,6 +16,9 @@ namespace HitOrMiss.Pps
         [Tooltip("Block index (0 = first block; practice uses -1)")]
         public int blockIndex;
 
+        [Tooltip("Trial index within block, 0 = first trial")]
+        public int trialIndex;
+
         [Tooltip("True if this trial is part of the practice phase")]
         public bool isPractice;
 
@@ -33,10 +36,15 @@ namespace HitOrMiss.Pps
         /// </summary>
         public bool RequiresResponse => modality != PpsModality.VisualOnly;
 
-        public static PpsTrialDefinition CreateVisualOnly(int blockIndex, PpsSpeed speed, PpsWidth width, bool isPractice = false)
+        public static PpsTrialDefinition CreateVisualOnly(
+            int blockIndex,
+            PpsSpeed speed,
+            PpsWidth width,
+            bool isPractice = false)
             => new()
             {
                 blockIndex = blockIndex,
+                trialIndex = 0,
                 isPractice = isPractice,
                 modality = PpsModality.VisualOnly,
                 speed = speed,
@@ -45,15 +53,18 @@ namespace HitOrMiss.Pps
             };
 
         /// <summary>
-        /// Tactile-only trial. <paramref name="speed"/> determines the matched timing window
-        /// (i.e. the moment the vibration fires is computed from the same curve a VT trial
-        /// of this speed would use to cross <paramref name="stage"/>). <paramref name="width"/>
-        /// carries no visual meaning here but is logged so T and VT trials share a schema.
+        /// Tactile-only trial. speed determines the matched timing window.
         /// </summary>
-        public static PpsTrialDefinition CreateTactileOnly(int blockIndex, PpsSpeed speed, PpsWidth width, DistanceStage stage, bool isPractice = false)
+        public static PpsTrialDefinition CreateTactileOnly(
+            int blockIndex,
+            PpsSpeed speed,
+            PpsWidth width,
+            DistanceStage stage,
+            bool isPractice = false)
             => new()
             {
                 blockIndex = blockIndex,
+                trialIndex = 0,
                 isPractice = isPractice,
                 modality = PpsModality.TactileOnly,
                 speed = speed,
@@ -61,10 +72,16 @@ namespace HitOrMiss.Pps
                 vibrationStage = stage,
             };
 
-        public static PpsTrialDefinition CreateBoth(int blockIndex, PpsSpeed speed, PpsWidth width, DistanceStage stage, bool isPractice = false)
+        public static PpsTrialDefinition CreateBoth(
+            int blockIndex,
+            PpsSpeed speed,
+            PpsWidth width,
+            DistanceStage stage,
+            bool isPractice = false)
             => new()
             {
                 blockIndex = blockIndex,
+                trialIndex = 0,
                 isPractice = isPractice,
                 modality = PpsModality.Both,
                 speed = speed,
