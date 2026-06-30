@@ -81,10 +81,18 @@ namespace HitOrMiss
 
         public void BeginSession(string sessionId)
         {
-            string dir = Path.Combine(Application.persistentDataPath, "EEG_Markers");
-            Directory.CreateDirectory(dir);
+            string dir = Path.Combine(
+                Directory.GetCurrentDirectory(),
+                "Logger",
+                $"{m_ParticipantId}_{sessionId}"
+            );
 
+            Directory.CreateDirectory(dir);
             m_LogPath = Path.Combine(dir, $"{m_ParticipantId}_{sessionId}_markers.csv");
+            
+            // string dir = Path.Combine(Directory.GetCurrentDirectory, "Logger", $"");
+            // Directory.CreateDirectory(dir);
+            // m_LogPath = Path.Combine(dir, $"{m_ParticipantId}_{sessionId}_markers.csv");
 
             m_CsvWriter = new StreamWriter(m_LogPath, append: false);
             m_CsvWriter.WriteLine("Time,EventCode,TrialId,Category,Expected,Received,Extra,TriggerValue");

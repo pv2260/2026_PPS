@@ -13,6 +13,7 @@ MonoBehaviour:
   m_Name: CyberFishTaskAsset
   m_EditorClassIdentifier: Assembly-CSharp::HitOrMiss.Cybersickness.CyberBugTaskAsset
   m_TaskName: Cyber Bug Prediction Task
+  m_CurrentLanguage: 0
   m_BlockCount: 1
   m_MissTrialsPerBlock: 4
   m_ContactSplashTrialsPerBlock: 10
@@ -24,36 +25,49 @@ MonoBehaviour:
   m_FastSpeed: 1.75
   m_ItiSeconds: 0.2
   m_BreakDurationSeconds: 2
-  m_IntroText: 'In this task, a bug will approach you.
+  m_PracticeIntroTextEnglish: 'Before we begin the testing session, we will first
+    show you what to expect during the task.
+
+'
+  m_TriggerDemoTextEnglish: "First, let\u2019s learn which buttons to press.\n\nPress
+    the trigger on each controller."
+  m_ResponseMappingTextEnglish: 'Great!
 
 
-    Sometimes it will clearly
-    miss you.
-
-    Sometimes it will touch you and splash.
+    In this task, you will use the triggers
+    to answer Yes or No.
 
 
-    Your task is to
-    predict whether the bug will touch you.'
-  m_ControllerGuideText: 'Use the triggers to answer:
+    Press LEFT for YES.
 
+    Press RIGHT for NO.'
+  m_ApproachIntroTextEnglish: "In this task, objects may move toward you.\n\nDo not
+    worry \u2014 nothing can hurt you."
+  m_IntroTaskTextEnglish: "Now, let\u2019s put everything together in a short task.\n\nA
+    small fish will swim in front of you.\n\nYour task is to predict: will it touch
+    me?\n"
+  m_ControllerGuideTextEnglish: 'Like we learned, use the triggers to answer: YES
+    or NO.'
+  m_ReadyTextEnglish: 'Ready?
 
-    LEFT trigger = YES
-
-    RIGHT
-    trigger = NO
-
-
-    You will answer the question:
-
-
-    Will the bug touch you?'
-  m_ReadyText: 'Ready?
-
-
-    Watch the bug carefully and answer before it reaches
-    you.'
-  m_OutroText: 'The task is complete.
+'
+  m_OutroTextEnglish: 'The task is complete.
 
 
     Thank you.'
+  m_PracticeIntroTextFrench: "Avant de commencer la session de test, nous allons
+    d\u2019abord vous montrer \xE0 quoi vous attendre pendant la t\xE2che."
+  m_TriggerDemoTextFrench: "Commen\xE7ons par apprendre quels boutons utiliser.\r\n\r\nAppuyez
+    sur la g\xE2chette de chaque contr\xF4leur."
+  m_ResponseMappingTextFrench: "Tr\xE8s bien !\r\n\r\nDans cette t\xE2che, vous utiliserez
+    les g\xE2chettes pour r\xE9pondre Oui ou Non.\r\n\r\nAppuyez \xE0 GAUCHE pour
+    OUI.\r\nAppuyez \xE0 DROITE pour NON."
+  m_ApproachIntroTextFrench: "Dans cette t\xE2che, des objets peuvent se d\xE9placer
+    vers vous.\r\n\r\nNe vous inqui\xE9tez pas \u2014 rien ne peut vous faire mal."
+  m_IntroTaskTextFrench: "Maintenant, mettons tout ensemble dans une courte t\xE2che.\r\n\r\nUn
+    petit poisson va nager devant vous.\r\n\r\nVotre t\xE2che est de pr\xE9dire :
+    va-t-il me toucher ?\r\n"
+  m_ControllerGuideTextFrench: "Comme nous l\u2019avons appris, utilisez les g\xE2chettes
+    pour r\xE9pondre : OUI ou NON."
+  m_ReadyTextFrench: "Pr\xEAt ?"
+  m_OutroTextFrench: "La t\xE2che est termin\xE9e.\n\nMerci."

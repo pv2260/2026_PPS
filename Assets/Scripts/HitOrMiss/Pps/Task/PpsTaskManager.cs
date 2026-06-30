@@ -456,6 +456,38 @@ namespace HitOrMiss.Pps
                 // In tactile-only trials, no visual stimulus is shown.
                 // The vibration is fired at the same time it would have fired
                 // if a looming stimulus had moved to the configured stage.
+                int triggerCode = TriggerEncoder.EncodeTask1(
+                    trial.vibrationStage.ToString(),
+                    trial.modality switch
+                    {
+                        PpsModality.VisualOnly  => TriggerEncoder.Task1TrialType.VisualOnly,
+                        PpsModality.TactileOnly => TriggerEncoder.Task1TrialType.VibrotactileOnly,
+                        PpsModality.Both        => TriggerEncoder.Task1TrialType.Both,
+                        _                       => TriggerEncoder.Task1TrialType.VisualOnly
+                    },
+                    trial.width switch
+                    {
+                        PpsWidth.Narrow => TriggerEncoder.Task1Width.Narrow,
+                        PpsWidth.Wide   => TriggerEncoder.Task1Width.Wide,
+                        _               => TriggerEncoder.Task1Width.Narrow
+                    },
+                    trial.speed switch
+                    {
+                        PpsSpeed.Slow => TriggerEncoder.Task1Speed.Slow,
+                        PpsSpeed.Fast => TriggerEncoder.Task1Speed.Fast,
+                        _             => TriggerEncoder.Task1Speed.Slow
+                    }
+                );
+
+                m_MarkerEmitter?.Emit(
+                    "pps_trial_start",
+                    trial.trialId,
+                    trial.modality.ToString(),
+                    extra: triggerCode.ToString()
+                );
+
+
+
                 float waitToFire = m_TaskAsset.TimeToReachStage(trial.speed, trial.vibrationStage);
 
                 if (waitToFire > 0f)
