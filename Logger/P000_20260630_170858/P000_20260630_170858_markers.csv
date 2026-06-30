@@ -1,0 +1,4 @@
+Time,EventCode,TrialId,Category,Expected,Received,Extra,TriggerValue
+5.465089,phase_intro,,,,,,51
+15.978793,phase_controller_practice,,,,,,32
+0.000000,session_end,,,,,,57

@@ -9,11 +9,10 @@ namespace HitOrMiss
     /// Full session flow:
     ///
     ///   PrePracticePopups[]                 — Welcome, TriggerCheck, Positioning, etc.
-    ///   ↓
-    ///   ControllerPracticeIntroPanel        — "LEFT = YES, RIGHT = NO. Let's practice."
-    ///   LeftControllerPracticePanel         — wait for LEFT trigger → GiantSquare blue → auto-advance
-    ///   RightControllerPracticePanel        — wait for RIGHT trigger → GiantSquare orange → auto-advance
-    ///   ↓
+    ///  
+    /// 
+    /// 
+    /// 
     ///   BallDemoIntroPanel                  — "Watch two examples."
     ///   BallDemoSequence (PASSIVE)          — [clear_hit, clear_miss]; no input accepted
     ///   ↓
@@ -80,21 +79,18 @@ namespace HitOrMiss
         [Tooltip("Shown after positioning. Displays the fixation cross and waits for a trigger press to confirm the subject sees it.")]
         [SerializeField] TaskPopupPanel m_FixationAckPanel;
 
-      
-
+    
         // ---- Controller practice ----
-        [Header("Controller practice (forced-response sequence)")]
+        [Header("Controller practice")]
         [SerializeField] TaskPopupPanel m_ControllerPracticeIntroPanel;
-        [Tooltip("Waits for LEFT trigger; GiantSquare turns blue; auto-advances. Behavior dropdown is ignored.")]
-        [SerializeField] TaskPopupPanel m_LeftControllerPracticePanel;
-        [Tooltip("Waits for RIGHT trigger; GiantSquare turns orange; auto-advances. Behavior dropdown is ignored.")]
-        [SerializeField] TaskPopupPanel m_RightControllerPracticePanel;
 
-        [Header("Forced-response visual feedback")]
-        [SerializeField] Color m_ForcedIdleColor      = new Color(0.8f, 0.8f, 0.8f, 1f);
-        [SerializeField] Color m_ForcedLeftFillColor  = new Color(0.20f, 0.45f, 1.00f, 1f);
-        [SerializeField] Color m_ForcedRightFillColor = new Color(1.00f, 0.55f, 0.10f, 1f);
-        //[SerializeField] float m_ForcedFlashSeconds = 0.5f;
+        [Header("Controller trigger demo")]
+        [SerializeField] TaskPopupPanel m_TriggerDemoPopup;
+        [SerializeField] HitOrMissControllerIntroDemo m_ControllerIntroDemo;
+
+        [Header("Response mapping demo")]
+        [SerializeField] TaskPopupPanel m_ResponseMappingPopup;
+        [SerializeField] HitOrMissResponseMappingDemo m_ResponseMappingDemo;
 
         // ---- Ball demo (passive) ----
         [Header("Ball demo (2 passive trials)")]
@@ -402,8 +398,123 @@ namespace HitOrMiss
         IEnumerator RunControllerPractice()
         {
             yield return RunOnePopup(m_ControllerPracticeIntroPanel);
-            yield return ForcedResponsePopup(m_LeftControllerPracticePanel,  SemanticCommand.Hit,  m_ForcedLeftFillColor);
-            yield return ForcedResponsePopup(m_RightControllerPracticePanel, SemanticCommand.Miss, m_ForcedRightFillColor);
+            yield return RunControllerIntroDemo();
+            yield return RunResponseMappingDemo();
+        }
+        // ====================================================================
+        // Controller demo popups
+        // ====================================================================
+
+        IEnumerator RunControllerIntroDemo()
+        {
+            if (m_TriggerDemoPopup == null)
+            {
+                Debug.LogWarning("[HitOrMissAppController] Trigger demo popup not assigned. Skipping.");
+                yield break;
+            }
+
+            if (m_ControllerIntroDemo == null)
+            {
+                Debug.LogWarning("[HitOrMissAppController] HitOrMissControllerIntroDemo not assigned. Skipping.");
+                yield break;
+            }
+
+            if (m_InputSource == null)
+            {
+                Debug.LogError("[HitOrMissAppController] No input source for trigger demo popup.");
+                yield break;
+            }
+
+            var ctx = BuildPopupContext();
+            m_TriggerDemoPopup.SetText(ctx.ResolveText(m_TriggerDemoPopup));
+            m_TriggerDemoPopup.Show();
+
+            m_ControllerIntroDemo.BeginDemo();
+
+            bool leftPressed = false;
+            bool rightPressed = false;
+
+            void Handler(ResponseEvent ev)
+            {
+                if (ev.command == SemanticCommand.Hit)
+                {
+                    leftPressed = true;
+                    m_ControllerIntroDemo.LeftTriggerPressed();
+                }
+                else if (ev.command == SemanticCommand.Miss)
+                {
+                    rightPressed = true;
+                    m_ControllerIntroDemo.RightTriggerPressed();
+                }
+            }
+
+            m_InputSource.ResponseReceived += Handler;
+            m_InputSource.Enable();
+
+            while (!leftPressed || !rightPressed)
+                yield return null;
+
+            m_InputSource.ResponseReceived -= Handler;
+
+            yield return null;
+
+            m_TriggerDemoPopup.Hide();
+        }
+
+        IEnumerator RunResponseMappingDemo()
+        {
+            if (m_ResponseMappingPopup == null)
+            {
+                Debug.LogWarning("[HitOrMissAppController] Response mapping popup not assigned. Skipping.");
+                yield break;
+            }
+
+            if (m_ResponseMappingDemo == null)
+            {
+                Debug.LogWarning("[HitOrMissAppController] HitOrMissResponseMappingDemo not assigned. Skipping.");
+                yield break;
+            }
+
+            if (m_InputSource == null)
+            {
+                Debug.LogError("[HitOrMissAppController] No input source for response mapping popup.");
+                yield break;
+            }
+
+            var ctx = BuildPopupContext();
+            m_ResponseMappingPopup.SetText(ctx.ResolveText(m_ResponseMappingPopup));
+            m_ResponseMappingPopup.Show();
+
+            m_ResponseMappingDemo.ResetDemo();
+
+            bool leftPressed = false;
+            bool rightPressed = false;
+
+            void Handler(ResponseEvent ev)
+            {
+                if (ev.command == SemanticCommand.Hit)
+                {
+                    leftPressed = true;
+                    m_ResponseMappingDemo.LeftPressed();
+                }
+                else if (ev.command == SemanticCommand.Miss)
+                {
+                    rightPressed = true;
+                    m_ResponseMappingDemo.RightPressed();
+                }
+            }
+
+            m_InputSource.ResponseReceived += Handler;
+            m_InputSource.Enable();
+
+            while (!leftPressed || !rightPressed)
+                yield return null;
+
+            m_InputSource.ResponseReceived -= Handler;
+
+            yield return null;
+
+            m_ResponseMappingPopup.Hide();
         }
 
         IEnumerator RunBallDemo()
@@ -557,71 +668,6 @@ namespace HitOrMiss
             m_TooSlowPanel.Hide();
         }
 
-        // ====================================================================
-        // Forced-response popup (LEFT / RIGHT controller practice)
-        // ====================================================================
-
-        IEnumerator ForcedResponsePopup(TaskPopupPanel panel, SemanticCommand expected, Color fillColor)
-        {
-            if (panel == null)
-            {
-                Debug.LogWarning($"[HitOrMissAppController] Forced-response popup ({expected}) not assigned. Skipping.");
-                yield break;
-            }
-            if (m_InputSource == null)
-            {
-                Debug.LogError("[HitOrMissAppController] No input source for forced-response popup.");
-                yield break;
-            }
-
-            var ctx = BuildPopupContext();
-            string text = ctx.ResolveText(panel);
-            panel.SetText(text);
-            panel.Show();
-
-            var giantSquareButton = FindGiantSquareButton(panel);
-            UnityEngine.UI.Image giantSquareImage = null;
-            if (giantSquareButton != null)
-            {
-                giantSquareImage = giantSquareButton.GetComponent<UnityEngine.UI.Image>();
-                giantSquareButton.onClick.RemoveAllListeners();
-            }
-            if (giantSquareImage != null)
-                giantSquareImage.color = m_ForcedIdleColor;
-
-            bool got = false;
-            void Handler(ResponseEvent ev)
-            {
-                if (ev.command == expected) got = true;
-            }
-            m_InputSource.ResponseReceived += Handler;
-            m_InputSource.Enable();
-
-            while (!got) yield return null;
-
-            m_InputSource.ResponseReceived -= Handler;
-
-            if (giantSquareImage != null)
-                giantSquareImage.color = fillColor;
-            // Note: ResponseIndicator is NOT in practice mode here — the
-            // forced-response panel is purely tutorial. We pass matched=true
-            // so the neutral indicator just flashes the label.
-            if (m_ResponseIndicator != null)
-                m_ResponseIndicator.Show(expected, true);
-
-           // yield return new WaitForSeconds(m_ForcedFlashSeconds);
-            panel.Hide();
-        }
-
-        static UnityEngine.UI.Button FindGiantSquareButton(TaskPopupPanel panel)
-        {
-            if (panel == null) return null;
-            var buttons = panel.GetComponentsInChildren<UnityEngine.UI.Button>(true);
-            foreach (var b in buttons)
-                if (b != null && b.name.Contains("GiantSquare")) return b;
-            return null;
-        }
-
         IEnumerator RunFixationAcknowledgement()
         {
             if (m_FixationAckPanel == null)
@@ -737,8 +783,8 @@ namespace HitOrMiss
             HideArray(m_ExtraPostPracticePopups);
             if (m_FixationAckPanel != null) m_FixationAckPanel.Hide();
             if (m_ControllerPracticeIntroPanel  != null) m_ControllerPracticeIntroPanel.Hide();
-            if (m_LeftControllerPracticePanel   != null) m_LeftControllerPracticePanel.Hide();
-            if (m_RightControllerPracticePanel  != null) m_RightControllerPracticePanel.Hide();
+            if (m_TriggerDemoPopup              != null) m_TriggerDemoPopup.Hide();
+            if (m_ResponseMappingPopup          != null) m_ResponseMappingPopup.Hide();
             if (m_BallDemoIntroPanel            != null) m_BallDemoIntroPanel.Hide();
             if (m_EasyPracticeIntroPanel        != null) m_EasyPracticeIntroPanel.Hide();
             if (m_DifficultPracticeIntroPanel   != null) m_DifficultPracticeIntroPanel.Hide();
