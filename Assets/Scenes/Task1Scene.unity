@@ -37960,7 +37960,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: aedf5622e18f8a24dbc9dc52e0c286fc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_ParticipantId: P000
+  m_ParticipantId: PAM
   m_UseSerialBridge: 1
   m_AutoDetectPort: 1
   m_ComPort: COM7
@@ -37978,7 +37978,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 87f7510eef6fbeb4b917191c6925c8b4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_ParticipantId: 30-06-26-test3
+  m_ParticipantId: 01-07-26-session2
   m_SessionId: 
 --- !u!1 &1896021331678287680
 GameObject:
@@ -38928,7 +38928,7 @@ MonoBehaviour:
   m_FixationCross: {fileID: 0}
   m_StandingCross: {fileID: 0}
   m_ClinicianPanel: {fileID: 0}
-  m_SubjectIdFallback: 25-09-PAMELA-1
+  m_SubjectIdFallback: 01-07-26-session1
   m_AutoStartOnPlay: 1
 --- !u!1 &9041478014344155232
 GameObject:

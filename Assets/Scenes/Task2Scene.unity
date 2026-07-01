@@ -15224,7 +15224,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3759500561752380470, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
       propertyPath: m_ComPort
-      value: COM8
+      value: COM7
+      objectReference: {fileID: 0}
+    - target: {fileID: 3759500561752380470, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
+      propertyPath: m_ParticipantId
+      value: PAM
+      objectReference: {fileID: 0}
+    - target: {fileID: 3759500561752380470, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
+      propertyPath: m_UseSerialBridge
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3799011170388618083, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
       propertyPath: m_AnchorMax.y
@@ -15249,6 +15257,14 @@ PrefabInstance:
     - target: {fileID: 3799011170388618083, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
       propertyPath: m_AnchoredPosition.y
       value: -10
+      objectReference: {fileID: 0}
+    - target: {fileID: 4403324273002708146, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
+      propertyPath: m_SessionId
+      value: 01-07-26-session1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4403324273002708146, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
+      propertyPath: m_ParticipantId
+      value: PAM
       objectReference: {fileID: 0}
     - target: {fileID: 4631451537410140510, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
       propertyPath: m_AnchorMin.x

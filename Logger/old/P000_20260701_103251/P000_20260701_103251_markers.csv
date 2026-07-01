@@ -1,0 +1,10 @@
+Time,EventCode,TrialId,Category,Expected,Received,Extra,TriggerValue
+12.014798,pps_trial_start,PRACTICE_T01,TactileOnly,,,19,19
+13.518516,pps_vib_fired,PRACTICE_T01,,,,D4,127
+17.834589,pps_response,,,,,,62
+19.045742,pps_trial_start,PRACTICE_T02,TactileOnly,,,13,13
+20.897657,pps_vib_fired,PRACTICE_T02,,,,D3,127
+21.064356,pps_response,,,,,,62
+26.201534,pps_trial_start,PRACTICE_T01,VisualOnly,,,3,3
+27.593937,pps_response,,,,,,62
+0.000000,session_end,,,,,,57

@@ -145,7 +145,6 @@ namespace HitOrMiss
         IResponseInputSource m_InputSource;
 
         SessionMetadata m_SessionMetadata;
-        bool m_SessionMetadataExplicitlySet;
         TrajectoryTaskAsset m_SessionAsset;
 
         // Practice-only TooSlow handler (added/removed around practice phases).
@@ -181,7 +180,6 @@ namespace HitOrMiss
         public void SetSessionMetadata(SessionMetadata metadata)
         {
             m_SessionMetadata = metadata;
-            m_SessionMetadataExplicitlySet = true;
             if (!string.IsNullOrEmpty(metadata.participantId))
                 ParticipantId = metadata.participantId;
         }
@@ -205,7 +203,6 @@ namespace HitOrMiss
                 if (binder != null) binder.Language = language;
         }
         
-
         public void StartSession()
         {
             if (m_CurrentPhase != TaskPhase.Idle)
@@ -220,17 +217,16 @@ namespace HitOrMiss
                 Debug.LogError("[HitOrMissAppController] No input sources assigned in inspector.");
                 return;
             }
+
             m_InputSource = composite;
             m_TaskManager.SetInputSource(m_InputSource);
 
-            if (!m_SessionMetadataExplicitlySet)
-                m_SessionMetadata = SessionMetadata.CreateDefault(ParticipantId);
-            else
-                m_SessionMetadata.participantId = ParticipantId;
-
+            m_SessionMetadata = SessionMetadata.CreateDefault(
+                m_EegMarkerEmitter != null ? m_EegMarkerEmitter.ParticipantId : "P000"
+            );
+                        
             m_SessionMetadata.PopulateFromTaskAsset(m_TaskAsset);
-            if (string.IsNullOrEmpty(m_SessionMetadata.sessionId))
-                m_SessionMetadata.sessionId = System.DateTime.Now.ToString("yyyyMMdd_HHmmss");
+
             if (string.IsNullOrEmpty(m_SessionMetadata.sessionDate))
                 m_SessionMetadata.sessionDate = System.DateTime.Now.ToString("yyyy-MM-dd");
 
@@ -239,18 +235,11 @@ namespace HitOrMiss
                 m_SessionAsset = m_TaskAsset.CreateSessionClone();
                 m_SessionAsset.ApplyTask2SessionOverrides(m_SessionMetadata);
                 m_TaskManager.TaskAsset = m_SessionAsset;
-                Debug.Log($"[HitOrMissAppController] Session asset clone applied. " +
-                          $"BlockCount={m_SessionAsset.BlockCount}, " +
-                          $"TrialsPerBlock={m_SessionAsset.TrialsPerBlock}, " +
-                          $"BreakDurationSeconds={m_SessionAsset.BreakDurationSeconds}");
-            }
 
-            if (m_TaskLogger != null)
-            {
-                m_TaskLogger.ParticipantId = ParticipantId;
-                m_TaskLogger.SetMetadata(m_SessionMetadata);
-                m_TaskLogger.BeginSession(TaskKind.Task2HitOrMiss, m_TaskAsset != null ? m_TaskAsset.TaskName : "HitOrMiss");
-                m_TaskManager.TrialJudged += m_TaskLogger.LogTrial;
+                Debug.Log($"[HitOrMissAppController] Session asset clone applied. " +
+                        $"BlockCount={m_SessionAsset.BlockCount}, " +
+                        $"TrialsPerBlock={m_SessionAsset.TrialsPerBlock}, " +
+                        $"BreakDurationSeconds={m_SessionAsset.BreakDurationSeconds}");
             }
 
             if (m_EegMarkerEmitter == null)
@@ -259,18 +248,35 @@ namespace HitOrMiss
 
                 if (m_EegMarkerEmitter == null)
                 {
-                    Debug.LogWarning("[PPSAppController] No EegMarkerEmitter found in the scene. EEG markers will be disabled.");
+                    Debug.LogWarning("[HitOrMissAppController] No EegMarkerEmitter found in the scene. EEG markers will be disabled.");
                 }
                 else
                 {
-                    Debug.Log("[PPSAppController] Found EegMarkerEmitter automatically.");
+                    Debug.Log("[HitOrMissAppController] Found EegMarkerEmitter automatically.");
                 }
             }
-            
+
+            // IMPORTANT:
+            // EegMarkerEmitter owns ParticipantId, SessionId, and SessionDirectory.
+            // It must begin BEFORE TaskLogger begins.
             if (m_EegMarkerEmitter != null)
             {
-                string sessionId = System.DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                m_EegMarkerEmitter.BeginSession(sessionId);
+                m_EegMarkerEmitter.BeginSession();
+
+                m_SessionMetadata.participantId = m_EegMarkerEmitter.ParticipantId;
+                m_SessionMetadata.sessionId = m_EegMarkerEmitter.SessionId;
+            }
+
+            if (m_TaskLogger != null)
+            {
+                m_TaskLogger.SetMetadata(m_SessionMetadata);
+
+                m_TaskLogger.BeginSession(
+                    TaskKind.Task2HitOrMiss,
+                    m_TaskAsset != null ? m_TaskAsset.TaskName : "HitOrMiss"
+                );
+
+                m_TaskManager.TrialJudged += m_TaskLogger.LogTrial;
             }
 
             if (m_ClinicianPanel != null)
@@ -454,9 +460,10 @@ namespace HitOrMiss
             while (!leftPressed || !rightPressed)
                 yield return null;
 
-            m_InputSource.ResponseReceived -= Handler;
+            while (!m_ResponseMappingDemo.ReadyToAdvance)
+                yield return null;
 
-            yield return null;
+            m_InputSource.ResponseReceived -= Handler;
 
             m_TriggerDemoPopup.Hide();
         }
@@ -510,9 +517,12 @@ namespace HitOrMiss
             while (!leftPressed || !rightPressed)
                 yield return null;
 
+            while (!m_ResponseMappingDemo.ReadyToAdvance)
+                yield return null;
+
             m_InputSource.ResponseReceived -= Handler;
 
-            yield return null;
+            
 
             m_ResponseMappingPopup.Hide();
         }

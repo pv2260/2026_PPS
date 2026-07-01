@@ -24,8 +24,13 @@ namespace HitOrMiss
     /// </summary>
     public class TaskLogger : MonoBehaviour
     {
-        [SerializeField] string m_ParticipantId = "P000";
-        [SerializeField] string m_SessionId = "";
+        /// Pam added for logging system
+        [Header("Shared Session Folder")]
+        [SerializeField] EegMarkerEmitter m_EegMarkerEmitter;
+        string m_ParticipantId;
+        string m_SessionId;
+        ///
+
 
         SessionMetadata m_Metadata;
         bool m_MetadataExplicitlySet;
@@ -74,10 +79,6 @@ namespace HitOrMiss
             m_Metadata = metadata;
             m_MetadataExplicitlySet = true;
 
-            if (!string.IsNullOrEmpty(metadata.participantId))
-                m_ParticipantId = metadata.participantId;
-            if (!string.IsNullOrEmpty(metadata.sessionId))
-                m_SessionId = metadata.sessionId;
         }
 
         /// <summary>
@@ -102,15 +103,30 @@ namespace HitOrMiss
 
             m_TaskKind = taskKind;
 
-            if (string.IsNullOrEmpty(m_SessionId))
-                m_SessionId = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+           // m_SessionDir = Path.Combine(
+           //     Directory.GetCurrentDirectory(),
+          //      "Logger",
+           //     $"{m_ParticipantId}_{m_SessionId}"
+           // );
+           // Directory.CreateDirectory(m_SessionDir);
 
-            m_SessionDir = Path.Combine(
-                Directory.GetCurrentDirectory(),
-                "Logger",
-                $"{m_ParticipantId}_{m_SessionId}"
-            );
-            Directory.CreateDirectory(m_SessionDir);
+            // Pam added for new logger system
+            if (m_EegMarkerEmitter == null)
+            {
+                Debug.LogError("[TaskLogger] Missing EegMarkerEmitter reference. Cannot use shared session folder.");
+                return;
+            }
+
+            if (string.IsNullOrEmpty(m_EegMarkerEmitter.SessionDirectory))
+            {
+                Debug.LogError("[TaskLogger] EegMarkerEmitter has not created a session directory yet. Call EegMarkerEmitter.BeginSession(...) before TaskLogger.BeginSession(...).");
+                return;
+            }
+
+            m_ParticipantId = m_EegMarkerEmitter.ParticipantId;
+            m_SessionId = m_EegMarkerEmitter.SessionId;
+            m_SessionDir = m_EegMarkerEmitter.SessionDirectory;
+            //
 
             string idSlug = m_ParticipantId.Replace(" ", "_");
             int sn = m_Metadata.sessionNumber > 0 ? m_Metadata.sessionNumber : 1;

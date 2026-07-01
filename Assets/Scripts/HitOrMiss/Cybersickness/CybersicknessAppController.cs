@@ -206,12 +206,14 @@ void ApplyTaskLanguage()
 
             if (m_CsvLogger != null)
                 m_CsvLogger.BeginSession(m_ParticipantId);
-
+                
             if (m_EegMarkerEmitter != null)
             {
-                string sessionId = System.DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                m_EegMarkerEmitter.BeginSession(sessionId);
-                m_EegMarkerEmitter.Emit("cyberfish_session_start", extra: m_ParticipantId);
+                m_EegMarkerEmitter.BeginSession();
+                m_EegMarkerEmitter.Emit(
+                    "cyberfish_session_start",
+                    extra: m_EegMarkerEmitter.ParticipantId
+                );
             }
             
             ApplyTaskLanguage();

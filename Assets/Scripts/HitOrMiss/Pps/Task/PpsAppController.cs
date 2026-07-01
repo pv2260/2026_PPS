@@ -290,10 +290,9 @@ namespace HitOrMiss.Pps
 
             if (m_EegMarkerEmitter != null)
             {
-                string sessionId = !string.IsNullOrEmpty(m_SessionMetadata.sessionId)
-                    ? m_SessionMetadata.sessionId
-                    : System.DateTime.Now.ToString("yyyyMMdd_HHmmss");
-                m_EegMarkerEmitter.BeginSession(sessionId);
+                m_EegMarkerEmitter.BeginSession();
+                m_SessionMetadata.participantId = m_EegMarkerEmitter.ParticipantId;
+                m_SessionMetadata.sessionId = m_EegMarkerEmitter.SessionId;
                 m_TaskManager.SetMarkerEmitter(m_EegMarkerEmitter);
             }
 

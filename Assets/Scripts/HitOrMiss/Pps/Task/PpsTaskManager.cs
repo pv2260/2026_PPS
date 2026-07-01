@@ -447,10 +447,6 @@ namespace HitOrMiss.Pps
             for (int i = 0; i < crossings.Length; i++)
                 crossings[i] = double.NaN;
 
-
-
-
-
             if (trial.modality == PpsModality.TactileOnly)
             {
                 // In tactile-only trials, no visual stimulus is shown.
@@ -478,6 +474,7 @@ namespace HitOrMiss.Pps
                         _             => TriggerEncoder.Task1Speed.Slow
                     }
                 );
+                Debug.LogWarning($"TACTILE ONLY {triggerCode}");
 
                 m_MarkerEmitter?.Emit(
                     "pps_trial_start",
@@ -485,7 +482,6 @@ namespace HitOrMiss.Pps
                     trial.modality.ToString(),
                     extra: triggerCode.ToString()
                 );
-
 
 
                 float waitToFire = m_TaskAsset.TimeToReachStage(trial.speed, trial.vibrationStage);

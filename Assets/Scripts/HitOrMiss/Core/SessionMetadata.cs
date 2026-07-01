@@ -82,8 +82,8 @@ namespace HitOrMiss
             {
                 participantId = string.IsNullOrEmpty(participantId) ? "P000" : participantId,
                 clinicianInitials = string.Empty,
+                sessionId = string.Empty,
                 sessionDate = DateTime.Now.ToString("yyyy-MM-dd"),
-                sessionId = DateTime.Now.ToString("yyyyMMdd_HHmmss"),
                 sessionNumber = 1,
 
                 ageYears = 0,

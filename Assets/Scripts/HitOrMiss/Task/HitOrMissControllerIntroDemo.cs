@@ -12,6 +12,11 @@ namespace HitOrMiss
         [Header("Text")]
         [SerializeField] private TMP_Text m_InstructionText;
 
+        [Header("Advance delay")]
+        [SerializeField] private float m_AfterBothTriggersDelaySeconds = 0.6f;
+
+        private float m_BothTriggersCompletedTime = -1f;
+
         [TextArea(2, 5)]
         [SerializeField] private string m_DemoText =
             "First, let's learn which buttons to press.\n\nPress the TRIGGER on EACH controller.";
@@ -20,6 +25,11 @@ namespace HitOrMiss
         private bool m_RightPressed;
 
         public bool HasPressedBothTriggers => m_LeftPressed && m_RightPressed;
+
+        public bool ReadyToAdvance =>
+            HasPressedBothTriggers &&
+            m_BothTriggersCompletedTime > 0f &&
+            Time.time >= m_BothTriggersCompletedTime + m_AfterBothTriggersDelaySeconds;
 
         private void OnEnable()
         {
@@ -37,6 +47,8 @@ namespace HitOrMiss
             m_LeftPressed = false;
             m_RightPressed = false;
 
+            m_BothTriggersCompletedTime = -1f;
+
             if (m_InstructionText != null)
                 m_InstructionText.text = m_DemoText;
 
@@ -45,6 +57,15 @@ namespace HitOrMiss
 
             if (m_RightTriggerHighlight != null)
                 m_RightTriggerHighlight.SetActive(false);
+        }
+
+        private void CheckBothTriggersCompleted()
+        {
+            if (m_LeftPressed && m_RightPressed && m_BothTriggersCompletedTime < 0f)
+            {
+                m_BothTriggersCompletedTime = Time.time;
+                Debug.Log($"[HIT OR MISS TRIGGER DEMO] Both triggers completed at {m_BothTriggersCompletedTime:F3}");
+            }
         }
 
         public void ShowBeforeStart()
@@ -67,6 +88,8 @@ namespace HitOrMiss
                 m_LeftTriggerHighlight.SetActive(true);
             else
                 Debug.LogError("[HIT OR MISS TRIGGER DEMO] LeftTriggerHighlight is not assigned.");
+
+            CheckBothTriggersCompleted();
         }
 
         public void RightTriggerPressed()
@@ -79,6 +102,8 @@ namespace HitOrMiss
                 m_RightTriggerHighlight.SetActive(true);
             else
                 Debug.LogError("[HIT OR MISS TRIGGER DEMO] RightTriggerHighlight is not assigned.");
+
+            CheckBothTriggersCompleted();
         }
     }
 }

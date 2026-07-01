@@ -13,8 +13,15 @@ namespace HitOrMiss
     /// </summary>
     public class EegMarkerEmitter : MonoBehaviour
     {
-        [Header("Participant")]
-        [SerializeField] string m_ParticipantId = "P000";
+        // Added by Pam: new logging system /////////////////////////////////////////////////////////
+        [Header("Participant / Session")]
+        [SerializeField] private string m_ParticipantId = "P000";
+        [SerializeField] private string m_SessionId = "S1";
+
+        public string ParticipantId => m_ParticipantId;
+        public string SessionId => m_SessionId;
+        public string SessionDirectory { get; private set; }
+        /////////////////////////////////////////////////////////
 
         [Header("Arduino Serial Trigger")]
         [Tooltip("Enable to send trigger bytes over serial to an Arduino")]
@@ -79,16 +86,26 @@ namespace HitOrMiss
             set => m_UseSerialBridge = value;
         }
 
-        public void BeginSession(string sessionId)
+        public void BeginSession()
         {
-            string dir = Path.Combine(
+
+        // Added by Pam: new logging system /////////////////////////////////////////////////////////
+            if (m_SessionOpen)
+            {
+                Debug.LogWarning("[EegMarkerEmitter] BeginSession called while a session was already open.");
+                return;
+            }
+            
+            SessionDirectory = Path.Combine(
                 Directory.GetCurrentDirectory(),
                 "Logger",
-                $"{m_ParticipantId}_{sessionId}"
+                $"{m_ParticipantId}_{m_SessionId}"
             );
 
-            Directory.CreateDirectory(dir);
-            m_LogPath = Path.Combine(dir, $"{m_ParticipantId}_{sessionId}_markers.csv");
+            Directory.CreateDirectory(SessionDirectory);
+            m_LogPath = Path.Combine(SessionDirectory, $"{m_ParticipantId}_{m_SessionId}_markers.csv");
+        /////////////////////////////////////////////////////////
+
             
             // string dir = Path.Combine(Directory.GetCurrentDirectory, "Logger", $"");
             // Directory.CreateDirectory(dir);
@@ -111,6 +128,12 @@ namespace HitOrMiss
 
                 //Emit("session_start");
             }
+        }
+
+        /// Pam: New logger system, to improve compatibility with other tasks using EegMarkerEmitter
+        public void BeginSession(string ignoredSessionId)
+        {
+            BeginSession();
         }
 
         public void Emit(
@@ -158,7 +181,7 @@ namespace HitOrMiss
                     float duration = m_TriggerDuration;
 
                     // Vibration trigger: hold longer so the Arduino/motor detects it clearly.
-                    if (triggerValue == 201)
+                    if (triggerValue == 127)
                         duration = 0.1f;
 
                     m_Arduino.SendTrigger((byte)triggerValue, duration);
