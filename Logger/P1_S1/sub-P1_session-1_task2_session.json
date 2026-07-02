@@ -44,7 +44,57 @@
         ],
         "clinicianNotes": ""
     },
-    "timestamp": "2026-07-02T12:01:57.6227402+02:00",
-    "totalTrials": 0,
-    "judgements": []
+    "timestamp": "2026-07-02T15:28:05.5954852+02:00",
+    "totalTrials": 1,
+    "judgements": [
+        {
+            "trialId": "B1_T01",
+            "blockIndex": 0,
+            "category": 2,
+            "expected": 2,
+            "received": 1,
+            "result": 1,
+            "isCorrect": false,
+            "wasTooSlow": false,
+            "trialNumberInBlock": 1,
+            "runId": 0,
+            "trialInRun": 1,
+            "runLength": 3,
+            "trialsSinceLastSwitch": 0,
+            "isSwitchTrial": false,
+            "speedMps": 1.5,
+            "prevSpeedMps": 0.0,
+            "speedChange": 1.5,
+            "absSpeedChange": 1.5,
+            "changeDirection": 0,
+            "currentSpeedLevel": 0,
+            "previousSpeedLevel": 0,
+            "hasPreviousSpeed": false,
+            "transitionStatus": 0,
+            "trajectoryId": "NearMiss_R_46",
+            "trajectoryAngleDeg": 1.7619997262954713,
+            "startWorldPosition": {
+                "x": 0.0,
+                "y": 0.9739999771118164,
+                "z": 15.0
+            },
+            "endWorldPosition": {
+                "x": 0.4614359140396118,
+                "y": 0.9739999771118164,
+                "z": 0.0
+            },
+            "lateralOffsetMeters": 0.4614359140396118,
+            "trialStartTime": 179.63507080078126,
+            "ballMotionStartTime": 179.63507775651929,
+            "stimulusOnsetTime": 179.63507080078126,
+            "responseTime": 181.48904426020409,
+            "reactionTimeMs": 1853.973459422832,
+            "interTrialIntervalMs": 0.0,
+            "failureReason": "",
+            "trialTriggerCode": 0,
+            "responseTriggerCode": 0,
+            "triggerTimestamp": 0.0,
+            "trialInterrupted": false
+        }
+    ]
 }

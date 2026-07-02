@@ -465,6 +465,7 @@ namespace HitOrMiss
             yield return new WaitForSeconds(0.6f);
 
             m_TriggerDemoPopup.Hide();
+            
         }
 
         IEnumerator RunResponseMappingDemo()

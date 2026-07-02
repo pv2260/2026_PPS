@@ -480,7 +480,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -10}
+  m_AnchoredPosition: {x: 200, y: -10}
   m_SizeDelta: {x: 200, y: 80}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &20649969
@@ -739,7 +739,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 970690408}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 984165673}
+        m_TargetAssemblyTypeName: HitOrMiss.HitOrMissAppController, Assembly-CSharp
+        m_MethodName: StopSession
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!222 &20649975
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -1696,6 +1708,14 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2296990407779115617, guid: 91dedd7189c103d49a21fdff41d0c383, type: 3}
+      propertyPath: m_BackLabel
+      value: 
+      objectReference: {fileID: 778824687}
+    - target: {fileID: 2296990407779115617, guid: 91dedd7189c103d49a21fdff41d0c383, type: 3}
+      propertyPath: m_BackButton
+      value: 
+      objectReference: {fileID: 1851345801}
+    - target: {fileID: 2296990407779115617, guid: 91dedd7189c103d49a21fdff41d0c383, type: 3}
       propertyPath: m_ContinueLabel
       value: 
       objectReference: {fileID: 1638812472}
@@ -2550,7 +2570,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4330663596433747094, guid: aa14702dd234c8d4fb9ac0df97715ef7, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 100
+      value: -150
       objectReference: {fileID: 0}
     - target: {fileID: 4330663596433747094, guid: aa14702dd234c8d4fb9ac0df97715ef7, type: 3}
       propertyPath: m_LocalPosition.z
@@ -5523,7 +5543,7 @@ GameObject:
   - component: {fileID: 356268345}
   - component: {fileID: 356268344}
   m_Layer: 5
-  m_Name: Intro_StartPractice
+  m_Name: Intro_CheckControllers
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -5568,7 +5588,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Start Practice
+  m_text: Check Controllers
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: fbb7c6a04be6d8341934b839f24b42e1, type: 2}
   m_sharedMaterial: {fileID: 4687939059374929122, guid: fbb7c6a04be6d8341934b839f24b42e1, type: 2}
@@ -5820,7 +5840,7 @@ GameObject:
   - component: {fileID: 425240433}
   - component: {fileID: 425240432}
   m_Layer: 5
-  m_Name: Text Poke Button Start Practice
+  m_Name: Text Poke Button Check Controllers
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -6262,7 +6282,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Start Task
+  m_text: 'Start '
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: fbb7c6a04be6d8341934b839f24b42e1, type: 2}
   m_sharedMaterial: {fileID: 4687939059374929122, guid: fbb7c6a04be6d8341934b839f24b42e1, type: 2}
@@ -6849,6 +6869,8 @@ MonoBehaviour:
   m_Body: {fileID: 870160410}
   m_ContinueButton: {fileID: 0}
   m_ContinueLabel: {fileID: 0}
+  m_BackButton: {fileID: 0}
+  m_BackLabel: {fileID: 0}
   m_CountdownText: {fileID: 0}
   m_BodyKey: trigger_demo_key
   m_BodyFallback: 
@@ -9044,7 +9066,7 @@ MonoBehaviour:
           m_StringArgument: 
           m_BoolArgument: 0
         m_CallState: 2
-      - m_Target: {fileID: 0}
+      - m_Target: {fileID: 1661944316}
         m_TargetAssemblyTypeName: UnityEngine.GameObject, UnityEngine
         m_MethodName: SetActive
         m_Mode: 6
@@ -11225,6 +11247,14 @@ PrefabInstance:
       value: popup3_positioning
       objectReference: {fileID: 0}
     - target: {fileID: 2296990407779115617, guid: 91dedd7189c103d49a21fdff41d0c383, type: 3}
+      propertyPath: m_BackLabel
+      value: 
+      objectReference: {fileID: 2048577355}
+    - target: {fileID: 2296990407779115617, guid: 91dedd7189c103d49a21fdff41d0c383, type: 3}
+      propertyPath: m_BackButton
+      value: 
+      objectReference: {fileID: 625065081}
+    - target: {fileID: 2296990407779115617, guid: 91dedd7189c103d49a21fdff41d0c383, type: 3}
       propertyPath: m_ContinueLabel
       value: 
       objectReference: {fileID: 598149057}
@@ -11816,7 +11846,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1224485729}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 984165673}
+        m_TargetAssemblyTypeName: HitOrMiss.HitOrMissAppController, Assembly-CSharp
+        m_MethodName: StopAllCoroutines
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!222 &758857975
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -13164,7 +13206,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5560984057321341479, guid: 91dedd7189c103d49a21fdff41d0c383, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 100
+      value: -80
       objectReference: {fileID: 0}
     - target: {fileID: 5611710278653995456, guid: 91dedd7189c103d49a21fdff41d0c383, type: 3}
       propertyPath: m_text
@@ -13172,7 +13214,9 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6610604726055033427, guid: 91dedd7189c103d49a21fdff41d0c383, type: 3}
       propertyPath: m_text
-      value: 
+      value: '"A ball will move toward you.\nTwo panels move with it: Y and N.\nThey
+        remind you which answer to choose.\nY / LEFT = YES, it will hit me.\nN /
+        RIGHT = NO, it will miss me."'
       objectReference: {fileID: 0}
     - target: {fileID: 6610604726055033427, guid: 91dedd7189c103d49a21fdff41d0c383, type: 3}
       propertyPath: m_fontSize
@@ -14276,7 +14320,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 887631717}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 984165673}
+        m_TargetAssemblyTypeName: HitOrMiss.HitOrMissAppController, Assembly-CSharp
+        m_MethodName: StopAllCoroutines
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!222 &886398190
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -14753,7 +14809,7 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 951693456}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: -1}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -15210,7 +15266,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 1, g: 0.3254902, b: 0.34509805, a: 1}
   m_RaycastTarget: 0
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -15335,9 +15391,17 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 316128335639633311, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
+      propertyPath: m_CrosshairDefaultMaterial
+      value: 
+      objectReference: {fileID: 2100000, guid: 9ff1a0b5c97560448b1d26a21c9a31d5, type: 2}
+    - target: {fileID: 316128335639633311, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
       propertyPath: m_RequireResponseToAdvance
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 316128335639633311, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
+      propertyPath: m_CrosshairItiBlackMaterial
+      value: 
+      objectReference: {fileID: 2100000, guid: 3d81c2fbcb91c204b838f19cd4cbc564, type: 2}
     - target: {fileID: 384069064163138054, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
       propertyPath: m_SizeDelta.y
       value: 0
@@ -16905,7 +16969,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Start Practice
+  m_text: Continue Practice
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: fbb7c6a04be6d8341934b839f24b42e1, type: 2}
   m_sharedMaterial: {fileID: 4687939059374929122, guid: fbb7c6a04be6d8341934b839f24b42e1, type: 2}
@@ -18181,7 +18245,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1125792319
 RectTransform:
   m_ObjectHideFlags: 0
@@ -19534,6 +19598,8 @@ MonoBehaviour:
   m_Body: {fileID: 310784168}
   m_ContinueButton: {fileID: 0}
   m_ContinueLabel: {fileID: 0}
+  m_BackButton: {fileID: 0}
+  m_BackLabel: {fileID: 0}
   m_CountdownText: {fileID: 0}
   m_BodyKey: trigger_mapping
   m_BodyFallback: 
@@ -19585,7 +19651,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 250, y: 0}
-  m_SizeDelta: {x: 150, y: 60}
+  m_SizeDelta: {x: 200, y: 80}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1205201919
 MonoBehaviour:
@@ -19843,7 +19909,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 279180882}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 984165673}
+        m_TargetAssemblyTypeName: HitOrMiss.HitOrMissAppController, Assembly-CSharp
+        m_MethodName: StopAllCoroutines
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!222 &1205201925
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -21517,7 +21595,7 @@ GameObject:
   - component: {fileID: 1297622506}
   - component: {fileID: 1297622505}
   m_Layer: 5
-  m_Name: Text Poke Button Start
+  m_Name: Text Poke Button Begin
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -21542,7 +21620,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -250, y: -10}
+  m_AnchoredPosition: {x: -200, y: -10}
   m_SizeDelta: {x: 200, y: 80}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1297622505
@@ -22262,7 +22340,7 @@ GameObject:
   - component: {fileID: 1348955337}
   - component: {fileID: 1348955336}
   m_Layer: 5
-  m_Name: Text Poke Button Start Practice
+  m_Name: Text Poke Button Retry Practice
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -22595,6 +22673,14 @@ PrefabInstance:
       propertyPath: m_Behavior
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 2296990407779115617, guid: 91dedd7189c103d49a21fdff41d0c383, type: 3}
+      propertyPath: m_BackLabel
+      value: 
+      objectReference: {fileID: 283182609}
+    - target: {fileID: 2296990407779115617, guid: 91dedd7189c103d49a21fdff41d0c383, type: 3}
+      propertyPath: m_BackButton
+      value: 
+      objectReference: {fileID: 1459155639}
     - target: {fileID: 2296990407779115617, guid: 91dedd7189c103d49a21fdff41d0c383, type: 3}
       propertyPath: m_ContinueLabel
       value: 
@@ -23984,7 +24070,7 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1423464324}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: -10}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -25266,7 +25352,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 250, y: 0}
-  m_SizeDelta: {x: 150, y: 60}
+  m_SizeDelta: {x: 200, y: 80}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1534512409
 MonoBehaviour:
@@ -25524,7 +25610,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 685876079}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 984165673}
+        m_TargetAssemblyTypeName: HitOrMiss.HitOrMissAppController, Assembly-CSharp
+        m_MethodName: StopSession
+        m_Mode: 1
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!222 &1534512415
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -27986,7 +28084,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 665267158092037711, guid: e8fb48b2097a4fe4c9bad4f438c1eae2, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 100
+      value: -150
       objectReference: {fileID: 0}
     - target: {fileID: 665267158092037711, guid: e8fb48b2097a4fe4c9bad4f438c1eae2, type: 3}
       propertyPath: m_LocalPosition.z
@@ -29827,6 +29925,14 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2296990407779115617, guid: 91dedd7189c103d49a21fdff41d0c383, type: 3}
+      propertyPath: m_BackLabel
+      value: 
+      objectReference: {fileID: 43606891}
+    - target: {fileID: 2296990407779115617, guid: 91dedd7189c103d49a21fdff41d0c383, type: 3}
+      propertyPath: m_BackButton
+      value: 
+      objectReference: {fileID: 1482722439}
+    - target: {fileID: 2296990407779115617, guid: 91dedd7189c103d49a21fdff41d0c383, type: 3}
       propertyPath: m_ContinueLabel
       value: 
       objectReference: {fileID: 1080414564}
@@ -29836,7 +29942,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2296990407779115617, guid: 91dedd7189c103d49a21fdff41d0c383, type: 3}
       propertyPath: m_ButtonLabelKey
-      value: Start  Practice
+      value: Continue  Practice
       objectReference: {fileID: 0}
     - target: {fileID: 2296990407779115617, guid: 91dedd7189c103d49a21fdff41d0c383, type: 3}
       propertyPath: m_ContinueButton
@@ -29848,7 +29954,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2296990407779115617, guid: 91dedd7189c103d49a21fdff41d0c383, type: 3}
       propertyPath: m_ButtonLabelFallback
-      value: Start  Practice
+      value: Continue  Practice
       objectReference: {fileID: 0}
     - target: {fileID: 3129969171584212864, guid: 91dedd7189c103d49a21fdff41d0c383, type: 3}
       propertyPath: m_IsActive
@@ -30940,6 +31046,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HitOrMiss.FixationCrossController
   m_Cross: {fileID: 1942432076152751309, guid: 39bc76c4199c8f442896b8071c99d5c5, type: 3}
+  m_CrossRenderers: []
+  m_DefaultMaterial: {fileID: 0}
+  m_ItiBlackMaterial: {fileID: 0}
 --- !u!1 &1874092041
 GameObject:
   m_ObjectHideFlags: 0
@@ -31275,7 +31384,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 1, y: 100}
+  m_AnchoredPosition: {x: 1, y: -120}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &1912536451
@@ -33038,6 +33147,14 @@ PrefabInstance:
       value: popup4_controllerpracticeintro
       objectReference: {fileID: 0}
     - target: {fileID: 2296990407779115617, guid: 91dedd7189c103d49a21fdff41d0c383, type: 3}
+      propertyPath: m_BackLabel
+      value: 
+      objectReference: {fileID: 2048577355}
+    - target: {fileID: 2296990407779115617, guid: 91dedd7189c103d49a21fdff41d0c383, type: 3}
+      propertyPath: m_BackButton
+      value: 
+      objectReference: {fileID: 625065081}
+    - target: {fileID: 2296990407779115617, guid: 91dedd7189c103d49a21fdff41d0c383, type: 3}
       propertyPath: m_ContinueLabel
       value: 
       objectReference: {fileID: 356268344}
@@ -33055,7 +33172,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2296990407779115617, guid: 91dedd7189c103d49a21fdff41d0c383, type: 3}
       propertyPath: m_ButtonLabelFallback
-      value: Start Practice
+      value: Check Controllers
       objectReference: {fileID: 0}
     - target: {fileID: 2938953260732076259, guid: 91dedd7189c103d49a21fdff41d0c383, type: 3}
       propertyPath: m_AnchoredPosition.y
@@ -34485,6 +34602,10 @@ PrefabInstance:
       propertyPath: m_DurationSeconds
       value: 10
       objectReference: {fileID: 0}
+    - target: {fileID: 896414566263221640, guid: 849c46acce8682c44806d2b83f3d4027, type: 3}
+      propertyPath: m_ButtonLabelFallback
+      value: Start
+      objectReference: {fileID: 0}
     - target: {fileID: 1342042459136058648, guid: 849c46acce8682c44806d2b83f3d4027, type: 3}
       propertyPath: m_Name
       value: Popup6_RightControllerPracticePanel
@@ -34517,6 +34638,14 @@ PrefabInstance:
       propertyPath: m_Behavior
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 1583099757283143707, guid: 849c46acce8682c44806d2b83f3d4027, type: 3}
+      propertyPath: m_BackLabel
+      value: 
+      objectReference: {fileID: 1382351946}
+    - target: {fileID: 1583099757283143707, guid: 849c46acce8682c44806d2b83f3d4027, type: 3}
+      propertyPath: m_BackButton
+      value: 
+      objectReference: {fileID: 220990901}
     - target: {fileID: 1583099757283143707, guid: 849c46acce8682c44806d2b83f3d4027, type: 3}
       propertyPath: m_ContinueLabel
       value: 
@@ -34674,6 +34803,14 @@ PrefabInstance:
       value: popup1_intro
       objectReference: {fileID: 0}
     - target: {fileID: 3759988423183175761, guid: 849c46acce8682c44806d2b83f3d4027, type: 3}
+      propertyPath: m_BackLabel
+      value: 
+      objectReference: {fileID: 30511879}
+    - target: {fileID: 3759988423183175761, guid: 849c46acce8682c44806d2b83f3d4027, type: 3}
+      propertyPath: m_BackButton
+      value: 
+      objectReference: {fileID: 2063524254}
+    - target: {fileID: 3759988423183175761, guid: 849c46acce8682c44806d2b83f3d4027, type: 3}
       propertyPath: m_BodyFallback
       value: 
       objectReference: {fileID: 0}
@@ -34712,6 +34849,10 @@ PrefabInstance:
     - target: {fileID: 4506893940796352070, guid: 849c46acce8682c44806d2b83f3d4027, type: 3}
       propertyPath: m_DurationSeconds
       value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 4506893940796352070, guid: 849c46acce8682c44806d2b83f3d4027, type: 3}
+      propertyPath: m_ButtonLabelFallback
+      value: 
       objectReference: {fileID: 0}
     - target: {fileID: 4573613166703221316, guid: 849c46acce8682c44806d2b83f3d4027, type: 3}
       propertyPath: m_BodyKey
@@ -34776,6 +34917,10 @@ PrefabInstance:
     - target: {fileID: 5130820180125339741, guid: 849c46acce8682c44806d2b83f3d4027, type: 3}
       propertyPath: m_SizeDelta.x
       value: 1000
+      objectReference: {fileID: 0}
+    - target: {fileID: 5130820180125339741, guid: 849c46acce8682c44806d2b83f3d4027, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 100
       objectReference: {fileID: 0}
     - target: {fileID: 5130820180125339741, guid: 849c46acce8682c44806d2b83f3d4027, type: 3}
       propertyPath: m_AnchoredPosition.x

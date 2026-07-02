@@ -40,6 +40,8 @@ namespace HitOrMiss
         [SerializeField] TMP_Text m_Body;
         [SerializeField] Button m_ContinueButton;
         [SerializeField] TMP_Text m_ContinueLabel;
+        [SerializeField] Button m_BackButton;
+        [SerializeField] TMP_Text m_BackLabel;
         [SerializeField] TMP_Text m_CountdownText;
 
         [Header("Localization (looked up in the active LocalizedTermTable)")]
@@ -64,6 +66,9 @@ namespace HitOrMiss
 
         bool m_Pressed;
         bool m_Initialized;
+
+        bool m_BackPressed;
+        public bool BackPressed => m_BackPressed;
 
         public string BodyKey => m_BodyKey;
         public string BodyFallback => m_BodyFallback;
@@ -92,6 +97,13 @@ namespace HitOrMiss
                 m_ContinueButton.onClick.RemoveListener(OnContinue); 
                 m_ContinueButton.onClick.AddListener(OnContinue);
             }
+
+            if (m_BackButton != null)
+            {
+                m_BackButton.onClick.RemoveListener(OnBack);
+                m_BackButton.onClick.AddListener(OnBack);
+            }
+
         }
 
         // ---- Display ----
@@ -156,20 +168,25 @@ namespace HitOrMiss
                 case PopupBehavior.WaitForButton:
                     yield return ShowAndWaitForButton();
                     break;
+
                 case PopupBehavior.AutoAdvance:
                     yield return ShowForSeconds(duration, showCountdown: false);
                     break;
+
                 case PopupBehavior.BreakWithCountdown:
                     yield return ShowForSeconds(duration, showCountdown: true);
                     break;
             }
-        }
-
+}
         IEnumerator ShowAndWaitForButton()
         {
             Show();
             m_Pressed = false;
-            while (!m_Pressed) yield return null;
+            m_BackPressed = false;
+
+            while (!m_Pressed)
+                yield return null;
+
             Hide();
         }
 
@@ -223,8 +240,27 @@ namespace HitOrMiss
             return m > 0 ? $"{m}:{s:D2}" : $"{s}s";
         }
 
-        void OnContinue() => m_Pressed = true;
-        public void ForceAdvance() => m_Pressed = true;
+        void OnBack()
+        {
+            m_BackPressed = true;
+            m_Pressed = true;
+        }
+
+        void OnContinue()
+        {
+            m_Pressed = true;
+        }
+
+        public void ForceAdvance()
+        {
+            m_Pressed = true;
+        }
+
+        public void ForceBack()
+        {
+            m_BackPressed = true;
+            m_Pressed = true;
+        }
     }
 
     /// <summary>

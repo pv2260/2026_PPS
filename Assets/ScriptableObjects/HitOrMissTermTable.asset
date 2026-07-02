@@ -57,16 +57,16 @@ MonoBehaviour:
     english: 'Too Slow! '
     french: Trop lent !
   - key: popup12_nofeedback
-    english: Practice is complete.\nThe task will now begin.
+    english: Practice is now complete.\nThe task will  begin.
     french: "La pratique est termin\xE9e.\\nLa vraie t\xE2che va maintenant commencer."
   - key: popup13_ready
-    english: Are you ready to begin?.\nPress start when you are ready.
+    english: Are you ready to begin?.\nPress Start when you are ready.
     french: "\xCAtes-vous pr\xEAt \xE0 commencer ? .\\nAppuyez sur Start quand vous
       \xEAtes pr\xEAt."
   - key: popup14_block_intro
-    english: Let's start with Block {block}. .\nPress Begin when you are ready.
-    french: "Commen\xE7ons avec le Bloc {block}. .\\nAppuyez sur Commencer quand
-      vous \xEAtes pr\xEAt"
+    english: Let's start with Block {block}. .\nPress Begin Blockwhen you are ready.
+    french: "Commen\xE7ons avec le Bloc {block}. \\nAppuyez sur Commencer quand vous
+      \xEAtes pr\xEAt"
   - key: popup15_break
     english: All done with Block {block}. .\nTake a little break.
     french: "Bloc {block} termin\xE9. .\\nPrenez une petite pause."
@@ -88,11 +88,9 @@ MonoBehaviour:
     french: "Utilisez les G\xC2CHETTES des contr\xF4leurs pour entrer vos r\xE9ponses.\\nEssayez
       !"
   - key: trigger_mapping
-    english: 'During the task, a ball will approach you.\nTwo panels will appear
-      next to it: Y and N.\nUse the triggers to answer.\nY / LEFT = YES, the ball
-      will hit me.\nN / RIGHT = NO, the ball will miss me.\nThe selected panel will
-      turn orange.'
-    french: "Pendant la t\xE2che, une balle s\u2019approchera de vous.\\nDeux panneaux
-      appara\xEEtront \xE0 c\xF4t\xE9 : Y et N.\\nUtilisez les g\xE2chettes pour
-      r\xE9pondre.\\nY / GAUCHE = OUI, la balle va me toucher.\\nN / DROITE = NON,
-      la balle va me manquer.\\nLe panneau choisi deviendra orange."
+    english: 'A ball will move toward you with two panels: Y and N.\nThey remind
+      you which answer to choose.\n\nY / LEFT = YES, it will hit me.\nN / RIGHT =
+      NO, it will miss me.'
+    french: "Une balle avancera vers vous avec deux panneaux : Y et N.\\nIls vous
+      rappellent quelle r\xE9ponse choisir.\\n\\nY / GAUCHE = OUI, elle va me toucher.\\nN
+      / DROITE = NON, elle va me manquer."

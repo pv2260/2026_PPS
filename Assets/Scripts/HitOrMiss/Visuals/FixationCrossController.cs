@@ -2,40 +2,71 @@ using UnityEngine;
 
 namespace HitOrMiss
 {
-    /// <summary>
-    /// Wraps the fixation cross GameObject the participant looks at between
-    /// trials. <see cref="HitOrMissAppController"/> shows it during the
-    /// inter-trial interval and hides it while a ball is in flight, per the
-    /// PDF spec ("Fixation on the cross / inter-trial-interval").
-    ///
-    /// You can plug a separate cross here, or reuse the crosshair already
-    /// instantiated by <see cref="TrajectoryTaskManager"/> — just drag that
-    /// GameObject into <see cref="m_Cross"/>.
-    /// </summary>
     public class FixationCrossController : MonoBehaviour
     {
-        [SerializeField] GameObject m_Cross;
+        [Header("Cross object")]
+        [SerializeField] private GameObject m_Cross;
 
-        void Awake()
+        [Header("Cross renderers")]
+        [SerializeField] private Renderer[] m_CrossRenderers;
+
+        [Header("Materials")]
+        [SerializeField] private Material m_DefaultMaterial;
+        [SerializeField] private Material m_ItiBlackMaterial;
+
+        private void Awake()
         {
-            if (m_Cross == null) m_Cross = gameObject;
+            if (m_Cross == null)
+                m_Cross = gameObject;
+
+            if (m_CrossRenderers == null || m_CrossRenderers.Length == 0)
+                m_CrossRenderers = m_Cross.GetComponentsInChildren<Renderer>(true);
+
+            SetDefaultColor();
             Hide();
         }
 
         public void Show()
         {
-            if (m_Cross != null) m_Cross.SetActive(true);
+            if (m_Cross != null)
+                m_Cross.SetActive(true);
         }
 
         public void Hide()
         {
-            if (m_Cross != null) m_Cross.SetActive(false);
+            if (m_Cross != null)
+                m_Cross.SetActive(false);
         }
 
         public void SetActive(bool on)
         {
             if (on) Show();
             else Hide();
+        }
+
+        public void SetItiColor()
+        {
+            SetMaterial(m_ItiBlackMaterial);
+        }
+
+        public void SetDefaultColor()
+        {
+            SetMaterial(m_DefaultMaterial);
+        }
+
+        private void SetMaterial(Material material)
+        {
+            if (material == null)
+                return;
+
+            if (m_CrossRenderers == null || m_CrossRenderers.Length == 0)
+                return;
+
+            foreach (Renderer r in m_CrossRenderers)
+            {
+                if (r != null)
+                    r.sharedMaterial = material;
+            }
         }
     }
 }

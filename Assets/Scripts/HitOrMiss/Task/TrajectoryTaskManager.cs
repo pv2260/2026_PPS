@@ -26,6 +26,12 @@ namespace HitOrMiss
         [Tooltip("Optional prefab used as the crosshair. Auto-instantiated at the spawn point if CrosshairTarget is empty.")]
         [SerializeField] GameObject m_CrosshairPrefab;
 
+        [Header("Crosshair ITI feedback")]
+        [SerializeField] Material m_CrosshairDefaultMaterial;
+        [SerializeField] Material m_CrosshairItiBlackMaterial;
+
+        Renderer[] m_CrosshairRenderers;
+
         [Tooltip("Vertical offset added to the spawned/instantiated crosshair (meters). Use this to lift the crosshair to eye level relative to the player anchor.")]
         [SerializeField] float m_CrosshairHeightOffset = 1.5f;
 
@@ -328,6 +334,8 @@ namespace HitOrMiss
                 && Time.time >= m_NextSpawnEarliest
                 && !gateOnPriorResponse)
             {
+                SetCrosshairDefaultMaterial();
+
                 var def = m_BlockTrials[m_NextTrialIndex];
                 SpawnTrial(def);
                 m_NextTrialIndex++;
@@ -335,7 +343,6 @@ namespace HitOrMiss
                 float deadline = def.Duration + m_ResponseGracePeriod;
                 m_NextSpawnEarliest = Time.time + deadline + NextItiSeconds();
             }
-
             // Update active trials
             for (int i = m_ActiveTrials.Count - 1; i >= 0; i--)
             {
@@ -365,9 +372,15 @@ namespace HitOrMiss
                 {
                     if (trial.ObjectController != null)
                         trial.ObjectController.Despawn();
+
                     m_ActiveTrials.RemoveAt(i);
+
+                    if (m_NextTrialIndex < m_BlockTrials.Length)
+                        SetCrosshairItiMaterial();
+
                     continue;
                 }
+
 
                 // Wait-for-response mode: ball reached deadline but no pinch yet.
                 // Despawn the visual so the participant sees only the crosshair,
@@ -382,6 +395,9 @@ namespace HitOrMiss
                         trial.ObjectController.Despawn();
                     m_AwaitingLateResponse.Add(trial);
                     m_ActiveTrials.RemoveAt(i);
+
+                    if (m_NextTrialIndex < m_BlockTrials.Length)
+                    SetCrosshairItiMaterial();
                     if (!m_PassiveMode)
                     {
                         m_MarkerEmitter?.Emit("trial_too_slow");
@@ -409,6 +425,45 @@ namespace HitOrMiss
         void SetCrosshairActive(bool active)
         {
             if (m_CrosshairTarget != null) m_CrosshairTarget.SetActive(active);
+        }
+
+        void CacheCrosshairRenderers()
+        {
+            if (m_CrosshairTarget == null)
+            {
+                m_CrosshairRenderers = null;
+                return;
+            }
+
+            m_CrosshairRenderers = m_CrosshairTarget.GetComponentsInChildren<Renderer>(true);
+        }
+
+        void SetCrosshairMaterial(Material material)
+        {
+            if (material == null)
+                return;
+
+            if (m_CrosshairRenderers == null || m_CrosshairRenderers.Length == 0)
+                CacheCrosshairRenderers();
+
+            if (m_CrosshairRenderers == null)
+                return;
+
+            foreach (Renderer r in m_CrosshairRenderers)
+            {
+                if (r != null)
+                    r.sharedMaterial = material;
+            }
+        }
+
+        void SetCrosshairDefaultMaterial()
+        {
+            SetCrosshairMaterial(m_CrosshairDefaultMaterial);
+        }
+
+        void SetCrosshairItiMaterial()
+        {
+            SetCrosshairMaterial(m_CrosshairItiBlackMaterial);
         }
 
         /// <summary>
@@ -452,6 +507,9 @@ namespace HitOrMiss
             }
 
             PositionCrosshair(m_CrosshairTarget.transform);
+
+            CacheCrosshairRenderers();
+        SetCrosshairDefaultMaterial();
 
             if (m_CrosshairTarget.GetComponent<BillboardToCamera>() == null)
                 m_CrosshairTarget.AddComponent<BillboardToCamera>();
@@ -510,7 +568,7 @@ namespace HitOrMiss
             !(float.IsNaN(v.x) || float.IsInfinity(v.x) ||
               float.IsNaN(v.y) || float.IsInfinity(v.y) ||
               float.IsNaN(v.z) || float.IsInfinity(v.z));
-
+        
         void SpawnTrial(TrialDefinition trial)
         {
             var rt = new RuntimeTrial(trial) { SpawnTime = Time.time };
