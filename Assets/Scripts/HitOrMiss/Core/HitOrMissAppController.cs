@@ -460,10 +460,9 @@ namespace HitOrMiss
             while (!leftPressed || !rightPressed)
                 yield return null;
 
-            while (!m_ResponseMappingDemo.ReadyToAdvance)
-                yield return null;
-
             m_InputSource.ResponseReceived -= Handler;
+
+            yield return new WaitForSeconds(0.6f);
 
             m_TriggerDemoPopup.Hide();
         }

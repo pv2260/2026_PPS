@@ -2,7 +2,7 @@
     "metadata": {
         "participantId": "P1",
         "clinicianInitials": "",
-        "sessionDate": "2026-07-01",
+        "sessionDate": "2026-07-02",
         "sessionId": "S1",
         "sessionNumber": 1,
         "ageYears": 0,
@@ -44,7 +44,7 @@
         ],
         "clinicianNotes": ""
     },
-    "timestamp": "2026-07-01T17:17:23.1896153+02:00",
+    "timestamp": "2026-07-02T12:01:57.6227402+02:00",
     "totalTrials": 0,
     "judgements": []
 }

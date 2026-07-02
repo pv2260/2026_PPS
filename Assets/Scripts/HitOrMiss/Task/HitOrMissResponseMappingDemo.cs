@@ -23,9 +23,17 @@ namespace HitOrMiss
         [SerializeField] private Renderer m_YesPanelRenderer;
         [SerializeField] private Renderer m_NoPanelRenderer;
 
-        [Header("Materials")]
-        [SerializeField] private Material m_DefaultMaterial;
+        [Header("Y/N text")]
+        [SerializeField] private TMP_Text m_YesText;
+        [SerializeField] private TMP_Text m_NoText;
+
+        [Header("Panel materials")]
+        [SerializeField] private Material m_PanelDefaultMaterial;
         [SerializeField] private Material m_SelectedOrangeMaterial;
+
+        [Header("Text colors")]
+        [SerializeField] private Color m_TextDefaultColor = Color.white;
+        [SerializeField] private Color m_TextSelectedColor = new Color(1f, 0.45f, 0f);
 
         [Header("Instruction text")]
         [SerializeField] private TMP_Text m_InstructionText;
@@ -66,16 +74,21 @@ namespace HitOrMiss
 
         private void Awake()
         {
-            if (m_YesPanel != null)
-                m_YesPanelOriginalScale = m_YesPanel.transform.localScale;
-
-            if (m_NoPanel != null)
-                m_NoPanelOriginalScale = m_NoPanel.transform.localScale;
+            CacheOriginalScales();
         }
 
         private void OnEnable()
         {
             ResetDemo();
+        }
+
+        private void CacheOriginalScales()
+        {
+            if (m_YesPanel != null)
+                m_YesPanelOriginalScale = m_YesPanel.transform.localScale;
+
+            if (m_NoPanel != null)
+                m_NoPanelOriginalScale = m_NoPanel.transform.localScale;
         }
 
         public void ResetDemo()
@@ -92,6 +105,10 @@ namespace HitOrMiss
 
             if (m_NoPopCoroutine != null)
                 StopCoroutine(m_NoPopCoroutine);
+
+            m_FadeCoroutine = null;
+            m_YesPopCoroutine = null;
+            m_NoPopCoroutine = null;
 
             if (m_InstructionText != null)
             {
@@ -120,10 +137,13 @@ namespace HitOrMiss
                 m_NoPanel.transform.localScale = m_NoPanelOriginalScale;
             }
 
-            SetRendererMaterial(m_LeftTriggerRenderer, m_DefaultMaterial);
-            SetRendererMaterial(m_RightTriggerRenderer, m_DefaultMaterial);
-            SetRendererMaterial(m_YesPanelRenderer, m_DefaultMaterial);
-            SetRendererMaterial(m_NoPanelRenderer, m_DefaultMaterial);
+            // Reset only panels/text to default.
+            // We do not reset trigger materials because you said only panels need default.
+            SetRendererMaterial(m_YesPanelRenderer, m_PanelDefaultMaterial);
+            SetRendererMaterial(m_NoPanelRenderer, m_PanelDefaultMaterial);
+
+            SetTMPTextColor(m_YesText, m_TextDefaultColor);
+            SetTMPTextColor(m_NoText, m_TextDefaultColor);
         }
 
         public void LeftPressed()
@@ -139,11 +159,11 @@ namespace HitOrMiss
 
             if (m_LeftTriggerHighlight != null)
                 m_LeftTriggerHighlight.SetActive(true);
-            else
-                Debug.LogError("[HIT OR MISS RESPONSE MAPPING] LeftTriggerHighlight is not assigned.");
 
+            // Turn left trigger and Y panel orange.
             SetRendererMaterial(m_LeftTriggerRenderer, m_SelectedOrangeMaterial);
             SetRendererMaterial(m_YesPanelRenderer, m_SelectedOrangeMaterial);
+            SetTMPTextColor(m_YesText, m_TextSelectedColor);
 
             if (m_YesPanel != null)
             {
@@ -162,19 +182,6 @@ namespace HitOrMiss
 
         public void RightPressed()
         {
-            Debug.LogError("[RESPONSE MAPPING DEBUG] RightPressed was called.");
-
-            Debug.LogError($"[RESPONSE MAPPING DEBUG] RightTriggerHighlight = {(m_RightTriggerHighlight != null ? m_RightTriggerHighlight.name : "NULL")}");
-            Debug.LogError($"[RESPONSE MAPPING DEBUG] RightTriggerRenderer = {(m_RightTriggerRenderer != null ? m_RightTriggerRenderer.name : "NULL")}");
-            Debug.LogError($"[RESPONSE MAPPING DEBUG] NoPanel = {(m_NoPanel != null ? m_NoPanel.name : "NULL")}");
-            Debug.LogError($"[RESPONSE MAPPING DEBUG] NoPanelRenderer = {(m_NoPanelRenderer != null ? m_NoPanelRenderer.name : "NULL")}");
-
-            if (m_RightTriggerHighlight != null)
-                Debug.LogError($"[RESPONSE MAPPING DEBUG] RightTriggerHighlight activeInHierarchy = {m_RightTriggerHighlight.activeInHierarchy}");
-
-            if (m_NoPanel != null)
-                Debug.LogError($"[RESPONSE MAPPING DEBUG] NoPanel activeInHierarchy = {m_NoPanel.activeInHierarchy}");
-
             if (m_RightPressed)
                 return;
 
@@ -186,16 +193,14 @@ namespace HitOrMiss
 
             if (m_RightTriggerHighlight != null)
                 m_RightTriggerHighlight.SetActive(true);
-            else
-                Debug.LogError("[HIT OR MISS RESPONSE MAPPING] RightTriggerHighlight is not assigned.");
 
+            // Turn right trigger and N panel orange.
             SetRendererMaterial(m_RightTriggerRenderer, m_SelectedOrangeMaterial);
             SetRendererMaterial(m_NoPanelRenderer, m_SelectedOrangeMaterial);
+            SetTMPTextColor(m_NoText, m_TextSelectedColor);
 
             if (m_NoPanel != null)
             {
-                m_NoPanel.SetActive(true);
-
                 if (m_NoPopCoroutine != null)
                     StopCoroutine(m_NoPopCoroutine);
 
@@ -259,23 +264,31 @@ namespace HitOrMiss
             m_InstructionText.color = color;
         }
 
+        private void SetTMPTextColor(TMP_Text text, Color color)
+        {
+            if (text == null)
+                return;
+
+            text.color = color;
+        }
+
         private void SetRendererMaterial(Renderer targetRenderer, Material material)
         {
             if (targetRenderer == null)
             {
-                Debug.LogError("[RESPONSE DEMO] Missing renderer reference.");
+                Debug.LogWarning("[RESPONSE MAPPING DEMO] Missing renderer reference.");
                 return;
             }
 
             if (material == null)
             {
-                Debug.LogError("[RESPONSE DEMO] Missing material reference.");
+                Debug.LogWarning("[RESPONSE MAPPING DEMO] Missing material reference.");
                 return;
             }
 
             targetRenderer.sharedMaterial = material;
 
-            Debug.Log($"[RESPONSE DEMO] Set {targetRenderer.name} material to {material.name}");
+            Debug.Log($"[RESPONSE MAPPING DEMO] Set {targetRenderer.name} material to {material.name}");
         }
 
         private IEnumerator PopObject(GameObject obj, Vector3 originalScale)
