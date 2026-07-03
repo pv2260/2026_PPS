@@ -50,9 +50,6 @@ namespace HitOrMiss.Pps
             referenceForward = Flatten(xrCamera.forward).normalized;
 
             SetButtonVisible(false);
-
-            if (logDebug)
-                Debug.Log("[PpsHeadTurnPauseButton] Initialized.");
         }
 
         private void LateUpdate()
@@ -75,19 +72,19 @@ namespace HitOrMiss.Pps
             float absAngle = Mathf.Abs(signedAngle);
 
             if (logDebug && Time.frameCount % 60 == 0)
-                Debug.Log($"[PpsHeadTurnPauseButton] Head angle = {absAngle:0.0}");
+               
 
             if (!buttonVisible && absAngle >= showAngleDegrees)
             {
                 if (logDebug)
-                    Debug.Log("[PpsHeadTurnPauseButton] Showing pause access button.");
+                  
 
                 SetButtonVisible(true);
             }
             else if (buttonVisible && absAngle <= hideAngleDegrees)
             {
                 if (logDebug)
-                    Debug.Log("[PpsHeadTurnPauseButton] Hiding pause access button.");
+                  
 
                 SetButtonVisible(false);
             }

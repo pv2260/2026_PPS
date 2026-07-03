@@ -21,7 +21,7 @@ MonoBehaviour:
   m_FastDurationSeconds: 1
   m_SlowDurationSeconds: 3
   m_ResponseGracePeriodSeconds: 1
-  m_ItiSeconds: 1.2
+  m_ItiSeconds: 1.5
   m_MotionCurve:
     serializedVersion: 2
     m_Curve:

@@ -334,6 +334,56 @@ namespace HitOrMiss.Pps
             SessionEnded?.Invoke();
         }
 
+        private IEnumerator RunPreTaskPanels()
+        {
+            int step = 0;
+
+            while (!StopWasRequested())
+            {
+                m_Ui.ClearBackRequest();
+
+                switch (step)
+                {
+                    case 0:
+                        yield return m_Ui.ShowWelcomeAndWait();
+                        break;
+
+                    case 1:
+                        yield return m_Ui.ShowInstructionsAndWait();
+                        break;
+
+                    case 2:
+                        m_Ui.ShowStandingCross();
+                        yield return m_Ui.ShowPositioningAndWait();
+                        break;
+
+                    case 3:
+                        yield return m_Ui.ShowPracticeIntroVTOnlyAndWait();
+                        break;
+                }
+
+                if (StopWasRequested())
+                    yield break;
+
+                if (m_Ui.BackRequested)
+                {
+                    m_Ui.ClearBackRequest();
+
+                    if (step == 2)
+                        m_Ui.HideStandingCross();
+
+                    step = Mathf.Max(0, step - 1);
+                }
+                else
+                {
+                    step++;
+                }
+
+                if (step > 3)
+                    yield break;
+            }
+        }
+
         private IEnumerator RunTask1()
         {
             // Set tokens once up front so any panel that references
@@ -346,29 +396,20 @@ namespace HitOrMiss.Pps
                 breakSeconds:  Asset.RestDurationSeconds
             );
 
-            yield return m_Ui.ShowWelcomeAndWait();
-            if (StopWasRequested()) { yield return StopExperiment(); yield break; }
-
-            yield return m_Ui.ShowInstructionsAndWait();
-            if (StopWasRequested()) { yield return StopExperiment(); yield break; }
-
-            m_Ui.ShowStandingCross();
-
-            yield return m_Ui.ShowPositioningAndWait();
+             // Navigable intro panels only.
+            yield return RunPreTaskPanels();
             if (StopWasRequested()) { yield return StopExperiment(); yield break; }
 
             // ---- Practice 1: tactile only ----
-            yield return m_Ui.ShowPracticeIntroVTOnlyAndWait();
-            if (StopWasRequested()) { yield return StopExperiment(); yield break; }
-
             Debug.Log("[PPS] Starting VT-only practice.");
             yield return m_TaskManager.RunTrials(PpsTrialGenerator.GenerateVTOnlyPractice(Asset));
             if (StopWasRequested()) { yield return StopExperiment(); yield break; }
 
-            // ---- Practice 2: visual + tactile ----
+            // Practice 2 intro panel.
             yield return m_Ui.ShowPracticeIntroVTVisualAndWait();
             if (StopWasRequested()) { yield return StopExperiment(); yield break; }
 
+            // ---- Practice 2: visual + tactile ----
             Debug.Log("[PPS] Starting VT+Visual practice.");
             yield return m_TaskManager.RunTrials(PpsTrialGenerator.GenerateVTVisualPractice(Asset));
             if (StopWasRequested()) { yield return StopExperiment(); yield break; }
@@ -378,7 +419,6 @@ namespace HitOrMiss.Pps
 
             yield return m_Ui.ShowReadyToStartAndWait();
             if (StopWasRequested()) { yield return StopExperiment(); yield break; }
-
             // Logging: open the shared TaskLogger with TaskKind.Task1Pps so
             // file names, setup.json, and session.json all carry the task1
             // layout. PpsTaskManager only emits TrialCompleted; the logger

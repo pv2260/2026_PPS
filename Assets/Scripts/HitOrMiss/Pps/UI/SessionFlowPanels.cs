@@ -1,5 +1,4 @@
 using System.Collections;
-using System.Collections.Generic; 
 using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
@@ -43,8 +42,6 @@ namespace HitOrMiss.Pps
         private float m_BreakRemainingSeconds;
         private bool m_BreakIsRunning;
 
-        private readonly Stack<GameObject> m_PanelHistory = new Stack<GameObject>();
-
         private int m_TokenBlocksCount;
         private int m_TokenCurrentBlock;
         private int m_TokenTotalBlocks;
@@ -82,19 +79,18 @@ namespace HitOrMiss.Pps
             }
         }
 
-        private IEnumerable<GameObject> GetAllPanels()
+        public enum PanelNavigationAction
         {
-            return new[]
-            {
-                m_WelcomePanel, m_InstructionsPanel,
-                m_PositioningPanel, m_PracticeIntroVTOnlyPanel, m_PracticeIntroVTVisualPanel,
-                m_PracticeFeedbackPanel, m_NoFeedbackPanel, m_ReadyToStartPanel,
-                m_BlockCounterPanel, m_BreakPanel, m_PausePanel, m_EndPanel
-            };
+            Continue,
+            Back,
+            Stop
         }
 
-        bool m_WaitingForContinue;
+        private bool m_BackRequested;
+        public bool BackRequested => m_BackRequested;
+        public PanelNavigationAction LastAction { get; private set; } = PanelNavigationAction.Continue;
 
+        bool m_WaitingForContinue;
         public bool StopRequested { get; private set; }
 
         public enum UiLanguage
@@ -152,14 +148,22 @@ namespace HitOrMiss.Pps
         public IEnumerator ShowWelcomeAndWait()
         {
             Debug.Log("[UI FLOW] ShowWelcomeAndWait called");
+
+            ClearBackRequest();
             yield return ShowAndWait(m_WelcomePanel);
         }
 
         public IEnumerator ShowInstructionsAndWait()
-            => ShowAndWait(m_InstructionsPanel);
+        {
+            ClearBackRequest();
+            yield return ShowAndWait(m_InstructionsPanel);
+        }
 
         public IEnumerator ShowPositioningAndWait()
-            => ShowAndWait(m_PositioningPanel);
+        {
+            ClearBackRequest();
+            yield return ShowAndWait(m_PositioningPanel);
+        }
 
         public void ShowStandingCross()
         {
@@ -172,25 +176,32 @@ namespace HitOrMiss.Pps
         }
 
         public IEnumerator ShowPracticeIntroVTOnlyAndWait()
-            => ShowAndWait(m_PracticeIntroVTOnlyPanel);
+        {
+            ClearBackRequest();
+            yield return ShowAndWait(m_PracticeIntroVTOnlyPanel);
+        }
 
         public IEnumerator ShowPracticeIntroVTVisualAndWait()
-            => ShowAndWait(m_PracticeIntroVTVisualPanel);
+        {
+            ClearBackRequest();
+            yield return ShowAndWait(m_PracticeIntroVTVisualPanel);
+        }
 
         public IEnumerator ShowNoFeedbackAndWait()
-            => ShowAndWait(m_NoFeedbackPanel);
+        {
+            ClearBackRequest();
+            yield return ShowAndWait(m_NoFeedbackPanel);
+        }
 
         public IEnumerator ShowReadyToStartAndWait()
-            => ShowAndWait(m_ReadyToStartPanel);
+        {
+            ClearBackRequest();
+            yield return ShowAndWait(m_ReadyToStartPanel);
+        }
 
         public IEnumerator ShowBlockCounterAndWait(int blockIndex, int totalBlocks)
         {
-            // Inline the show/wait logic instead of calling ShowAndWait. The
-            // shared helper runs RefreshLanguage AFTER SetActive, which would
-            // overwrite the dynamic "Block N / M" text with the static
-            // localized string and leave the block counter stuck on whatever
-            // the template authored. By writing the block-counter text AFTER
-            // RefreshLanguage, each block gets the correct number.
+            ClearBackRequest();
 
             HideAll();
 
@@ -224,13 +235,13 @@ namespace HitOrMiss.Pps
             }
 
             m_WaitingForContinue = true;
-            while (m_WaitingForContinue && !StopRequested)
+
+            while (m_WaitingForContinue && !StopRequested && !m_BackRequested)
                 yield return null;
 
             m_BlockCounterPanel.SetActive(false);
             m_WaitingForContinue = false;
         }
-
         public void ExtendBreak()
         {
             if (!m_BreakIsRunning)
@@ -279,22 +290,17 @@ namespace HitOrMiss.Pps
         {
             Debug.Log("[UI FLOW] OnBack pressed");
 
-            if (m_PanelHistory.Count == 0)
-            {
-                Debug.LogWarning("[UI FLOW] No panel history to go back to.");
-                return;
-            }
-
-            HideAll();
-            m_WaitingForContinue = false; // unblock any running coroutine
-
-            GameObject previous = m_PanelHistory.Pop();
-            previous.SetActive(true);
-            RefreshLanguage();
-
-            m_WaitingForContinue = true; // re-arm so the panel waits again
+            m_BackRequested = true;
+            LastAction = PanelNavigationAction.Back;
+            m_WaitingForContinue = false;
         }
-        
+
+        public void ClearBackRequest()
+        {
+            m_BackRequested = false;
+            LastAction = PanelNavigationAction.Continue;
+        }
+                        
         public IEnumerator ShowBreakAndWait(float breakSeconds)
         {
             HideAll();
@@ -368,16 +374,6 @@ namespace HitOrMiss.Pps
 
         private IEnumerator ShowAndWait(GameObject panel, bool allowStopToClose)
         {
-            // Push the currently active panel to history before hiding everything
-            foreach (var p in GetAllPanels())
-            {
-                if (p != null && p.activeSelf)
-                {
-                    m_PanelHistory.Push(p);
-                    break;
-                }
-            }
-
             HideAll();
 
             if (panel == null)
@@ -395,8 +391,8 @@ namespace HitOrMiss.Pps
 
             if (allowStopToClose)
             {
-                while (m_WaitingForContinue && !StopRequested)
-                    yield return null;
+            while (m_WaitingForContinue && !StopRequested && !m_BackRequested)
+                yield return null;
             }
             else
             {
@@ -413,6 +409,9 @@ namespace HitOrMiss.Pps
         public void OnContinue()
         {
             Debug.Log("[UI FLOW] OnContinue pressed");
+
+            m_BackRequested = false;
+            LastAction = PanelNavigationAction.Continue;
             m_WaitingForContinue = false;
         }
 
@@ -426,6 +425,7 @@ namespace HitOrMiss.Pps
             Debug.Log("[SessionFlowPanels] Stop pressed.");
 
             StopRequested = true;
+            LastAction = PanelNavigationAction.Stop;
             m_WaitingForContinue = false;
         }
 

@@ -2731,9 +2731,6 @@ PrefabInstance:
       addedObject: {fileID: 965426599}
     - targetCorrespondingSourceObject: {fileID: 4276623248792366368, guid: 97c4e40b856a4fe4f8c6e3191d6b0430, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 2070559568}
-    - targetCorrespondingSourceObject: {fileID: 4276623248792366368, guid: 97c4e40b856a4fe4f8c6e3191d6b0430, type: 3}
-      insertIndex: -1
       addedObject: {fileID: 395796436}
     - targetCorrespondingSourceObject: {fileID: 4276623248792366368, guid: 97c4e40b856a4fe4f8c6e3191d6b0430, type: 3}
       insertIndex: -1
@@ -2750,6 +2747,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 4276623248792366368, guid: 97c4e40b856a4fe4f8c6e3191d6b0430, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1927333693}
+    - targetCorrespondingSourceObject: {fileID: 4276623248792366368, guid: 97c4e40b856a4fe4f8c6e3191d6b0430, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2070559568}
     - targetCorrespondingSourceObject: {fileID: 4276623248792366368, guid: 97c4e40b856a4fe4f8c6e3191d6b0430, type: 3}
       insertIndex: -1
       addedObject: {fileID: 2041645119}
@@ -5422,7 +5422,7 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 277381992}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 2}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -8215,7 +8215,7 @@ GameObject:
   - component: {fileID: 467539041}
   - component: {fileID: 467539040}
   m_Layer: 5
-  m_Name: PracticeVTV_ContinuePractice
+  m_Name: PracticeVTV_StartPractice
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -8260,7 +8260,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'Continue Practice '
+  m_text: 'Start Practice '
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: fbb7c6a04be6d8341934b839f24b42e1, type: 2}
   m_sharedMaterial: {fileID: 4687939059374929122, guid: fbb7c6a04be6d8341934b839f24b42e1, type: 2}
@@ -10698,7 +10698,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 1}
   m_SizeDelta: {x: 800, y: 600}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &611909341
@@ -11012,7 +11012,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0}
   m_AnchorMax: {x: 0.5, y: 0}
-  m_AnchoredPosition: {x: 2, y: 300}
+  m_AnchoredPosition: {x: 30, y: 300}
   m_SizeDelta: {x: 1500, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &623462703
@@ -21555,8 +21555,8 @@ MonoBehaviour:
   xrCamera: {fileID: 939463899}
   pauseButtonRoot: {fileID: 747071997}
   fullPausePanel: {fileID: 93650241}
-  showAngleDegrees: 40
-  hideAngleDegrees: 20
+  showAngleDegrees: 20
+  hideAngleDegrees: 10
   distanceFromHead: 1
   verticalOffset: -0.1
   logDebug: 1
@@ -25494,7 +25494,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 200, y: 80}
+  m_SizeDelta: {x: 300, y: 120}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1432925659
 MonoBehaviour:
@@ -25577,15 +25577,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Image
   m_Material: {fileID: 0}
-  m_Color: {r: 0, g: 0, b: 0, a: 0.64705884}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 46da8634de2114354be217373280f00a, type: 3}
-  m_Type: 0
+  m_Sprite: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
+  m_Type: 1
   m_PreserveAspect: 0
   m_FillCenter: 1
   m_FillMethod: 4
@@ -25892,8 +25892,8 @@ MonoBehaviour:
   m_fontMaterials: []
   m_fontColor32:
     serializedVersion: 2
-    rgba: 4294967295
-  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
+    rgba: 4281479730
+  m_fontColor: {r: 0.19607843, g: 0.19607843, b: 0.19607843, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -28415,7 +28415,7 @@ MonoBehaviour:
   m_EndText: {fileID: 2143914962}
   m_StandingCross: {fileID: 2068488786}
   m_PracticeFeedbackSeconds: 1
-  m_ExtendBreakButton: {fileID: 412532741}
+  m_ExtendBreakButton: {fileID: 0}
   m_ExtendBreakSeconds: 30
   m_CurrentLanguage: 0
   m_LocalizedTexts:
@@ -28426,70 +28426,69 @@ MonoBehaviour:
     english: Start
     french: Commencer
   - textTarget: {fileID: 671514806}
-    english: Select Other Language
-    french: Selectionner Autre Langue
+    english: Language Settings
+    french: Selectionner Langue
   - textTarget: {fileID: 1200385535}
     english: Stop
-    french: "Arr\xEAter la t\xE2che\r\n"
+    french: Arreter la Tache
   - textTarget: {fileID: 53756947}
     english: Continue
     french: Continuer
   - textTarget: {fileID: 376609664}
     english: Back
-    french: Retour
+    french: Avant
   - textTarget: {fileID: 869205363}
-    english: "In this task, you will feel gentle vibrations on your chest.\\nAt times,
-      you will also see lights moving toward you.\\n\\nYour task is to respond to
-      the vibration:\\n when you feel it, press the controller as quickly as you
-      can.\\n\\nLet\u2019s start with a short practice.\\n\\nPress Continue when
+    english: "In this task, lights will move toward you.\\nYou will also feel gentle
+      vibrations on your chest.\\nWhen you feel a vibration, PRESS the controller
+      as soon as you can.\\nLet\u2019s try a short practice.\\nPress Continue when
       you are ready."
-    french: "Dans cette t\xE2che, vous ressentirez de l\xE9g\xE8res vibrations sur
-      votre poitrine.\\nPar moments, vous verrez \xE9galement des lumi\xE8res se
-      d\xE9placer vers vous.\\n\\nVotre t\xE2che est de r\xE9pondre \xE0 la vibration
-      : \\n lorsque vous la ressentez, appuyez sur la manette aussi rapidement que
-      possible.\\\\nnNous allons commencer par un court entra\xEEnement.\\n\\nAppuyez
-      sur Continuer lorsque vous \xEAtes pr\xEAt(e)."
+    french: "Dans cette t\xE2che, des lumi\xE8res avanceront vers vous.\\nVous sentirez
+      \xE9galement de l\xE9g\xE8res vibrations sur votre poitrine.\\nLorsque vous
+      sentez une vibration, appuyez sur la manette d\xE8s que possible.\\nNous allons
+      faire un court entra\xEEnement.\\nAppuyez sur Continuer lorsque vous \xEAtes
+      pr\xEAt(e)."
   - textTarget: {fileID: 1270008075}
-    english: Please stand on the X marker and face forward facing the cross.\n\nPress
+    english: Please stand on the X marker and face forward facing the cross.\nPress
       Continue when ready.
     french: "Pour commencer, veuillez vous tenir debout sur le rep\xE8re X au sol.\\nRegardez
-      droit devant vous, en direction de la croix.\\n\\nAppuyez sur Continuer lorsque
+      droit devant vous, en direction de la croix.\\nAppuyez sur Continuer lorsque
       vous \xEAtes pr\xEAt."
   - textTarget: {fileID: 1345587028}
-    english: "Let\u2019s try a short vibration practice.\\n\\nWhen you feel a vibration
-      on your chest, press the controller as quickly as you can.\\n\\nPress Start
-      Practice when you are ready.\r\n"
-    french: "Essayons un court entra\xEEnement avec les vibrations.\\n\\nLorsque
-      vous sentez une vibration sur votre poitrine, appuyez sur la manette aussi
-      rapidement que possible.\\n\\nAppuyez sur Commencer l\u2019entra\xEEnement
-      lorsque vous \xEAtes pr\xEAt(e)."
+    english: "Let\u2019s try a short vibration practice.\\nWhen you feel a vibration
+      on your chest, press the controller as quickly as you can.\\nPress Start Practice
+      when you are ready.\r\n"
+    french: "Essayons un court entra\xEEnement avec les vibrations.\\nLorsque vous
+      sentez une vibration sur votre poitrine, appuyez sur la manette aussi rapidement
+      que possible.\\nAppuyez sur Start Practice lorsque vous \xEAtes pr\xEAt(e)."
   - textTarget: {fileID: 929655511}
-    english: "Great! \\n\\nNow, let\u2019s add the moving lights.\\nThe lights will
+    english: "Great! \\n Now, let\u2019s add the moving lights.\\nThe lights will
       move toward you.\\nWhen you feel a vibration, press the controller as soon
       as you can.\r\n"
-    french: "Tr\xE8s bien! \\n\\nMaintenant, ajoutons les lumi\xE8res en mouvement.\\nLes
+    french: "Tr\xE8s bien! \\n Maintenant, ajoutons les lumi\xE8res en mouvement.\\nLes
       lumi\xE8res vont avancer vers vous.\\nLorsque vous sentez une vibration, appuyez
       sur la manette d\xE8s que possible."
   - textTarget: {fileID: 518538310}
-    english: 'Practice is now complete.\n\nThe main task will now begin.\nThe rule
-      is the same: when you feel a vibration,\n press the controller as soon as you
-      can.\n\nAre you ready?
+    english: 'Practice is now complete.\nThe main task will now begin.\nThe rule
+      is the same: when you feel a vibration, press the controller as soon as you
+      can.\nAre you ready?
 
 '
-    french: "L\u2019entra\xEEnement est maintenant termin\xE9.\\n\\nLa t\xE2che principale
-      va maintenant commencer.\\nLa r\xE8gle reste la m\xEAme :\\n lorsque vous sentez
-      une vibration, appuyez sur la manette d\xE8s que possible.\\n\\n\xCAtes-vous
-      pr\xEAt(e) ?"
+    french: "L\u2019entra\xEEnement est maintenant termin\xE9.\\nLa t\xE2che principale
+      va maintenant commencer.\\nLa r\xE8gle reste la m\xEAme : lorsque vous sentez
+      une vibration, appuyez sur la manette d\xE8s que possible.\\n\xCAtes-vous pr\xEAt(e)
+      ?"
   - textTarget: {fileID: 580178337}
-    english: The task consists of {blocksCount} blocks.\n\nThere will be short breaks
-      between blocks, and you may sit down to rest.\nA small timer will show how
-      much time is left.\nWe will stay nearby if you need anything.\n\nAre you ready
-      to start?
-    french: "La t\xE2che comprend {blocksCount} blocs.\\n\\nIl y aura de courtes
-      pauses entre les blocs, et vous pourrez vous asseoir pour vous reposer.\\nUn
-      petit minuteur indiquera le temps restant.\\nNous resterons \xE0 proximit\xE9
-      si vous avez besoin de quoi que ce soit.\\n\\n\xCAtes-vous pr\xEAt(e) \xE0
-      commencer ?"
+    english: 'The task consists of {blocksCount} blocks.\nThere will be short breaks
+      between blocks, and you may sit down to rest during each break.\nA small timer
+      on the screen will show you how much time is left.\nWe will stay nearby if
+      you need anything.\nAre you ready to start?
+
+'
+    french: "La t\xE2che comprend {blocksCount} blocs.\\nIl y aura de courtes pauses
+      entre les blocs, et vous pourrez vous asseoir pour vous reposer pendant chaque
+      pause.\\nUn petit minuteur \xE0 l\u2019\xE9cran vous indiquera le temps restant.\\nNous
+      resterons \xE0 proximit\xE9 si vous avez besoin de quoi que ce soit.\\n\xCAtes-vous
+      pr\xEAt(e) \xE0 commencer ?"
   - textTarget: {fileID: 623462703}
     english: 'Block {currentBlock} / {totalBlocks} Insole Check: Raise and lower
       your left foot, then your right foot.'
@@ -28499,18 +28498,18 @@ MonoBehaviour:
     english: Begin Block
     french: Commencer le Bloc
   - textTarget: {fileID: 1910229895}
-    english: It is now time for a {breakTime} break. \n\nYou can sit comfortably
-      in the chair provided next to you during this time.
-    french: "C'est le moment de faire une pause de {breakTime}.\\n\\nVous pouvez
-      vous installer confortablement sur la chaise mise \xE0 votre disposition pendant
+    english: It is now time for a {breakTime} break. You can sit comfortably in the
+      chair provided next to you during this time.
+    french: "C'est le moment de faire une pause de {breakTime}. Vous pouvez vous
+      installer confortablement sur la chaise mise \xE0 votre disposition pendant
       ce temps."
   - textTarget: {fileID: 124875369}
     english: Extend Break!
     french: Prolonguez le break!
   - textTarget: {fileID: 323607683}
-    english: 'The task has been paused.\n\nPress Resume to start a new trial, or
-      restart the whole block. '
-    french: "La t\xE2che a \xE9t\xE9 mise en pause.\\n\\nAppuyez sur Reprendre pour
+    english: 'The task has been paused.\nPress Resume to start a new trial, or restart
+      the whole block. '
+    french: "La t\xE2che a \xE9t\xE9 mise en pause.\\nAppuyez sur Reprendre pour
       commencer un nouvel essai, ou recommencez tout le bloc."
   - textTarget: {fileID: 2123794633}
     english: Resume next trial
@@ -28519,9 +28518,9 @@ MonoBehaviour:
     english: 'Restart Current Blcok '
     french: Recommencez le bloc.
   - textTarget: {fileID: 2143914962}
-    english: 'This is the end of the task. \n\n Please wait for the experimenter''s
+    english: 'This is the end of the task. \n Please wait for the experimenter''s
       instructions. '
-    french: "C\u2019est la fin de la t\xE2che.\\n\\nVeuillez attendre les instructions
+    french: "C\u2019est la fin de la t\xE2che.\\nVeuillez attendre les instructions
       de l\u2019exp\xE9rimentateur."
   - textTarget: {fileID: 0}
     english: Return to clinician menu
@@ -28542,48 +28541,6 @@ MonoBehaviour:
   - textTarget: {fileID: 1209303846}
     english: Continue
     french: Continuer
-  - textTarget: {fileID: 1738140942}
-    english: Stop
-    french: "Arr\xEAter la t\xE2che\r\n"
-  - textTarget: {fileID: 104309410}
-    english: Start Practice
-    french: "Commencer l\u2019entra\xEEnement"
-  - textTarget: {fileID: 613252946}
-    english: Back
-    french: Retour
-  - textTarget: {fileID: 169272652}
-    english: Stop
-    french: "Arr\xEAter la t\xE2che\r\n"
-  - textTarget: {fileID: 467539040}
-    english: Continue Practice
-    french: "Continuer l\u2019entra\xEEnement"
-  - textTarget: {fileID: 2066146891}
-    english: Back
-    french: Retour
-  - textTarget: {fileID: 1327191488}
-    english: Stop
-    french: "Arr\xEAter la t\xE2che"
-  - textTarget: {fileID: 656459179}
-    english: Back
-    french: Retour
-  - textTarget: {fileID: 2087265182}
-    english: Stop
-    french: "Arr\xEAter la t\xE2che"
-  - textTarget: {fileID: 906498292}
-    english: Stop
-    french: "Arr\xEAter la t\xE2che"
-  - textTarget: {fileID: 59130778}
-    english: Back
-    french: Retour
-  - textTarget: {fileID: 123846908}
-    english: Continue
-    french: 'Continuer '
-  - textTarget: {fileID: 1890150161}
-    english: Back
-    french: Retour
-  - textTarget: {fileID: 1890150161}
-    english: Stop
-    french: "Arr\xEAter la t\xE2che"
 --- !u!114 &1643808110
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -29026,7 +28983,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 1, y: 1}
+  m_AnchoredPosition: {x: 0, y: 1}
   m_SizeDelta: {x: 1000, y: 700}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1676206103
@@ -29512,7 +29469,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0.2, y: 0}
+  m_AnchoredPosition: {x: 0.2, y: 1}
   m_SizeDelta: {x: 1000, y: 700}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1713619821
@@ -35153,7 +35110,7 @@ GameObject:
   - component: {fileID: 2035663820}
   - component: {fileID: 2035663819}
   m_Layer: 5
-  m_Name: ContinuePracticeButton
+  m_Name: StartPracticeButton
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -36423,7 +36380,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0.5}
   m_SizeDelta: {x: 1000, y: 700}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2070559570
@@ -38733,7 +38690,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: -1}
   m_SizeDelta: {x: 1000, y: 700}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &7659978567479148310
