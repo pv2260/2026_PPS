@@ -182,19 +182,60 @@ namespace HitOrMiss
         /// <summary>Task 1 trial row. Skips practice trials.</summary>
         public void LogTrial(HitOrMiss.Pps.PpsTrialResult result)
         {
-            if (m_TaskKind != TaskKind.Task1Pps)
+            Debug.Log("[TaskLogger/PPS] LogTrial ENTER");
+
+            if (!m_SessionOpen)
             {
-                Debug.LogWarning($"TaskLogger received Task1/PPS result while configured for {m_TaskKind}");
+                Debug.LogWarning("[TaskLogger/PPS] Session is not open. Skipping log.");
                 return;
             }
 
-            m_Task1Results.Add(result);
+            if (m_TaskKind != TaskKind.Task1Pps)
+            {
+                Debug.LogWarning($"[TaskLogger/PPS] Received PPS result while configured for {m_TaskKind}. Skipping log.");
+                return;
+            }
 
-            m_TrialsWriter.WriteLine(
-                result.ToCsvRow(m_Metadata.participantId, m_Metadata.sessionNumber)
-            );
+            Debug.Log($"[TaskLogger/PPS] result exists: {result}");
 
-            m_TrialsWriter.Flush();
+            if (m_Task1Results == null)
+            {
+                Debug.LogError("[TaskLogger/PPS] m_Task1Results is NULL.");
+                return;
+            }
+
+            if (m_TrialsWriter == null)
+            {
+                Debug.LogError("[TaskLogger/PPS] m_TrialsWriter is NULL. Was StartSession/OpenSession called?");
+                return;
+            }
+
+            try
+            {
+                Debug.Log("[TaskLogger/PPS] Adding result to memory list.");
+                m_Task1Results.Add(result);
+
+                Debug.Log("[TaskLogger/PPS] Building CSV row.");
+                string row = result.ToCsvRow(
+                    m_Metadata.participantId,
+                    m_Metadata.sessionNumber
+                );
+
+                Debug.Log($"[TaskLogger/PPS] CSV row built: {row}");
+
+                Debug.Log("[TaskLogger/PPS] Writing row.");
+                m_TrialsWriter.WriteLine(row);
+
+                Debug.Log("[TaskLogger/PPS] Flushing writer.");
+                m_TrialsWriter.Flush();
+
+                Debug.Log("[TaskLogger/PPS] LogTrial EXIT OK");
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogError("[TaskLogger/PPS] LogTrial crashed, skipping logging so task can continue:\n" + ex);
+                return;
+            }
         }
 
         public void EndSession()

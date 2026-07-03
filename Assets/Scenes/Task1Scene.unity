@@ -11115,56 +11115,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 623462701}
   m_CullTransparentMesh: 1
---- !u!1 &624187187
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 624187189}
-  - component: {fileID: 624187188}
-  m_Layer: 0
-  m_Name: EegMarkerEmitter
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &624187188
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 624187187}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: aedf5622e18f8a24dbc9dc52e0c286fc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HitOrMiss.EegMarkerEmitter
-  m_ParticipantId: P000
-  m_UseSerialBridge: 1
-  m_AutoDetectPort: 1
-  m_ComPort: COM7
-  m_BaudRate: 115195
-  m_TriggerDuration: 0.01
---- !u!4 &624187189
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 624187187}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 8848404438533868169}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &635835273
 GameObject:
   m_ObjectHideFlags: 0
@@ -14848,7 +14798,7 @@ MonoBehaviour:
   m_Ui: {fileID: 1643808109}
   m_Feedback: {fileID: 987324706}
   m_VibrotactileOutputBehaviour: {fileID: 0}
-  m_MarkerEmitter: {fileID: 624187188}
+  m_MarkerEmitter: {fileID: 295281198655078072}
   m_InputSourceBehaviour: {fileID: 7659978567479148310}
 --- !u!82 &867388213
 AudioSource:
@@ -37961,6 +37911,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_ParticipantId: PAM
+  m_SessionId: S1
   m_UseSerialBridge: 1
   m_AutoDetectPort: 1
   m_ComPort: COM7
@@ -37978,8 +37929,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 87f7510eef6fbeb4b917191c6925c8b4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_ParticipantId: 01-07-26-session2
-  m_SessionId: 
+  m_EegMarkerEmitter: {fileID: 295281198655078072}
 --- !u!1 &1896021331678287680
 GameObject:
   m_ObjectHideFlags: 0
@@ -38882,7 +38832,6 @@ Transform:
   - {fileID: 4719210530456875036}
   - {fileID: 3972558028441760682}
   - {fileID: 7130775027214725095}
-  - {fileID: 624187189}
   - {fileID: 987324704}
   - {fileID: 542131542}
   - {fileID: 1212424165}
@@ -38928,7 +38877,6 @@ MonoBehaviour:
   m_FixationCross: {fileID: 0}
   m_StandingCross: {fileID: 0}
   m_ClinicianPanel: {fileID: 0}
-  m_SubjectIdFallback: 01-07-26-session1
   m_AutoStartOnPlay: 1
 --- !u!1 &9041478014344155232
 GameObject:

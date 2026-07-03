@@ -29,9 +29,6 @@ namespace HitOrMiss.Pps
         [Header("Clinician")]
         [SerializeField] ClinicianControlPanel m_ClinicianPanel;
 
-        [Header("Session")]
-        [SerializeField] private string m_SubjectIdFallback = "P000";
-
         [Header("Start mode")]
         [Tooltip("If true, the task begins automatically when the scene loads (legacy / dev shortcut). " +
                  "If false, waits for StartSession() to be called by the clinician panel or the HTTP server. " +
@@ -55,10 +52,6 @@ namespace HitOrMiss.Pps
 
         public bool IsPaused => m_TaskManager != null && m_TaskManager.IsPaused;
 
-        public string ParticipantId =>
-            m_SessionMetadataSet && !string.IsNullOrEmpty(m_SessionMetadata.participantId)
-                ? m_SessionMetadata.participantId
-                : m_SubjectIdFallback;
 
         public event System.Action SessionStarted;
         public event System.Action SessionEnded;
@@ -74,6 +67,17 @@ namespace HitOrMiss.Pps
         /// being recorded. False during practice and intro panels.</summary>
         public bool IsRecording => m_TaskLogger != null && m_TaskLogger.IsSessionOpen;
         private bool m_RestartCurrentBlockRequested;
+
+        public string ParticipantId
+        {
+            get
+            {
+                if (m_EegMarkerEmitter != null)
+                    return m_EegMarkerEmitter.ParticipantId;
+
+                return m_SessionMetadata.participantId;
+            }
+        }
 
         /// <summary>
         /// Asks the running task to wind down at the next checkpoint.
@@ -97,8 +101,6 @@ namespace HitOrMiss.Pps
 
             if (m_TaskManager != null && metadata.shoulderWidthCm > 0f)
                 m_TaskManager.SetParticipantShoulderWidthCm(metadata.shoulderWidthCm);
-
-            Debug.Log($"[PPSAppController] Metadata applied. participantId={metadata.participantId}, shoulderWidthCm={metadata.shoulderWidthCm}");
         }
 
         public void StartSession(SessionMetadata metadata)
@@ -122,7 +124,6 @@ namespace HitOrMiss.Pps
 
             if (!m_SessionMetadataSet)
             {
-                m_SessionMetadata = SessionMetadata.CreateDefault(m_SubjectIdFallback);
                 m_SessionMetadata.PopulateFromPpsTaskAsset(m_TaskAsset);
                 m_SessionMetadataSet = true;
                 Debug.Log("[PPSAppController] No metadata set; using defaults derived from the task asset.");
@@ -255,19 +256,26 @@ namespace HitOrMiss.Pps
             if (m_EegMarkerEmitter == null)
             {
                 m_EegMarkerEmitter = FindAnyObjectByType<EegMarkerEmitter>();
+
                 if (m_EegMarkerEmitter == null)
                     Debug.LogWarning("[PPSAppController] No EegMarkerEmitter in scene. EEG markers disabled.");
                 else
-                    Debug.Log("[PPSAppController] EegMarkerEmitter auto-wired.");
+                    Debug.LogWarning($"[PPSAppController] EegMarkerEmitter auto-wired to: {m_EegMarkerEmitter.name}");
+            }
+
+            if (m_EegMarkerEmitter != null && !m_EegMarkerEmitter.gameObject.activeInHierarchy)
+            {
+                Debug.LogError($"[PPSAppController] Assigned EegMarkerEmitter is inactive: {m_EegMarkerEmitter.name}");
             }
 
             if (m_TaskLogger == null)
             {
                 m_TaskLogger = FindAnyObjectByType<TaskLogger>();
+
                 if (m_TaskLogger == null)
                     Debug.LogWarning("[PPSAppController] No TaskLogger in scene. Trial data will NOT be written to disk.");
                 else
-                    Debug.Log("[PPSAppController] TaskLogger auto-wired.");
+                    Debug.LogWarning($"[PPSAppController] TaskLogger auto-wired to: {m_TaskLogger.name}");
             }
         }
 
@@ -291,8 +299,6 @@ namespace HitOrMiss.Pps
             if (m_EegMarkerEmitter != null)
             {
                 m_EegMarkerEmitter.BeginSession();
-                m_SessionMetadata.participantId = m_EegMarkerEmitter.ParticipantId;
-                m_SessionMetadata.sessionId = m_EegMarkerEmitter.SessionId;
                 m_TaskManager.SetMarkerEmitter(m_EegMarkerEmitter);
             }
 
@@ -379,9 +385,24 @@ namespace HitOrMiss.Pps
             // owns the disk.
             if (m_TaskLogger != null)
             {
-                m_TaskLogger.ParticipantId = ParticipantId;
-                // Do NOT PopulateFromPpsTaskAsset here — that would overwrite the
-                // clinician-form values that drove the session asset clone.
+                if (m_EegMarkerEmitter != null)
+                {
+                    m_SessionMetadata.participantId = m_EegMarkerEmitter.ParticipantId;
+                    m_SessionMetadata.sessionNumber = ParseSessionNumber(m_EegMarkerEmitter.SessionId);
+
+                    Debug.Log(
+                        $"[PPSAppController] Using ID from EegMarkerEmitter: " +
+                        $"participant={m_SessionMetadata.participantId}, " +
+                        $"session={m_SessionMetadata.sessionNumber}"
+                    );
+                }
+                else
+                {
+                    Debug.LogWarning("[PPSAppController] No EegMarkerEmitter assigned. Using existing session metadata.");
+                }
+
+                m_TaskLogger.ParticipantId = m_SessionMetadata.participantId;
+
                 m_TaskLogger.SetMetadata(m_SessionMetadata);
                 m_TaskLogger.BeginSession(TaskKind.Task1Pps, Asset.TaskName);
 
@@ -489,7 +510,8 @@ namespace HitOrMiss.Pps
 
             CloseLoggingSession();
 
-            if (m_ClinicianPanel != null) m_ClinicianPanel.ExitTaskMode();
+            if (m_ClinicianPanel != null)
+                m_ClinicianPanel.ExitTaskMode();
 
             m_ControllerInput?.Disable();
             m_KeyboardInput?.Disable();
@@ -499,6 +521,23 @@ namespace HitOrMiss.Pps
                 m_Ui.HideStandingCross();
                 yield return m_Ui.ShowEndAndWait("Task stopped.\n\nThank you.");
             }
+        }
+
+        private int ParseSessionNumber(string sessionId)
+        {
+            if (string.IsNullOrWhiteSpace(sessionId))
+                return 1;
+
+            sessionId = sessionId.Trim();
+
+            if (sessionId.StartsWith("S", System.StringComparison.OrdinalIgnoreCase))
+                sessionId = sessionId.Substring(1);
+
+            if (int.TryParse(sessionId, out int parsed))
+                return parsed;
+
+            Debug.LogWarning($"[PPSAppController] Could not parse session ID '{sessionId}'. Defaulting to session 1.");
+            return 1;
         }
     }
 }
