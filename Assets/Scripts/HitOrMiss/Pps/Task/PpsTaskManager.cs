@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using UnityEngine;
+using UnityEngine.UI;
 
 namespace HitOrMiss.Pps
 {
@@ -27,6 +28,13 @@ namespace HitOrMiss.Pps
         [Header("Scene references")]
         [SerializeField] private LoomingPairController m_Loom;
         [SerializeField] private DistanceLayout m_Layout;
+
+        [Header("ITI Crosshair")]
+        [SerializeField] private Transform m_CrosshairRoot;
+        [SerializeField] private Material m_CrosshairDefaultMaterial;
+        [SerializeField] private Material m_CrosshairItiMaterial;
+
+        private Renderer[] m_CrosshairRenderers;
 
         [Header("Participant geometry")]
         [Tooltip("Participant shoulder width in meters. Narrow PPS width uses this value. Wide PPS width adds the asset's wide offset.")]
@@ -192,6 +200,15 @@ namespace HitOrMiss.Pps
             {
                 Debug.LogWarning("[PpsTaskManager] No input source assigned. Trial responses will not be captured.");
             }
+            if (m_CrosshairRoot != null)
+            {
+                m_CrosshairRenderers = m_CrosshairRoot.GetComponentsInChildren<Renderer>(true);
+                Debug.Log($"[PpsTaskManager] Found {m_CrosshairRenderers.Length} crosshair renderers.");
+            }
+            else
+            {
+                Debug.LogWarning("[PpsTaskManager] No crosshair root assigned.");
+            }
         }
 
         private void OnDestroy()
@@ -274,6 +291,21 @@ namespace HitOrMiss.Pps
             m_MarkerEmitter = emitter;
         }
 
+        private void SetCrosshairMaterial(Material material)
+        {
+            if (material == null)
+                return;
+
+            if (m_CrosshairRenderers == null || m_CrosshairRenderers.Length == 0)
+                return;
+
+            foreach (var r in m_CrosshairRenderers)
+            {
+                if (r != null)
+                    r.material = material;
+            }
+        }
+
         /// <summary>
         /// Runs a sequence of trials with an inter-trial interval before every trial.
         ///
@@ -323,18 +355,28 @@ namespace HitOrMiss.Pps
                 // ------------------------------------------------------------
                 // ITI BEFORE EVERY TRIAL
                 // ------------------------------------------------------------
+
                 float iti = NextItiSeconds();
                 float elapsedIti = 0f;
+
+                // Crosshair changes material during the ITI.
+                SetCrosshairMaterial(m_CrosshairItiMaterial);
 
                 while (elapsedIti < iti)
                 {
                     if (m_AbortCurrentRunRequested)
+                    {
+                        SetCrosshairMaterial(m_CrosshairDefaultMaterial);
                         yield break;
+                    }
 
                     while (m_Paused)
                     {
                         if (m_AbortCurrentRunRequested)
+                        {
+                            SetCrosshairMaterial(m_CrosshairDefaultMaterial);
                             yield break;
+                        }
 
                         yield return null;
                     }
@@ -342,6 +384,28 @@ namespace HitOrMiss.Pps
                     elapsedIti += Time.deltaTime;
                     yield return null;
                 }
+
+                // Reset crosshair material before the trial starts.
+                SetCrosshairMaterial(m_CrosshairDefaultMaterial);
+                // float iti = NextItiSeconds();
+                // float elapsedIti = 0f;
+
+                // while (elapsedIti < iti)
+                // {
+                //     if (m_AbortCurrentRunRequested)
+                //         yield break;
+
+                //     while (m_Paused)
+                //     {
+                //         if (m_AbortCurrentRunRequested)
+                //             yield break;
+
+                //         yield return null;
+                //     }
+
+                //     elapsedIti += Time.deltaTime;
+                //     yield return null;
+                // }
 
                 // ------------------------------------------------------------
                 // Trial starts only AFTER the ITI has completed

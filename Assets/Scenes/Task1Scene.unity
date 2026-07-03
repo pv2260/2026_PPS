@@ -810,7 +810,7 @@ GameObject:
   - component: {fileID: 53756948}
   - component: {fileID: 53756947}
   m_Layer: 5
-  m_Name: Instructions_StartPractice
+  m_Name: Instructions_Continue
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -855,7 +855,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'Start Practice '
+  m_text: Continue
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: fbb7c6a04be6d8341934b839f24b42e1, type: 2}
   m_sharedMaterial: {fileID: 4687939059374929122, guid: fbb7c6a04be6d8341934b839f24b42e1, type: 2}
@@ -2731,9 +2731,6 @@ PrefabInstance:
       addedObject: {fileID: 965426599}
     - targetCorrespondingSourceObject: {fileID: 4276623248792366368, guid: 97c4e40b856a4fe4f8c6e3191d6b0430, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 2070559568}
-    - targetCorrespondingSourceObject: {fileID: 4276623248792366368, guid: 97c4e40b856a4fe4f8c6e3191d6b0430, type: 3}
-      insertIndex: -1
       addedObject: {fileID: 395796436}
     - targetCorrespondingSourceObject: {fileID: 4276623248792366368, guid: 97c4e40b856a4fe4f8c6e3191d6b0430, type: 3}
       insertIndex: -1
@@ -2750,6 +2747,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 4276623248792366368, guid: 97c4e40b856a4fe4f8c6e3191d6b0430, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1927333693}
+    - targetCorrespondingSourceObject: {fileID: 4276623248792366368, guid: 97c4e40b856a4fe4f8c6e3191d6b0430, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2070559568}
     - targetCorrespondingSourceObject: {fileID: 4276623248792366368, guid: 97c4e40b856a4fe4f8c6e3191d6b0430, type: 3}
       insertIndex: -1
       addedObject: {fileID: 2041645119}
@@ -2785,7 +2785,7 @@ GameObject:
   - component: {fileID: 123846909}
   - component: {fileID: 123846908}
   m_Layer: 5
-  m_Name: Positioning_StartPractice
+  m_Name: Positioning_Continue
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2830,7 +2830,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'Start Practice '
+  m_text: 'Continue '
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: fbb7c6a04be6d8341934b839f24b42e1, type: 2}
   m_sharedMaterial: {fileID: 4687939059374929122, guid: fbb7c6a04be6d8341934b839f24b42e1, type: 2}
@@ -14791,6 +14791,9 @@ MonoBehaviour:
   m_TaskAsset: {fileID: 11400000, guid: b6a0232453b4a5f4182f868a7d2920f0, type: 2}
   m_Loom: {fileID: 1976196462}
   m_Layout: {fileID: 1086280596}
+  m_CrosshairRoot: {fileID: 2068488785}
+  m_CrosshairDefaultMaterial: {fileID: 2100000, guid: 9ff1a0b5c97560448b1d26a21c9a31d5, type: 2}
+  m_CrosshairItiMaterial: {fileID: 2100000, guid: 3d81c2fbcb91c204b838f19cd4cbc564, type: 2}
   m_ParticipantShoulderWidthMeters: 0.42
   m_ResponseAudioSource: {fileID: 867388213}
   m_ResponseRegisteredClip: {fileID: 8300000, guid: b319a2e4ff8f5d840b82d8635b645d22, type: 3}
@@ -21305,7 +21308,7 @@ GameObject:
   - component: {fileID: 1209303847}
   - component: {fileID: 1209303846}
   m_Layer: 5
-  m_Name: ReadytoStart_Start
+  m_Name: ReadytoStart_Continue
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -21350,7 +21353,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'Start Practice '
+  m_text: Continue
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: fbb7c6a04be6d8341934b839f24b42e1, type: 2}
   m_sharedMaterial: {fileID: 4687939059374929122, guid: fbb7c6a04be6d8341934b839f24b42e1, type: 2}
@@ -28429,29 +28432,27 @@ MonoBehaviour:
     english: Stop
     french: Arreter la Tache
   - textTarget: {fileID: 53756947}
-    english: Start Practice
-    french: Demarrer la practice
+    english: Continue
+    french: Continuer
   - textTarget: {fileID: 376609664}
     english: Back
     french: Avant
   - textTarget: {fileID: 869205363}
     english: "In this task, lights will move toward you.\\nYou will also feel gentle
-      vibrations on your chest.\\nWhen you feel a vibration, press the controller
-      as soon as you can.\\nTry to respond accurately, without pressing before the
-      vibration.\\nLet\u2019s try a short practice.\\nPress Start Practice when you
-      are ready."
+      vibrations on your chest.\\nWhen you feel a vibration, PRESS the controller
+      as soon as you can.\\nLet\u2019s try a short practice.\\nPress Continue when
+      you are ready."
     french: "Dans cette t\xE2che, des lumi\xE8res avanceront vers vous.\\nVous sentirez
-      \xE9galement de l\xE9g\xE8res vibrations sur votre poitrine.\\n\\nLorsque vous
-      sentez une vibration, appuyez sur la manette d\xE8s que possible.\\nEssayez
-      de r\xE9pondre correctement, sans appuyer avant la vibration.\\n\\nNous allons
-      faire un court entra\xEEnement.\\nAppuyez sur Commencer l\u2019entra\xEEnement
-      lorsque vous \xEAtes pr\xEAt(e)."
+      \xE9galement de l\xE9g\xE8res vibrations sur votre poitrine.\\nLorsque vous
+      sentez une vibration, appuyez sur la manette d\xE8s que possible.\\nNous allons
+      faire un court entra\xEEnement.\\nAppuyez sur Continuer lorsque vous \xEAtes
+      pr\xEAt(e)."
   - textTarget: {fileID: 1270008075}
     english: Please stand on the X marker and face forward facing the cross.\nPress
-      Start Practice when ready.
+      Continue when ready.
     french: "Pour commencer, veuillez vous tenir debout sur le rep\xE8re X au sol.\\nRegardez
-      droit devant vous, en direction de la croix.\\nAppuyez sur Demarrer l'entra\xEEnement 
-      lorsque vous \xEAtes pr\xEAt."
+      droit devant vous, en direction de la croix.\\nAppuyez sur Continuer lorsque
+      vous \xEAtes pr\xEAt."
   - textTarget: {fileID: 1345587028}
     english: "Let\u2019s try a short vibration practice.\\nWhen you feel a vibration
       on your chest, press the controller as quickly as you can.\\nPress Start Practice
@@ -28460,25 +28461,22 @@ MonoBehaviour:
       sentez une vibration sur votre poitrine, appuyez sur la manette aussi rapidement
       que possible.\\nAppuyez sur Start Practice lorsque vous \xEAtes pr\xEAt(e)."
   - textTarget: {fileID: 929655511}
-    english: "Great. Now, let\u2019s add the moving lights.\\nThe lights will move
-      toward you.\\nWhen you feel a vibration, press the controller as soon as you
-      can.\\nTry not to press before you feel the vibration.\r\n"
-    french: "Tr\xE8s bien. Maintenant, ajoutons les lumi\xE8res en mouvement.\\nLes
+    english: "Great! \\n Now, let\u2019s add the moving lights.\\nThe lights will
+      move toward you.\\nWhen you feel a vibration, press the controller as soon
+      as you can.\r\n"
+    french: "Tr\xE8s bien! \\n Maintenant, ajoutons les lumi\xE8res en mouvement.\\nLes
       lumi\xE8res vont avancer vers vous.\\nLorsque vous sentez une vibration, appuyez
-      sur la manette d\xE8s que possible.\\nEssayez de ne pas appuyer avant de sentir
-      la vibration."
+      sur la manette d\xE8s que possible."
   - textTarget: {fileID: 518538310}
-    english: 'Practice is now complete.\nThe main task will now begin.\nYou will
-      no longer receive feedback.\nBut the rule is the same: when you feel a vibration,
-      press the controller as soon as you can.\nTry not to press before you feel
-      the vibration.\nAre you ready?
+    english: 'Practice is now complete.\nThe main task will now begin.\nThe rule
+      is the same: when you feel a vibration, press the controller as soon as you
+      can.\nAre you ready?
 
 '
     french: "L\u2019entra\xEEnement est maintenant termin\xE9.\\nLa t\xE2che principale
-      va maintenant commencer.\\nVous ne recevrez plus de retour.\\nMais la r\xE8gle
-      reste la m\xEAme : lorsque vous sentez une vibration, appuyez sur la manette
-      d\xE8s que possible.\\nEssayez de ne pas appuyer avant de sentir la vibration.\\n\xCAtes-vous
-      pr\xEAt(e) ?"
+      va maintenant commencer.\\nLa r\xE8gle reste la m\xEAme : lorsque vous sentez
+      une vibration, appuyez sur la manette d\xE8s que possible.\\n\xCAtes-vous pr\xEAt(e)
+      ?"
   - textTarget: {fileID: 580178337}
     english: 'The task consists of {blocksCount} blocks.\nThere will be short breaks
       between blocks, and you may sit down to rest during each break.\nA small timer
@@ -28537,6 +28535,12 @@ MonoBehaviour:
       vibration.'
     french: "Vous n'avez pas r\xE9pondu.\nAppuyez sur le bouton quand vous sentez
       la vibration."
+  - textTarget: {fileID: 955692051}
+    english: Continue
+    french: Continuer
+  - textTarget: {fileID: 1209303846}
+    english: Continue
+    french: Continuer
 --- !u!114 &1643808110
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -30248,7 +30252,7 @@ GameObject:
   - component: {fileID: 1793120644}
   - component: {fileID: 1793120643}
   m_Layer: 5
-  m_Name: StartPracticeButton
+  m_Name: Continue
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -31836,7 +31840,7 @@ GameObject:
   - component: {fileID: 1906566485}
   - component: {fileID: 1906566484}
   m_Layer: 5
-  m_Name: StartPracticeButton
+  m_Name: ContinueButton
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -36598,7 +36602,7 @@ GameObject:
   - component: {fileID: 2089091988}
   - component: {fileID: 2089091987}
   m_Layer: 5
-  m_Name: StartButton
+  m_Name: ContinueButton
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
