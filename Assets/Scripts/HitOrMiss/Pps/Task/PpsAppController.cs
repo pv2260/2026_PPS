@@ -400,16 +400,27 @@ namespace HitOrMiss.Pps
             yield return RunPreTaskPanels();
             if (StopWasRequested()) { yield return StopExperiment(); yield break; }
 
-            // ---- Practice 1: tactile only ----
+           // ---- Practice 1: tactile only / vibration only ----
             Debug.Log("[PPS] Starting VT-only practice.");
             yield return m_TaskManager.RunTrials(PpsTrialGenerator.GenerateVTOnlyPractice(Asset));
             if (StopWasRequested()) { yield return StopExperiment(); yield break; }
 
-            // Practice 2 intro panel.
+
+            // ---- Practice 2 intro: visual only / light only ----
+            yield return m_Ui.ShowPracticeIntroVOnlyAndWait();
+            if (StopWasRequested()) { yield return StopExperiment(); yield break; }
+
+            // ---- Practice 2: visual only / light only ----
+            Debug.Log("[PPS] Starting Visual-only practice.");
+            yield return m_TaskManager.RunTrials(PpsTrialGenerator.GenerateVOnlyPractice(Asset));
+            if (StopWasRequested()) { yield return StopExperiment(); yield break; }
+
+
+            // ---- Practice 3 intro: vibration + visual ----
             yield return m_Ui.ShowPracticeIntroVTVisualAndWait();
             if (StopWasRequested()) { yield return StopExperiment(); yield break; }
 
-            // ---- Practice 2: visual + tactile ----
+            // ---- Practice 3: vibration + visual ----
             Debug.Log("[PPS] Starting VT+Visual practice.");
             yield return m_TaskManager.RunTrials(PpsTrialGenerator.GenerateVTVisualPractice(Asset));
             if (StopWasRequested()) { yield return StopExperiment(); yield break; }

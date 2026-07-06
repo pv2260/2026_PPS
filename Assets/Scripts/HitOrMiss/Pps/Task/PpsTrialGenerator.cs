@@ -232,6 +232,31 @@ namespace HitOrMiss.Pps
             return trials.ToArray();
         }
 
+        public static PpsTrialDefinition[] GenerateVOnlyPractice(PpsTaskAsset asset)
+        {
+            return new[]
+            {
+                new PpsTrialDefinition
+                {
+                    trialId = "practice_visual_only_slow",
+                    modality = PpsModality.VisualOnly,
+                    speed = PpsSpeed.Slow,
+                    width = PpsWidth.Narrow,
+                    vibrationStage = DistanceStage.D4,
+                    isPractice = true
+                },
+                new PpsTrialDefinition
+                {
+                    trialId = "practice_visual_only_fast",
+                    modality = PpsModality.VisualOnly,
+                    speed = PpsSpeed.Fast,
+                    width = PpsWidth.Narrow,
+                    vibrationStage = DistanceStage.D4,
+                    isPractice = true
+                }
+            };
+        }
+
         public static PpsTrialDefinition[] GenerateVTVisualPractice(PpsTaskAsset asset)
         {
             if (asset == null)

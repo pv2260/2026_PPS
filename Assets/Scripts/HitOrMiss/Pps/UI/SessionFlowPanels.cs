@@ -12,6 +12,7 @@ namespace HitOrMiss.Pps
         [SerializeField] GameObject m_InstructionsPanel;
         [SerializeField] GameObject m_PositioningPanel;
         [SerializeField] GameObject m_PracticeIntroVTOnlyPanel;
+        [SerializeField] GameObject m_PracticeIntroVOnlyPanel;
         [SerializeField] GameObject m_PracticeIntroVTVisualPanel;
         [SerializeField] GameObject m_PracticeFeedbackPanel;
         [SerializeField] GameObject m_NoFeedbackPanel;
@@ -135,6 +136,7 @@ namespace HitOrMiss.Pps
             SetActive(m_InstructionsPanel, false);
             SetActive(m_PositioningPanel, false);
             SetActive(m_PracticeIntroVTOnlyPanel, false);
+            SetActive(m_PracticeIntroVOnlyPanel, false);
             SetActive(m_PracticeIntroVTVisualPanel, false);
             SetActive(m_PracticeFeedbackPanel, false);
             SetActive(m_NoFeedbackPanel, false);
@@ -186,6 +188,13 @@ namespace HitOrMiss.Pps
             ClearBackRequest();
             yield return ShowAndWait(m_PracticeIntroVTVisualPanel);
         }
+
+        public IEnumerator ShowPracticeIntroVOnlyAndWait()
+        {
+            ClearBackRequest();
+            yield return ShowAndWait(m_PracticeIntroVOnlyPanel);
+        }
+
 
         public IEnumerator ShowNoFeedbackAndWait()
         {
