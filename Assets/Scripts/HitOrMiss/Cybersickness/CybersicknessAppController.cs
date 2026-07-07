@@ -10,6 +10,20 @@ namespace HitOrMiss.Cybersickness
         [Header("Welcome")]
         [SerializeField] GameObject m_WelcomePanel;
 
+        [Header("Welcome button labels")]
+        [SerializeField] TMP_Text m_WelcomeStartLabel;
+        [SerializeField] TMP_Text m_WelcomeSwitchLanguageLabel;
+        [SerializeField] TMP_Text m_WelcomeStopLabel;
+
+        [Header("Shared popup button labels")]
+        [SerializeField] TMP_Text[] m_ContinueLabels;
+
+        [Header("Special popup button labels")]
+        [SerializeField] TMP_Text m_PracticeStartLabel;
+        [SerializeField] TMP_Text m_ReadyStartLabel;
+        [SerializeField] TMP_Text m_BreakContinueLabel;
+        [SerializeField] TMP_Text m_EndButtonLabel;
+
         [Header("Task")]
         [SerializeField] CyberBugTaskAsset m_TaskAsset;
         [SerializeField] CybersicknessTaskManager m_TaskManager;
@@ -29,6 +43,9 @@ namespace HitOrMiss.Cybersickness
         [SerializeField] GameObject m_IntroTaskPopup;
         [SerializeField] GameObject m_ControllerGuidePopup;
         [SerializeField] GameObject m_PracticeYesPopup;
+
+        [Header("Approach intro world objects")]
+        [SerializeField] GameObject m_ApproachIntroWorldObjects;
 
         [FormerlySerializedAs("m_PracticeNoPPopup")]
         [SerializeField] GameObject m_PracticeNoPopup;
@@ -70,6 +87,9 @@ namespace HitOrMiss.Cybersickness
         {
             HideAllPanels();
 
+            if (m_ApproachIntroWorldObjects != null)
+            m_ApproachIntroWorldObjects.SetActive(false);
+
             ApplyTaskLanguage();
 
             if (m_WelcomePanel != null)
@@ -99,6 +119,9 @@ void ApplyTaskLanguage()
     if (m_TaskAsset == null)
         return;
 
+    bool french = m_TaskAsset.CurrentLanguage == CyberLanguage.French;
+
+    // ---------- Popup body text ----------
     SetPopupText(m_PracticeIntroPopup, m_TaskAsset.PracticeIntroText);
 
     SetPopupText(m_TriggerDemoPopup, m_TaskAsset.TriggerDemoText);
@@ -115,8 +138,39 @@ void ApplyTaskLanguage()
 
     SetPopupText(m_ReadyPopup, m_TaskAsset.ReadyText);
     SetPopupText(m_EndPopup, m_TaskAsset.OutroText);
+
+    // ---------- Welcome panel buttons ----------
+    SetText(m_WelcomeStartLabel, french ? "Commencer" : "Start");
+    SetText(m_WelcomeSwitchLanguageLabel, french ? "Changer de langue" : "Change language");
+    SetText(m_WelcomeStopLabel, french ? "Arrêter" : "Stop");
+
+    // ---------- Generic continue buttons ----------
+    SetTextArray(m_ContinueLabels, french ? "Continuer" : "Continue");
+
+    // ---------- Special buttons ----------
+    SetText(m_PracticeStartLabel, french ? "Commencer l’entraînement" : "Begin Practice");
+    SetText(m_ReadyStartLabel, french ? "Commencer" : "Start");
+    SetText(m_BreakContinueLabel, french ? "Continuer" : "Continue");
+    SetText(m_EndButtonLabel, french ? "Terminer" : "Finish");
 }
 
+    void SetText(TMP_Text label, string text)
+    {
+        if (label != null)
+            label.text = text;
+    }
+
+    void SetTextArray(TMP_Text[] labels, string text)
+    {
+        if (labels == null)
+            return;
+
+        foreach (TMP_Text label in labels)
+        {
+            if (label != null)
+                label.text = text;
+        }
+    }
     void SetPopupText(GameObject popupObject, string text)
     {
         if (popupObject == null)
@@ -310,9 +364,17 @@ void ApplyTaskLanguage()
             m_TriggerDemoRightPressed = false;
 
             if (m_TriggerDemo != null)
+            {
                 m_TriggerDemo.ResetDemo();
+
+                // Re-apply the currently selected language after ResetDemo().
+                SetPopupText(m_TriggerDemoPopup, m_TaskAsset.TriggerDemoText);
+                SendDemoText(m_TriggerDemo, m_TaskAsset.TriggerDemoText);
+            }
             else
+            {
                 Debug.LogError("[CYBER FLOW] TriggerDemo component is not assigned.");
+            }
 
             while (m_TriggerDemoWaiting)
                 yield return null;
@@ -321,6 +383,7 @@ void ApplyTaskLanguage()
 
             m_TriggerDemoPopup.SetActive(false);
         }
+
 
         IEnumerator RunResponseMappingDemo()
         {
@@ -341,9 +404,17 @@ void ApplyTaskLanguage()
             m_ResponseMappingRightPressed = false;
 
             if (m_ResponseMappingDemo != null)
+            {
                 m_ResponseMappingDemo.ResetDemo();
+
+                // Re-apply the currently selected language after ResetDemo().
+                SetPopupText(m_ResponseMappingPopup, m_TaskAsset.ResponseMappingText);
+                SendDemoText(m_ResponseMappingDemo, m_TaskAsset.ResponseMappingText);
+            }
             else
+            {
                 Debug.LogError("[CYBER FLOW] ResponseMappingDemo component is not assigned.");
+            }
 
             while (m_ResponseMappingWaiting)
                 yield return null;
@@ -353,9 +424,12 @@ void ApplyTaskLanguage()
             m_ResponseMappingPopup.SetActive(false);
         }
 
+
         IEnumerator RunApproachIntroDemo()
         {
             HideAllPanels();
+            if (m_ApproachIntroWorldObjects != null)
+            m_ApproachIntroWorldObjects.SetActive(true);
 
             if (m_ApproachIntroPopup == null)
             {
@@ -379,6 +453,9 @@ void ApplyTaskLanguage()
                 Debug.LogWarning("[CYBER FLOW] ApproachIntroDemo component is not assigned. Using fallback wait.");
                 yield return new WaitForSeconds(m_ApproachIntroFallbackSeconds);
             }
+
+            if (m_ApproachIntroWorldObjects != null)
+            m_ApproachIntroWorldObjects.SetActive(false);
 
             m_ApproachIntroPopup.SetActive(false);
         }
@@ -589,6 +666,7 @@ void ApplyTaskLanguage()
             if (m_ApproachIntroPopup != null) m_ApproachIntroPopup.SetActive(false);
             if (m_IntroTaskPopup != null) m_IntroTaskPopup.SetActive(false);
             if (m_ControllerGuidePopup != null) m_ControllerGuidePopup.SetActive(false);
+            if (m_ApproachIntroWorldObjects != null) m_ApproachIntroWorldObjects.SetActive(false);
             if (m_PracticeYesPopup != null) m_PracticeYesPopup.SetActive(false);
             if (m_PracticeNoPopup != null) m_PracticeNoPopup.SetActive(false);
             if (m_ReadyPopup != null) m_ReadyPopup.SetActive(false);

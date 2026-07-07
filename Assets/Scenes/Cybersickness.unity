@@ -436,16 +436,16 @@ MonoBehaviour:
   m_PlayerAnchor: {fileID: 1628024187}
   m_SpawnParent: {fileID: 0}
   m_StartDistance: 4
-  m_EndDistance: 0.2
-  m_Duration: 15
+  m_EndDistance: 0.8
+  m_Duration: 8
   m_VerticalOffset: 0
   m_AnimalScale: 0.5
-  m_BounceAmplitude: 0.09
-  m_BounceFrequency: 1
-  m_SwayAmplitude: 0.08
-  m_SwayFrequency: 1.2
-  m_WiggleYawAmplitude: 4
-  m_WiggleYawFrequency: 2
+  m_BounceAmplitude: 0.03
+  m_BounceFrequency: 0.45
+  m_SwayAmplitude: 0.015
+  m_SwayFrequency: 0.35
+  m_WiggleYawAmplitude: 0.5
+  m_WiggleYawFrequency: 0.4
   m_ModelYawOffset: 0
 --- !u!114 &213312222
 MonoBehaviour:
@@ -470,7 +470,7 @@ MonoBehaviour:
   m_ButtonLabel: Start Practice
   m_BackButtonLabelText: Back
   m_Behavior: 0
-  m_AutoAdvanceSeconds: 15
+  m_AutoAdvanceSeconds: 10
   m_AllowKeyboardAdvance: 0
 --- !u!1 &229286969
 GameObject:
@@ -556,8 +556,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 60
-  m_fontSizeBase: 60
+  m_fontSize: 50
+  m_fontSizeBase: 50
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 24
@@ -1006,6 +1006,11 @@ MonoBehaviour:
   m_ShadowLayerMask: 1
   m_RenderingLayers: 1
   m_ShadowRenderingLayers: 1
+--- !u!4 &263172081 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: ff45ba420fc7ba24fb9a668f443d25b1, type: 3}
+  m_PrefabInstance: {fileID: 1456062283}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &289207623
 GameObject:
   m_ObjectHideFlags: 0
@@ -1302,6 +1307,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
+--- !u!114 &470550197 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 4631451539518209592, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
+  m_PrefabInstance: {fileID: 984165669}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &543805515
 GameObject:
   m_ObjectHideFlags: 0
@@ -1839,6 +1855,17 @@ MonoBehaviour:
   m_CorrectColor: {r: 0.2, g: 0.85, b: 0.2, a: 0.5}
   m_IncorrectColor: {r: 0.95, g: 0.2, b: 0.2, a: 0.5}
   m_FlashSeconds: 0.2
+--- !u!114 &620230492 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 2322573817898693338, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
+  m_PrefabInstance: {fileID: 984165669}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!4 &642807797 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 665267158092037711, guid: e8fb48b2097a4fe4c9bad4f438c1eae2, type: 3}
@@ -1936,7 +1963,7 @@ GameObject:
   - component: {fileID: 674160326}
   - component: {fileID: 674160325}
   m_Layer: 5
-  m_Name: ContinueButton
+  m_Name: StartPractice
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1961,8 +1988,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -100}
-  m_SizeDelta: {x: 300, y: 100}
+  m_AnchoredPosition: {x: 0, y: 0}
+  m_SizeDelta: {x: 400, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &674160325
 MonoBehaviour:
@@ -2285,7 +2312,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: -100}
-  m_SizeDelta: {x: 300, y: 100}
+  m_SizeDelta: {x: 400, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &677649757
 MonoBehaviour:
@@ -2674,11 +2701,34 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6610604726055033427, guid: 91dedd7189c103d49a21fdff41d0c383, type: 3}
       propertyPath: m_text
-      value: 
+      value: '
+
+
+        Great!
+
+
+        In this task, you will use the triggers
+        to answer Yes or No.
+
+
+
+
+
+
+        Press LEFT for YES.
+
+        Press RIGHT
+        for NO.
+
+'
       objectReference: {fileID: 0}
     - target: {fileID: 6610604726055033427, guid: 91dedd7189c103d49a21fdff41d0c383, type: 3}
       propertyPath: m_fontSize
-      value: 42
+      value: 50
+      objectReference: {fileID: 0}
+    - target: {fileID: 6610604726055033427, guid: 91dedd7189c103d49a21fdff41d0c383, type: 3}
+      propertyPath: m_fontSizeBase
+      value: 50
       objectReference: {fileID: 0}
     - target: {fileID: 6610604726055033427, guid: 91dedd7189c103d49a21fdff41d0c383, type: 3}
       propertyPath: m_enableAutoSizing
@@ -3294,7 +3344,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3799011170388618083, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 300
+      value: 400
       objectReference: {fileID: 0}
     - target: {fileID: 3799011170388618083, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
       propertyPath: m_SizeDelta.y
@@ -3302,7 +3352,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3799011170388618083, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 250
+      value: 320
       objectReference: {fileID: 0}
     - target: {fileID: 3799011170388618083, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
       propertyPath: m_AnchoredPosition.y
@@ -3690,7 +3740,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4631451538751320249, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 300
+      value: 400
       objectReference: {fileID: 0}
     - target: {fileID: 4631451538751320249, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
       propertyPath: m_SizeDelta.y
@@ -3698,7 +3748,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4631451538751320249, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: -100
+      value: -200
       objectReference: {fileID: 0}
     - target: {fileID: 4631451538751320249, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
       propertyPath: m_AnchoredPosition.y
@@ -4201,6 +4251,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HitOrMiss.Cybersickness.CybersicknessAppController
   m_WelcomePanel: {fileID: 1462779316}
+  m_WelcomeStartLabel: {fileID: 470550197}
+  m_WelcomeSwitchLanguageLabel: {fileID: 620230492}
+  m_WelcomeStopLabel: {fileID: 0}
+  m_ContinueLabels:
+  - {fileID: 0}
+  m_PracticeStartLabel: {fileID: 555698260}
+  m_ReadyStartLabel: {fileID: 302907650}
+  m_BreakContinueLabel: {fileID: 0}
+  m_EndButtonLabel: {fileID: 0}
   m_TaskAsset: {fileID: 11400000, guid: fbb9676002bd5024396e8006ecf668b5, type: 2}
   m_TaskManager: {fileID: 984165678}
   m_CsvLogger: {fileID: 984165677}
@@ -4213,6 +4272,7 @@ MonoBehaviour:
   m_IntroTaskPopup: {fileID: 1320690133}
   m_ControllerGuidePopup: {fileID: 0}
   m_PracticeYesPopup: {fileID: 0}
+  m_ApproachIntroWorldObjects: {fileID: 1341053215}
   m_PracticeNoPopup: {fileID: 0}
   m_ReadyPopup: {fileID: 0}
   m_BreakPopup: {fileID: 0}
@@ -4259,7 +4319,7 @@ MonoBehaviour:
   m_CorrectnessFlashImage: {fileID: 1672155464}
   m_CorrectFlashColor: {r: 0.18231924, g: 0.8113208, b: 0, a: 0.49803922}
   m_IncorrectFlashColor: {r: 0.7075472, g: 0, b: 0.1428521, a: 0.35}
-  m_FlashSeconds: 0.75
+  m_FlashSeconds: 0.85
   m_EegMarkerEmitter: {fileID: 0}
   m_AllowKeyboardTesting: 0
 --- !u!114 &984165683
@@ -4289,7 +4349,7 @@ MonoBehaviour:
   m_BubbleScale: 0.12
   m_SwimYawAmplitudeDeg: 8
   m_SwimYawFrequencyHz: 2.5
-  m_BobAmplitudeMeters: 0.04
+  m_BobAmplitudeMeters: 0.05
   m_BobFrequencyHz: 1.5
 --- !u!114 &1040669566 stripped
 MonoBehaviour:
@@ -4536,7 +4596,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 1200, y: 100}
+  m_SizeDelta: {x: 1500, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1123948061
 MonoBehaviour:
@@ -4585,8 +4645,8 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 35
-  m_fontSizeBase: 35
+  m_fontSize: 50
+  m_fontSizeBase: 50
   m_fontWeight: 400
   m_enableAutoSizing: 0
   m_fontSizeMin: 24
@@ -5270,6 +5330,38 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1330246348}
   m_CullTransparentMesh: 1
+--- !u!1 &1341053215
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1341053216}
+  m_Layer: 0
+  m_Name: ApproachIntroWorldObjects
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!4 &1341053216
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1341053215}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0.5, z: 0}
+  m_LocalScale: {x: 0.3, y: 0.3, z: 0.3}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 263172081}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1343097405
 GameObject:
   m_ObjectHideFlags: 0
@@ -5745,9 +5837,10 @@ MonoBehaviour:
   m_Text: 'Great!
 
 
-
     In this task, you will use the triggers to answer Yes or
     No.
+
+
 
 
 
@@ -5875,6 +5968,75 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
+--- !u!1001 &1456062283
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1341053216}
+    m_Modifications:
+    - target: {fileID: -8679921383154817045, guid: ff45ba420fc7ba24fb9a668f443d25b1, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: ff45ba420fc7ba24fb9a668f443d25b1, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: ff45ba420fc7ba24fb9a668f443d25b1, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 0.8
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: ff45ba420fc7ba24fb9a668f443d25b1, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0.2
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: ff45ba420fc7ba24fb9a668f443d25b1, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 1.7
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: ff45ba420fc7ba24fb9a668f443d25b1, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 1.4
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: ff45ba420fc7ba24fb9a668f443d25b1, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: ff45ba420fc7ba24fb9a668f443d25b1, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: ff45ba420fc7ba24fb9a668f443d25b1, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: ff45ba420fc7ba24fb9a668f443d25b1, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: ff45ba420fc7ba24fb9a668f443d25b1, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: ff45ba420fc7ba24fb9a668f443d25b1, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 180
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: ff45ba420fc7ba24fb9a668f443d25b1, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: ff45ba420fc7ba24fb9a668f443d25b1, type: 3}
+      propertyPath: m_Name
+      value: BananaTarget
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: ff45ba420fc7ba24fb9a668f443d25b1, type: 3}
 --- !u!1 &1461948675 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 4424058235249050402, guid: 91dedd7189c103d49a21fdff41d0c383, type: 3}
@@ -7196,7 +7358,7 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1672155462}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: -10}
+  m_LocalPosition: {x: 0, y: 0, z: -20}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -10225,3 +10387,4 @@ SceneRoots:
   - {fileID: 984165669}
   - {fileID: 138103580}
   - {fileID: 1768455668}
+  - {fileID: 1341053216}

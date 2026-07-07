@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: CyberFishTaskAsset
   m_EditorClassIdentifier: Assembly-CSharp::HitOrMiss.Cybersickness.CyberBugTaskAsset
   m_TaskName: Cyber Bug Prediction Task
-  m_CurrentLanguage: 0
+  m_CurrentLanguage: 1
   m_BlockCount: 1
   m_MissTrialsPerBlock: 4
   m_ContactSplashTrialsPerBlock: 10
@@ -31,21 +31,21 @@ MonoBehaviour:
 '
   m_TriggerDemoTextEnglish: "First, let\u2019s learn which buttons to press.\n\nPress
     the trigger on each controller."
-  m_ResponseMappingTextEnglish: 'Great!
-
-
-    In this task, you will use the triggers
-    to answer Yes or No.
-
-
-    Press LEFT for YES.
-
-    Press RIGHT for NO.'
+  m_ResponseMappingTextEnglish: "\n\nGreat!\n\nIn this task, you will use the triggers
+    to answer Yes or No.\n \n\n\n\n\n\n\nPress LEFT for YES.\nPress RIGHT for NO.\n"
   m_ApproachIntroTextEnglish: "In this task, objects may move toward you.\n\nDo not
     worry \u2014 nothing can hurt you."
-  m_IntroTaskTextEnglish: "Now, let\u2019s put everything together in a short task.\n\nA
-    small fish will swim in front of you.\n\nYour task is to predict: will it touch
-    me?\n"
+  m_IntroTaskTextEnglish: 'Let''s put everything together in a short task.
+
+
+    A
+    small fish will swim in front of you.
+
+
+    Your task is to predict: will it
+    touch me?
+
+'
   m_ControllerGuideTextEnglish: 'Like we learned, use the triggers to answer: YES
     or NO.'
   m_ReadyTextEnglish: 'Ready?
