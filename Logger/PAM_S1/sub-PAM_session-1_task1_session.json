@@ -2,7 +2,7 @@
     "metadata": {
         "participantId": "PAM",
         "clinicianInitials": "",
-        "sessionDate": "2026-07-06",
+        "sessionDate": "2026-07-07",
         "sessionId": "S1",
         "sessionNumber": 1,
         "ageYears": 0,
@@ -41,7 +41,7 @@
         "task2BallSpeeds": [],
         "clinicianNotes": ""
     },
-    "timestamp": "2026-07-06T17:11:37.0550890+02:00",
+    "timestamp": "2026-07-07T11:37:10.6652963+02:00",
     "totalTrials": 0,
     "results": []
 }
