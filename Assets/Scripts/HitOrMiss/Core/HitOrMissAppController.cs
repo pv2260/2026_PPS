@@ -70,15 +70,6 @@ namespace HitOrMiss
         // ---- Pre-practice ----
         [Header("Pre-practice popups (Welcome → TriggerCheck → Positioning, etc.)")]
         [SerializeField] TaskPopupPanel[] m_PrePracticePopups;
-        [Tooltip("Index into m_PrePracticePopups[] of the positioning popup. -1 = no positioning step. The standing cross is visible only while that popup is up.")]
-        [SerializeField] int m_PositioningPopupIndex = -1;
-
-        
-        // ---- Positioning ----
-        [Header("Fixation acknowledgement (shown after positioning)")]
-        [Tooltip("Shown after positioning. Displays the fixation cross and waits for a trigger press to confirm the subject sees it.")]
-        [SerializeField] TaskPopupPanel m_FixationAckPanel;
-
     
         // ---- Controller practice ----
         [Header("Controller practice")]
@@ -92,15 +83,7 @@ namespace HitOrMiss
         [SerializeField] TaskPopupPanel m_ResponseMappingPopup;
         [SerializeField] HitOrMissResponseMappingDemo m_ResponseMappingDemo;
 
-        // ---- Ball demo (passive) ----
-        [Header("Ball demo (2 passive trials)")]
-        [Tooltip("Intro panel before the 2 passive demo balls.")]
-        [SerializeField] TaskPopupPanel m_BallDemoIntroPanel;
-
         // ---- Active practice ----
-        [Header("Easy practice (4 trials: 2 clear_hit, 2 clear_miss)")]
-        [SerializeField] TaskPopupPanel m_EasyPracticeIntroPanel;
-
         [Header("Difficult practice (10 trials: 2/2/3/3)")]
         [SerializeField] TaskPopupPanel m_DifficultPracticeIntroPanel;
         [Tooltip("Shown only if participant fails the difficult block (≥4 errors). Easy failures repeat silently.")]
@@ -201,6 +184,25 @@ namespace HitOrMiss
             if (m_UITextBinders == null) return;
             foreach (var binder in m_UITextBinders)
                 if (binder != null) binder.Language = language;
+        }
+
+        public void ToggleLanguage()
+        {
+            SetLanguage(
+                m_Language == SupportedLanguage.English
+                    ? SupportedLanguage.French
+                    : SupportedLanguage.English
+            );
+        }
+
+        public void SetLanguageEnglish()
+        {
+            SetLanguage(SupportedLanguage.English);
+        }
+
+        public void SetLanguageFrench()
+        {
+            SetLanguage(SupportedLanguage.French);
         }
         
         public void StartSession()
@@ -334,17 +336,9 @@ namespace HitOrMiss
             m_EegMarkerEmitter?.Emit("phase_intro");
             yield return RunPrePracticeSequence();
 
-            yield return RunFixationAcknowledgement();  
-
             SetPhase(TaskPhase.Practice);
             m_EegMarkerEmitter?.Emit("phase_controller_practice");
             yield return RunControllerPractice();
-
-            m_EegMarkerEmitter?.Emit("phase_ball_demo");
-            yield return RunBallDemo();
-
-            m_EegMarkerEmitter?.Emit("phase_easy_practice");
-            yield return RunEasyPractice();
 
             m_EegMarkerEmitter?.Emit("phase_difficult_practice");
             yield return RunDifficultPractice();
@@ -527,39 +521,6 @@ namespace HitOrMiss
             m_ResponseMappingPopup.Hide();
         }
 
-        IEnumerator RunBallDemo()
-        {
-            yield return RunOnePopup(m_BallDemoIntroPanel);
-
-            var demoTrials = TrialGenerator.GenerateBallDemoTrials(Asset, m_SessionMetadata.shoulderWidthCm);
-
-            if (m_FixationCross != null) m_FixationCross.Show();
-            // passive=true → manager ignores all input on these trials.
-            m_TaskManager.StartTrialList(-1, demoTrials, passive: true);
-            while (m_TaskManager.IsRunning) yield return null;
-            if (m_FixationCross != null) m_FixationCross.Hide();
-        }
-
-        IEnumerator RunEasyPractice()
-        {
-            yield return RunOnePopup(m_EasyPracticeIntroPanel);
-
-            while (true)
-            {
-                int errors = 0;
-                yield return RunFeedbackPracticeBlock(
-                    composition: (Asset.EasyPracticeClearHits, Asset.EasyPracticeClearMisses,
-                                Asset.EasyPracticeNearHits,  Asset.EasyPracticeNearMisses),
-                    onErrorCount: e => errors = e);
-
-                if (errors < Asset.EasyPracticeErrorThreshold)
-                    break;
-
-                Debug.Log($"[HitOrMissAppController] Easy practice failed " +
-                        $"({errors} errors ≥ {Asset.EasyPracticeErrorThreshold}). Repeating silently.");
-            }
-        }
-
         IEnumerator RunDifficultPractice()
         {
             yield return RunOnePopup(m_DifficultPracticeIntroPanel);
@@ -678,39 +639,6 @@ namespace HitOrMiss
             m_TooSlowPanel.Hide();
         }
 
-        IEnumerator RunFixationAcknowledgement()
-        {
-            if (m_FixationAckPanel == null)
-            {
-                Debug.LogWarning("[HitOrMissAppController] Fixation acknowledgement panel not assigned. Skipping.");
-                yield break;
-            }
-            if (m_InputSource == null)
-            {
-                Debug.LogError("[HitOrMissAppController] No input source for fixation acknowledgement.");
-                yield break;
-            }
-
-            // Show the exact trial crosshair, at its real spawn-point position.
-            if (m_TaskManager != null) m_TaskManager.ShowFixationCrosshair(true);
-
-            var ctx = BuildPopupContext();
-            m_FixationAckPanel.SetText(ctx.ResolveText(m_FixationAckPanel));
-            m_FixationAckPanel.Show();
-
-            // Any controller trigger (left or right) confirms.
-            bool acknowledged = false;
-            void Handler(ResponseEvent ev) => acknowledged = true;
-            m_InputSource.ResponseReceived += Handler;
-            m_InputSource.Enable();
-
-            while (!acknowledged) yield return null;
-
-            m_InputSource.ResponseReceived -= Handler;
-
-            m_FixationAckPanel.Hide();
-            if (m_TaskManager != null) m_TaskManager.ShowFixationCrosshair(false);
-        }
 
         // ====================================================================
         // Popup sequencing helpers
@@ -750,10 +678,7 @@ namespace HitOrMiss
             {
                 var panel = m_PrePracticePopups[i];
                 if (panel == null) continue;
-                bool needsCross = (i == m_PositioningPopupIndex && m_StandingCross != null);
-                if (needsCross) m_StandingCross.Show();
                 yield return RunOnePopup(panel);
-                if (needsCross) m_StandingCross.Hide();
             }
         }
 
@@ -791,12 +716,9 @@ namespace HitOrMiss
         {
             HideArray(m_PrePracticePopups);
             HideArray(m_ExtraPostPracticePopups);
-            if (m_FixationAckPanel != null) m_FixationAckPanel.Hide();
             if (m_ControllerPracticeIntroPanel  != null) m_ControllerPracticeIntroPanel.Hide();
             if (m_TriggerDemoPopup              != null) m_TriggerDemoPopup.Hide();
             if (m_ResponseMappingPopup          != null) m_ResponseMappingPopup.Hide();
-            if (m_BallDemoIntroPanel            != null) m_BallDemoIntroPanel.Hide();
-            if (m_EasyPracticeIntroPanel        != null) m_EasyPracticeIntroPanel.Hide();
             if (m_DifficultPracticeIntroPanel   != null) m_DifficultPracticeIntroPanel.Hide();
             if (m_PracticeRetryPanel            != null) m_PracticeRetryPanel.Hide();
             if (m_TooSlowPanel                  != null) m_TooSlowPanel.Hide();

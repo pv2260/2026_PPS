@@ -17,7 +17,7 @@ MonoBehaviour:
     english: 'In this task, a ball will move towards you. \nYour task is to decide
       whether the ball will hit or miss you. '
     french: "Dans cette t\xE2che, une balle va se d\xE9placer vers vous. \\nVotre
-      r\xF4le est de d\xE9cider si la balle va vous toucher ou vous \xE9viter (manquer).  "
+      r\xF4le est de d\xE9cider si la balle va vous toucher ou vous manquer.  "
   - key: popup3_positioning
     english: To begin, please stand in front of the cross. \nFace forward and hold
       both controllers comfortably.
@@ -42,12 +42,8 @@ MonoBehaviour:
     english: "Now it\u2019s your turn. \\nYou will start with easy examples. "
     french: "\xC0 vous maintenant. \\nVous allez commencer par des exemples faciles. "
   - key: popup9_difficult
-    english: Good! Now the task will become slightly harder. \nSome balls will clearly
-      hit or miss you. \nOthers will pass very close to your body. \nLets give it
-      a try!
-    french: "Bien ! La t\xE2che va maintenant devenir un peu plus difficile.\\nCertaines
-      balles vont clairement vous toucher ou vous manquer.\\nD\u2019autres passeront
-      tr\xE8s pr\xE8s de votre corps.\\nEssayons !"
+    english: "Great! Now let\u2019s put it into practice. "
+    french: "Tr\xE8s bien ! Maintenant, mettons cela en pratique. "
   - key: popup10_practiceretry
     english: "Let\u2019s try the practice again. \\nTry to respond before the ball
       reaches you."
@@ -64,7 +60,7 @@ MonoBehaviour:
     french: "\xCAtes-vous pr\xEAt \xE0 commencer ? .\\nAppuyez sur Start quand vous
       \xEAtes pr\xEAt."
   - key: popup14_block_intro
-    english: Let's start with Block {block}. .\nPress Begin Blockwhen you are ready.
+    english: Let's start with Block {block}. \nPress Begin Block when you are ready.
     french: "Commen\xE7ons avec le Bloc {block}. \\nAppuyez sur Commencer quand vous
       \xEAtes pr\xEAt"
   - key: popup15_break
@@ -89,8 +85,37 @@ MonoBehaviour:
       maintenant ! "
   - key: trigger_mapping
     english: 'Each time a ball moves toward you, decide whether it will hit you or
-      miss you.\n\nLEFT / Y = YES, it will hit me.\nRIGHT / N = NO, it will miss
-      me. '
+      miss you.\n\nLEFT= YES, it will hit me.\nRIGHT= NO, it will miss me. '
+    french: "Chaque fois qu\u2019une balle se d\xE9place vers vous, d\xE9cidez si
+      elle va vous toucher ou vous manquer.\\n\\n GAUCHE = OUI, elle va me toucher.\\
+      nDROITE = NON, elle va me manquer. "
+  - key: trigger_mapping
+    english: 'Each time a ball moves toward you, decide whether it will hit you or
+      miss you.\n\nLEFT= YES, it will hit me.\nRIGHT= NO, it will miss me. '
     french: "Chaque fois qu\u2019une balle se d\xE9place vers vous, d\xE9cidez si
       elle va vous toucher ou vous manquer.\\n\\nGAUCHE / O = OUI, elle va me toucher.\\nDROITE
-      / N = NON, elle va me manquer. "
+      /= NON, elle va me manquer. "
+  - key: intro_continue
+    english: Continue
+    french: Continuer
+  - key: intro_continue
+    english: Continue
+    french: Continuer
+  - key: block_intro
+    english: Begin Block
+    french: Commencer le Bloc
+  - key: welcome_switchlanguage
+    english: Switch Language
+    french: Choisir Langue
+  - key: welcome_start
+    english: Start
+    french: Commencer
+  - key: controller_check
+    english: Check Controllers
+    french: 'Tester les manettes '
+  - key: welcome_start
+    english: Start
+    french: Commencer
+  - key: diff_practice
+    english: Begin Practice
+    french: "Commencer l\u2019entra\xEEnement "
