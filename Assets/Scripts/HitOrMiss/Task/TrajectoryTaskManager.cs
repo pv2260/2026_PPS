@@ -76,10 +76,6 @@ namespace HitOrMiss
         bool m_Running;
         bool m_Paused;
 
-        // When true, the next StartTrialList run will ignore all input. Set by
-        // the passive overload below; reset to false at the end of every run.
-        bool m_PassiveMode;
-
         // When true, timed-out trials auto-resolve as NoResponse instead of waiting
         // for a late press. Used by practice so timeouts count as errors and the
         // block doesn't hang. Main task leaves this false.
@@ -159,27 +155,15 @@ namespace HitOrMiss
             StartTrialList(blockIndex, m_TaskAsset.GenerateBlock(blockIndex));
         }
 
-        /// <summary>
-        /// Runs a pre-generated trial list (e.g. practice trials from
-        /// <see cref="TrialGenerator.GeneratePracticeTrials"/>). Same lifecycle
-        /// as <see cref="StartBlock"/> — events fire, the crosshair is
-        /// enabled, and <see cref="IsRunning"/> goes true until every trial
-        /// completes.
-        /// </summary>
         public void StartTrialList(int blockIndex, TrialDefinition[] trials)
         {
-            StartTrialList(blockIndex, trials, passive: false);
+            StartTrialList(blockIndex, trials, false);
         }
 
-        /// <summary>
-        /// Runs a pre-generated trial list. When <paramref name="passive"/> is
-        /// true the manager spawns and animates the ball normally but ignores
-        /// all participant input — no judgement is emitted, no feedback fires,
-        /// trials auto-resolve when their ball's deadline elapses. Used by the
-        /// ball-demo phase where the participant just watches.
-        /// </summary>
         public void StartTrialList(int blockIndex, TrialDefinition[] trials, bool passive)
         {
+            passive = false; // disables passive trials, even if another script passes true
+
             if (trials == null || trials.Length == 0)
             {
                 Debug.LogWarning("[TrajectoryTaskManager] StartTrialList called with empty trial list.");
@@ -195,20 +179,17 @@ namespace HitOrMiss
             m_LastSpawnEndTime = 0f;
             m_ActiveTrials.Clear();
             m_AwaitingLateResponse.Clear();
-            m_PassiveMode = passive;
 
             m_Running = true;
-            // In passive mode we intentionally don't enable the input source —
-            // any presses simply produce no events on our side.
-            if (!passive) m_InputSource?.Enable();
+            m_InputSource?.Enable();
+
             EnsureCrosshair();
             SetCrosshairActive(true);
 
             m_MarkerEmitter?.Emit("block_triL_start");
             BlockStarted?.Invoke(blockIndex);
 
-            Debug.Log($"[TrajectoryTaskManager] Block {blockIndex + 1} started with {trials.Length} trials. " +
-                      $"passive={passive}, requireResponseToAdvance={m_RequireResponseToAdvance}.");
+            Debug.Log($"[TrajectoryTaskManager] Block {blockIndex + 1} started with {trials.Length} trials. requireResponseToAdvance={m_RequireResponseToAdvance}.");
         }
 
         /// <summary>
@@ -235,7 +216,6 @@ namespace HitOrMiss
             m_ActiveTrials.Clear();
             m_AwaitingLateResponse.Clear();
             m_Paused = false;
-            m_PassiveMode = false;
             m_Running = true;
             m_InputSource?.Enable();
             SetCrosshairActive(true);
@@ -248,7 +228,6 @@ namespace HitOrMiss
         {
             m_Running = false;
             m_Paused = false;
-            m_PassiveMode = false;
             m_InputSource?.Disable();
             SetCrosshairActive(false);
 
@@ -303,7 +282,7 @@ namespace HitOrMiss
         {
             if (!m_Running || !m_Paused) return;
             m_Paused = false;
-            if (!m_PassiveMode) m_InputSource?.Enable();
+            m_InputSource?.Enable();
             m_NextSpawnEarliest = Time.time + NextItiSeconds();
             m_MarkerEmitter?.Emit("block_resumed");
         }
@@ -351,22 +330,14 @@ namespace HitOrMiss
                 float duration = trial.Definition.Duration;
                 float deadline = duration + m_ResponseGracePeriod;
 
-                // Auto-timeout: in auto-advance mode the trial naturally resolves
-                // as NoResponse. In passive (demo) mode we also auto-resolve so
-                // the next demo trial can spawn even though require-response is
-                // on for the main protocol. AutoResolveTimeouts does the same for
-                // practice so timeouts count as errors and the block never hangs.
-                if (!trial.Resolved && trialElapsed >= deadline
-                    && (!m_RequireResponseToAdvance || m_PassiveMode || AutoResolveTimeouts))
-                {
-                    ResolveTrial(trial, SemanticCommand.None, TrialResult.NoResponse,
-                        m_PassiveMode ? "passive_demo" : "timeout");
-                    if (!m_PassiveMode)
-                    {
-                        m_MarkerEmitter?.Emit("trial_timeout");
-                    }
-                }
 
+                if (!trial.Resolved && trialElapsed >= deadline
+                    && (!m_RequireResponseToAdvance || AutoResolveTimeouts))
+                {
+                    ResolveTrial(trial, SemanticCommand.None, TrialResult.NoResponse, "timeout");
+                    m_MarkerEmitter?.Emit("trial_timeout");
+                }
+                
                 // Clean up resolved trials once the visual is done.
                 if (trial.Resolved && trialElapsed >= deadline)
                 {
@@ -398,11 +369,8 @@ namespace HitOrMiss
 
                     if (m_NextTrialIndex < m_BlockTrials.Length)
                     SetCrosshairItiMaterial();
-                    if (!m_PassiveMode)
-                    {
-                        m_MarkerEmitter?.Emit("trial_too_slow");
-                        TooSlow?.Invoke(trial.Definition);
-                    }
+                    m_MarkerEmitter?.Emit("trial_too_slow");
+                    TooSlow?.Invoke(trial.Definition);
                 }
             }
 
@@ -414,7 +382,6 @@ namespace HitOrMiss
                 && m_AwaitingLateResponse.Count == 0)
             {
                 m_Running = false;
-                m_PassiveMode = false;
                 m_InputSource?.Disable();
                 SetCrosshairActive(false);
                 m_MarkerEmitter?.Emit("block_end");
@@ -643,9 +610,7 @@ namespace HitOrMiss
 
         void OnResponseReceived(ResponseEvent response)
         {
-            Debug.Log($"[RESP] got {response.command} | running={m_Running} paused={m_Paused} passive={m_PassiveMode} active={m_ActiveTrials.Count} late={m_AwaitingLateResponse.Count}");
             if (!m_Running || m_Paused) return;
-            if (m_PassiveMode) return; // demo trials ignore input by design
 
             // Drop duplicate events for the same command inside the dedup
             // window (see k_DedupWindowSeconds). Done BEFORE marker emission

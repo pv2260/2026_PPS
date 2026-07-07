@@ -83,14 +83,14 @@ MonoBehaviour:
     english: MISS
     french: "RAT\xC9"
   - key: trigger_demo_key
-    english: Use the TRIGGERS in the controllers to enter your responses.\n Give
-      it a try!
-    french: "Utilisez les G\xC2CHETTES des contr\xF4leurs pour entrer vos r\xE9ponses.\\nEssayez
-      !"
+    english: You will use the TRIGGERS in the controllers to enter your responses.\n
+      Give it a try!
+    french: "Vous utiliserez les G\xC2CHETTES des manettes pour entrer vos r\xE9ponses.\\n\\nEssayez
+      maintenant ! "
   - key: trigger_mapping
-    english: 'A ball will move toward you with two panels: Y and N.\nThey remind
-      you which answer to choose.\n\nY / LEFT = YES, it will hit me.\nN / RIGHT =
-      NO, it will miss me.'
-    french: "Une balle avancera vers vous avec deux panneaux : Y et N.\\nIls vous
-      rappellent quelle r\xE9ponse choisir.\\n\\nY / GAUCHE = OUI, elle va me toucher.\\nN
-      / DROITE = NON, elle va me manquer."
+    english: 'Each time a ball moves toward you, decide whether it will hit you or
+      miss you.\n\nLEFT / Y = YES, it will hit me.\nRIGHT / N = NO, it will miss
+      me. '
+    french: "Chaque fois qu\u2019une balle se d\xE9place vers vous, d\xE9cidez si
+      elle va vous toucher ou vous manquer.\\n\\nGAUCHE / O = OUI, elle va me toucher.\\nDROITE
+      / N = NON, elle va me manquer. "
