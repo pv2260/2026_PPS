@@ -1,9 +1,0 @@
-﻿{
-    "participantId": "PAM",
-    "sessionId": "S1",
-    "taskKind": "Task1Pps",
-    "timestamp": "2026-07-06T10:56:50.1473112+02:00",
-    "currentBlockIndex": 0,
-    "nextTrialIndex": 3,
-    "trialsCompleted": 3
-}

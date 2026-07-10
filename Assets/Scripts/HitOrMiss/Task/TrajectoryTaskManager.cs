@@ -186,7 +186,7 @@ namespace HitOrMiss
             EnsureCrosshair();
             SetCrosshairActive(true);
 
-            m_MarkerEmitter?.Emit("block_triL_start");
+            // m_MarkerEmitter?.Emit("block_triL_start");
             BlockStarted?.Invoke(blockIndex);
 
             Debug.Log($"[TrajectoryTaskManager] Block {blockIndex + 1} started with {trials.Length} trials. requireResponseToAdvance={m_RequireResponseToAdvance}.");

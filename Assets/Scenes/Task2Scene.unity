@@ -8721,11 +8721,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3759500561752380470, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
       propertyPath: m_ComPort
-      value: COM7
+      value: COM8
+      objectReference: {fileID: 0}
+    - target: {fileID: 3759500561752380470, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
+      propertyPath: m_SessionId
+      value: s1
       objectReference: {fileID: 0}
     - target: {fileID: 3759500561752380470, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
       propertyPath: m_ParticipantId
-      value: P1
+      value: franc-task2
       objectReference: {fileID: 0}
     - target: {fileID: 3759500561752380470, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
       propertyPath: m_UseSerialBridge

@@ -14,18 +14,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   m_TaskName: Hit Or Miss Task
   m_BlockCount: 2
-  m_TrialsPerCategory: 10
+  m_TrialsPerCategory: 45
   m_IntroDuration: 3
   m_RestDuration: 3
   m_OutroDuration: 3
   m_SpawnDistance: 15
   m_BallDiameter: 0.175
-  m_ReferenceShoulderWidthCm: 42
-  m_FastSpeed: 6.5
-  m_SlowSpeed: 1.5
+  m_ReferenceShoulderWidthCm: 43
+  m_FastSpeed: 7.5
+  m_SlowSpeed: 3.5
   m_ItiMinSeconds: 1.5
-  m_ItiMaxSeconds: 2.5
-  m_BreakDurationSeconds: 2
+  m_ItiMaxSeconds: 1.5
+  m_BreakDurationSeconds: 10
   m_PracticeTrialCount: 2
   m_PracticeFeedbackSeconds: 1
   m_EasyPracticeClearHits: 1

@@ -312,7 +312,7 @@ namespace HitOrMiss
                 // Task 1 - PPS
                 case "pps_session_start":           return 61;
                 case "pps_session_end":             return 61;
-                case "pps_vib_fired":               return 64;
+                case "pps_vib_fired":               return 127;
                 case "pps_response":                return 62;
                 case "pps_block_paused":            return 61;
                 case "pps_block_resumed":           return 61;

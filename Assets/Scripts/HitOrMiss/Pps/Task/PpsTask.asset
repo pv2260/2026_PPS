@@ -16,8 +16,8 @@ MonoBehaviour:
   m_BlockCount: 3
   m_TrialsPerBlock: 140
   m_VtTrialsPerBlock: 84
-  m_VisualOnlyTrialsPerBlock: 28
-  m_TactileOnlyTrialsPerBlock: 28
+  m_VisualOnlyTrialsPerBlock: 14
+  m_TactileOnlyTrialsPerBlock: 42
   m_FastDurationSeconds: 1
   m_SlowDurationSeconds: 3
   m_ResponseGracePeriodSeconds: 1
@@ -51,14 +51,14 @@ MonoBehaviour:
   m_DefaultShoulderWidthMeters: 0.4
   m_WideOffsetMeters: 1
   m_LedHeight: 0
-  m_LoomStartDistance: 20
+  m_LoomStartDistance: 18
   m_LoomEndDistance: 0.01
   m_DistanceStageCount: 7
-  m_WarmupDistanceMeters: 4
-  m_WarmupDurationSeconds: 0.6
+  m_WarmupDistanceMeters: 19
+  m_WarmupDurationSeconds: 0.2
   m_ScaleAtD7: {x: 0.005, y: 0.005, z: 0.005}
   m_ScaleAtD1: {x: 0.005, y: 0.005, z: 0.005}
-  m_VibrationDurationMs: 300
+  m_VibrationDurationMs: 100
   m_VibrationIntensity: 1
   m_RestDurationSeconds: 30
   m_InstructionsKey: pps.instructions
