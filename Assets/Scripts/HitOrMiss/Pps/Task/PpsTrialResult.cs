@@ -15,6 +15,11 @@ namespace HitOrMiss.Pps
         /// <summary>Time.timeAsDouble at loom onset. NaN for T trials (no visual stimulus).</summary>
         public double loomOnsetTime;
 
+        /// <summary>Time.timeAsDouble at which the scored window opened (D7).
+        /// Equals loomOnsetTime + the warm-up lead. Nothing perceptible happens here;
+        /// it is an analysis bookmark, not a stimulus event. NaN for T trials.</summary>
+        public double d7OnsetTime;
+
         /// <summary>Time.timeAsDouble at each position crossing. NaN for T trials (no crossings exist).</summary>
         public double crossingD7Time;
         public double crossingD6Time;
@@ -37,11 +42,19 @@ namespace HitOrMiss.Pps
 
         public string vibrationDeviceName;
 
+        /// <summary>Metric distance of the vibration stage. NaN for V trials.</summary>
+        public float vibrationDistanceMeters;
+
+        /// <summary>Loom geometry for this trial, so the CSV is self-describing.</summary>
+        public float loomStartMeters;
+        public float loomEndMeters;
+
         public static PpsTrialResult Empty(PpsTrialDefinition def) => new()
         {
             definition = def,
             trialStartTime = double.NaN,
             loomOnsetTime = double.NaN,
+            d7OnsetTime = double.NaN,
             crossingD7Time = double.NaN,
             crossingD6Time = double.NaN,
             crossingD5Time = double.NaN,
@@ -54,6 +67,9 @@ namespace HitOrMiss.Pps
             responded = false,
             reactionTimeMs = float.NaN,
             vibrationDeviceName = string.Empty,
+            vibrationDistanceMeters = float.NaN,
+            loomStartMeters = float.NaN,
+            loomEndMeters = float.NaN,
         };
 
         static string MsOrBlank(double timeSeconds) =>
@@ -61,6 +77,9 @@ namespace HitOrMiss.Pps
 
         static string F1OrBlank(float value) =>
             float.IsNaN(value) ? "" : value.ToString("F1", System.Globalization.CultureInfo.InvariantCulture);
+
+        static string F3OrBlank(float value) =>
+            float.IsNaN(value) ? "" : value.ToString("F3", System.Globalization.CultureInfo.InvariantCulture);
 
         static string Esc(string s) =>
             string.IsNullOrEmpty(s) ? "" : s.Replace(",", ";");
@@ -96,6 +115,9 @@ namespace HitOrMiss.Pps
 
                 MsOrBlank(trialStartTime),
                 MsOrBlank(loomOnsetTime),
+                MsOrBlank(crossingD7Time),
+                MsOrBlank(crossingD6Time),
+                MsOrBlank(crossingD5Time),
                 MsOrBlank(crossingD4Time),
                 MsOrBlank(crossingD3Time),
                 MsOrBlank(crossingD2Time),
@@ -104,18 +126,26 @@ namespace HitOrMiss.Pps
                 MsOrBlank(responseTime),
                 F1OrBlank(reactionTimeMs),
 
+                F3OrBlank(vibrationDistanceMeters),
+                F3OrBlank(loomStartMeters),
+                F3OrBlank(loomEndMeters),
+
                 Esc(vibrationDeviceName),
                 "0",
                 timestamp
             );
+            );
         }
 
         public const string CsvHeader =
-            "subject_id,session_number,block_number,trial_number," +
-            "trial_type,response_made," +
-            "current_speed,width,distance_level," +
-            "trial_start_ms,stimulus_onset_ms,position_D4_ms,position_D3_ms,position_D2_ms,position_D1_ms," +
-            "vibrotactile_onset_ms,response_time_ms,reaction_time_ms," +
-            "vibration_device,trial_interrupted,timestamp";
+                    "subject_id,session_number,block_number,trial_number," +
+                    "trial_type,response_made," +
+                    "current_speed,width,distance_level," +
+                    "trial_start_ms,loom_onset_ms,d7_onset_ms," +
+                    "position_D7_ms,position_D6_ms,position_D5_ms,position_D4_ms," +
+                    "position_D3_ms,position_D2_ms,position_D1_ms," +
+                    "vibrotactile_onset_ms,response_time_ms,reaction_time_ms," +
+                    "distance_m,loom_start_m,loom_end_m," +
+                    "vibration_device,trial_interrupted,timestamp";
     }
 }

@@ -5,9 +5,30 @@ namespace HitOrMiss.Pps
 {
     /// <summary>
     /// Builds the per-block trial list from a <see cref="PpsTaskAsset"/>.
-    /// Composition is percentage-based (VT / V / T) and draws speed, width, and
-    /// vibration position uniformly within each condition. Total count matches
-    /// <see cref="PpsTaskAsset.TrialsPerBlock"/>.
+    ///
+    /// The design is fully crossed and count-driven. Repetitions are DERIVED by
+    /// dividing the per-type trial count by the number of cells, and generation
+    /// THROWS if the division is not exact. That is deliberate: an unbalanced
+    /// design is far more damaging than a failed build, and the old generator
+    /// hard-coded its repetition counts, so changing a trial count in the
+    /// Inspector silently produced either an exception or a lopsided block.
+    ///
+    /// CELLS
+    ///   VT: distances x speeds x widths
+    ///   T:  distances x speeds            (width is NOT crossed, see below)
+    ///   V:  speeds x widths               (no distance: no vibration fires)
+    ///
+    /// WIDTH
+    ///   Width only changes the lateral separation of the LEDs, so it exists only
+    ///   for trials that RENDER something. Tactile-only trials draw nothing and
+    ///   never call SeparationFor(), so crossing width there would double the cell
+    ///   count and halve the trials per timing cell for exactly no information.
+    ///   The pilot did cross it, which is why the T baseline had only 6 trials per
+    ///   (distance x speed) across the whole session and the facilitation came out
+    ///   as noise.
+    ///
+    ///   Set PpsTaskAsset.UseWidthFactor to turn the factor on or off. When off,
+    ///   every trial uses PpsTaskAsset.DefaultWidth (Narrow).
     /// </summary>
     public static class PpsTrialGenerator
     {
@@ -15,25 +36,6 @@ namespace HitOrMiss.Pps
         {
             PpsSpeed.Fast,
             PpsSpeed.Slow
-        };
-
-        static readonly PpsWidth[] Widths =
-        {
-            PpsWidth.Wide,
-            PpsWidth.Narrow
-        };
-
-        // UPDATED: vibration can now occur at any of the seven PPS stages.
-        // D7 = farthest, D1 = nearest.
-        static readonly DistanceStage[] VibStages =
-        {
-            DistanceStage.D7,
-            DistanceStage.D6,
-            DistanceStage.D5,
-            DistanceStage.D4,
-            DistanceStage.D3,
-            DistanceStage.D2,
-            DistanceStage.D1
         };
 
         public static PpsTrialDefinition[] Generate(PpsTaskAsset asset, int blockIndex)
@@ -45,119 +47,101 @@ namespace HitOrMiss.Pps
                 ? new System.Random(asset.RngSeed.Value + blockIndex)
                 : new System.Random();
 
+            // The stages actually sampled, farthest first. With DistanceStageCount = N
+            // this is the N nearest labels: 7 -> D7..D1, 6 -> D6..D1.
+            DistanceStage[] stages = asset.ActiveStages;
+
+            // Widths crossed on VISUAL trials. One entry when the factor is off.
+            PpsWidth[] widths = asset.ActiveWidths;
+
+            // Tactile-only trials render nothing, so width is fixed and meaningless.
+            // It is still written to the CSV so the schema stays constant.
+            PpsWidth tactileWidth = asset.DefaultWidth;
+
             var trials = new List<PpsTrialDefinition>();
 
             // ------------------------------------------------------------
-            // 1. VISUOTACTILE TRIALS
-            // ------------------------------------------------------------
-            // Desired:
-            // 3 repetitions x 7 distances x 4 speed-width conditions = 84 VT trials
-            //
-            // For each distance:
-            //   Fast/Wide, Fast/Narrow, Slow/Wide, Slow/Narrow
-            // repeated 3 times.
+            // 1. VISUOTACTILE
             // ------------------------------------------------------------
 
-            const int vtRepetitionsPerConditionPerDistance = 3;
+            int vtCells = stages.Length * Speeds.Length * widths.Length;
+            int vtReps  = DeriveReps(asset.VtTrialsPerBlock, vtCells, "VT",
+                                     $"{stages.Length} distances x {Speeds.Length} speeds x {widths.Length} width(s)");
 
-            for (int rep = 0; rep < vtRepetitionsPerConditionPerDistance; rep++)
-            {
-                foreach (var stage in VibStages)
-                {
+            for (int rep = 0; rep < vtReps; rep++)
+                foreach (var stage in stages)
                     foreach (var speed in Speeds)
-                    {
-                        foreach (var width in Widths)
-                        {
-                           trials.Add(PpsTrialDefinition.CreateBoth(
-                            blockIndex,
-                            speed,
-                            width,
-                            stage
-                        ));
-                        }
-                    }
-                }
-            }
+                        foreach (var width in widths)
+                            trials.Add(PpsTrialDefinition.CreateBoth(blockIndex, speed, width, stage));
 
             // ------------------------------------------------------------
-            // 2. TACTILE-ONLY TRIALS
+            // 2. TACTILE-ONLY (baseline)
             // ------------------------------------------------------------
-            // Desired:
-            // 7 distances x 4 timing conditions = 28 T trials
-            //
-            // Even though width has no visual meaning in T-only trials,
-            // we keep speed-width combinations so that timing is matched
-            // to the VT design and the logged schema stays consistent.
-            // ------------------------------------------------------------
+            // A silent clone of the VT timeline. Speed IS crossed, because speed sets
+            // the warm-up lead and the firing time, and the baseline has to be sampled
+            // at the same point on the temporal hazard curve as the VT trial it will be
+            // subtracted from. Width is NOT crossed: nothing is rendered.
 
-            foreach (var stage in VibStages)
-            {
+            int tCells = stages.Length * Speeds.Length;
+            int tReps  = DeriveReps(asset.TactileOnlyTrialsPerBlock, tCells, "T",
+                                    $"{stages.Length} distances x {Speeds.Length} speeds (width not crossed)");
+
+            for (int rep = 0; rep < tReps; rep++)
+                foreach (var stage in stages)
+                    foreach (var speed in Speeds)
+                        trials.Add(PpsTrialDefinition.CreateTactileOnly(blockIndex, speed, tactileWidth, stage));
+
+            // ------------------------------------------------------------
+            // 3. VISUAL-ONLY (catch)
+            // ------------------------------------------------------------
+            // No vibration ever fires, so there is no distance stage to assign and any
+            // press is a false alarm. These are what stop the participant learning that
+            // "LEDs approaching" means "press soon" (Kandula et al. 2017).
+
+            int vCells = Speeds.Length * widths.Length;
+            int vReps  = DeriveReps(asset.VisualOnlyTrialsPerBlock, vCells, "V",
+                                    $"{Speeds.Length} speeds x {widths.Length} width(s)");
+
+            for (int rep = 0; rep < vReps; rep++)
                 foreach (var speed in Speeds)
-                {
-                    foreach (var width in Widths)
-                    {
-                    trials.Add(PpsTrialDefinition.CreateTactileOnly(
-                        blockIndex,
-                        speed,
-                        width,
-                        stage
-                    ));
-                    }
-                }
-            }
-
-            // ------------------------------------------------------------
-            // 3. VISUAL-ONLY TRIALS
-            // ------------------------------------------------------------
-            // Desired:
-            // 7 repetitions x 4 speed-width conditions = 28 V trials
-            //
-            // Visual-only trials have no vibration stage.
-            // ------------------------------------------------------------
-
-            const int visualOnlyRepetitionsPerCondition = 7;
-
-            for (int rep = 0; rep < visualOnlyRepetitionsPerCondition; rep++)
-            {
-                foreach (var speed in Speeds)
-                {
-                    foreach (var width in Widths)
-                    {
-                    trials.Add(PpsTrialDefinition.CreateVisualOnly(
-                        blockIndex,
-                        speed,
-                        width
-                    ));
-                    }
-                }
-            }
+                    foreach (var width in widths)
+                        trials.Add(PpsTrialDefinition.CreateVisualOnly(blockIndex, speed, width));
 
             // ------------------------------------------------------------
             // 4. SAFETY CHECK
             // ------------------------------------------------------------
-            // Expected total:
-            // VT = 84
-            // T  = 28
-            // V  = 28
-            // Total = 140
-            // ------------------------------------------------------------
 
-            int expectedTotal = 140;
+            int expectedTotal =
+                asset.VtTrialsPerBlock +
+                asset.TactileOnlyTrialsPerBlock +
+                asset.VisualOnlyTrialsPerBlock;
 
             if (trials.Count != expectedTotal)
             {
                 throw new InvalidOperationException(
-                    $"PPS trial generation error: expected {expectedTotal} trials, but generated {trials.Count}."
+                    $"PPS trial generation error: expected {expectedTotal} trials " +
+                    $"(VT {asset.VtTrialsPerBlock} + T {asset.TactileOnlyTrialsPerBlock} + " +
+                    $"V {asset.VisualOnlyTrialsPerBlock}), generated {trials.Count}."
                 );
             }
 
-            // Optional: if your asset still has TrialsPerBlock, make sure it agrees.
             if (asset.TrialsPerBlock != expectedTotal)
             {
                 throw new InvalidOperationException(
-                    $"PpsTaskAsset.TrialsPerBlock is {asset.TrialsPerBlock}, but the balanced generator requires {expectedTotal} trials per block."
+                    $"PpsTaskAsset.TrialsPerBlock is {asset.TrialsPerBlock}, but the per-type " +
+                    $"counts sum to {expectedTotal}. OnValidate should keep these in lockstep; " +
+                    $"re-select the asset in the Inspector to force a refresh."
                 );
             }
+
+            UnityEngine.Debug.Log(
+                $"[PpsTrialGenerator] block {blockIndex + 1}: {trials.Count} trials | " +
+                $"VT {asset.VtTrialsPerBlock} ({vtReps} reps x {vtCells} cells) | " +
+                $"T {asset.TactileOnlyTrialsPerBlock} ({tReps} reps x {tCells} cells) | " +
+                $"V {asset.VisualOnlyTrialsPerBlock} ({vReps} reps x {vCells} cells) | " +
+                $"width factor {(asset.UseWidthFactor ? "ON" : $"OFF, all {asset.DefaultWidth}")} | " +
+                $"catch rate {100f * asset.VisualOnlyTrialsPerBlock / trials.Count:F1}%"
+            );
 
             if (asset.OrderingStrategy == TrialOrder.Shuffled)
                 Shuffle(trials, rng);
@@ -166,38 +150,47 @@ namespace HitOrMiss.Pps
 
             return trials.ToArray();
         }
+
         /// <summary>
-        /// Practice block: one of each trial type (V, T, VT).
+        /// Repetitions per cell, derived from the total. Throws rather than rounding,
+        /// because a non-integer here means the block would be unbalanced across cells
+        /// and no analysis downstream would notice.
+        /// </summary>
+        static int DeriveReps(int totalTrials, int cellCount, string label, string cellDescription)
+        {
+            if (cellCount <= 0)
+                throw new InvalidOperationException($"PPS {label}: cell count is {cellCount}.");
+
+            if (totalTrials % cellCount != 0)
+            {
+                throw new InvalidOperationException(
+                    $"PPS {label} trials per block ({totalTrials}) do not divide evenly by " +
+                    $"{cellDescription} = {cellCount} cells. The design would be unbalanced. " +
+                    $"Set the count to a multiple of {cellCount} " +
+                    $"(nearest: {cellCount * UnityEngine.Mathf.Max(1, UnityEngine.Mathf.RoundToInt(totalTrials / (float)cellCount))})."
+                );
+            }
+
+            return totalTrials / cellCount;
+        }
+
+        /// <summary>
+        /// Practice block: one of each trial type. Uses the asset's default width and a
+        /// mid-range stage so nothing about the practice depends on the width factor.
         /// </summary>
         public static PpsTrialDefinition[] GeneratePractice(PpsTaskAsset asset)
         {
             if (asset == null)
                 throw new ArgumentNullException(nameof(asset));
 
+            DistanceStage mid = MidStage(asset);
+            PpsWidth w = asset.DefaultWidth;
+
             var trials = new List<PpsTrialDefinition>
             {
-                PpsTrialDefinition.CreateVisualOnly(
-                    -1,
-                    PpsSpeed.Slow,
-                    PpsWidth.Wide,
-                    isPractice: true
-                ),
-
-                PpsTrialDefinition.CreateTactileOnly(
-                    -1,
-                    PpsSpeed.Slow,
-                    PpsWidth.Wide,
-                    DistanceStage.D4,
-                    isPractice: true
-                ),
-
-                PpsTrialDefinition.CreateBoth(
-                    -1,
-                    PpsSpeed.Slow,
-                    PpsWidth.Wide,
-                    DistanceStage.D4,
-                    isPractice: true
-                ),
+                PpsTrialDefinition.CreateVisualOnly(-1, PpsSpeed.Slow, w, isPractice: true),
+                PpsTrialDefinition.CreateTactileOnly(-1, PpsSpeed.Slow, w, mid, isPractice: true),
+                PpsTrialDefinition.CreateBoth(-1, PpsSpeed.Slow, w, mid, isPractice: true),
             };
 
             AssignIds(trials, blockIndex: 0, practice: true);
@@ -209,23 +202,13 @@ namespace HitOrMiss.Pps
             if (asset == null)
                 throw new ArgumentNullException(nameof(asset));
 
+            DistanceStage mid = MidStage(asset);
+            PpsWidth w = asset.DefaultWidth;
+
             var trials = new List<PpsTrialDefinition>
             {
-                PpsTrialDefinition.CreateTactileOnly(
-                    -1,
-                    PpsSpeed.Slow,
-                    PpsWidth.Wide,
-                    DistanceStage.D4,
-                    isPractice: true
-                ),
-
-                PpsTrialDefinition.CreateTactileOnly(
-                    -1,
-                    PpsSpeed.Slow,
-                    PpsWidth.Narrow,
-                    DistanceStage.D3,
-                    isPractice: true
-                )
+                PpsTrialDefinition.CreateTactileOnly(-1, PpsSpeed.Slow, w, mid, isPractice: true),
+                PpsTrialDefinition.CreateTactileOnly(-1, PpsSpeed.Fast, w, mid, isPractice: true),
             };
 
             AssignIds(trials, blockIndex: 0, practice: true);
@@ -234,27 +217,19 @@ namespace HitOrMiss.Pps
 
         public static PpsTrialDefinition[] GenerateVOnlyPractice(PpsTaskAsset asset)
         {
-            return new[]
+            if (asset == null)
+                throw new ArgumentNullException(nameof(asset));
+
+            PpsWidth w = asset.DefaultWidth;
+
+            var trials = new List<PpsTrialDefinition>
             {
-                new PpsTrialDefinition
-                {
-                    trialId = "practice_visual_only_slow",
-                    modality = PpsModality.VisualOnly,
-                    speed = PpsSpeed.Slow,
-                    width = PpsWidth.Narrow,
-                    vibrationStage = DistanceStage.D4,
-                    isPractice = true
-                },
-                new PpsTrialDefinition
-                {
-                    trialId = "practice_visual_only_fast",
-                    modality = PpsModality.VisualOnly,
-                    speed = PpsSpeed.Fast,
-                    width = PpsWidth.Narrow,
-                    vibrationStage = DistanceStage.D4,
-                    isPractice = true
-                }
+                PpsTrialDefinition.CreateVisualOnly(-1, PpsSpeed.Slow, w, isPractice: true),
+                PpsTrialDefinition.CreateVisualOnly(-1, PpsSpeed.Fast, w, isPractice: true),
             };
+
+            AssignIds(trials, blockIndex: 0, practice: true);
+            return trials.ToArray();
         }
 
         public static PpsTrialDefinition[] GenerateVTVisualPractice(PpsTaskAsset asset)
@@ -262,41 +237,29 @@ namespace HitOrMiss.Pps
             if (asset == null)
                 throw new ArgumentNullException(nameof(asset));
 
+            DistanceStage mid = MidStage(asset);
+            PpsWidth w = asset.DefaultWidth;
+
             var trials = new List<PpsTrialDefinition>
             {
-                // Visual-only catch trial.
-                PpsTrialDefinition.CreateVisualOnly(
-                    -1,
-                    PpsSpeed.Slow,
-                    PpsWidth.Wide,
-                    isPractice: true
-                ),
-
-                // Visuotactile trial.
-                PpsTrialDefinition.CreateBoth(
-                    -1,
-                    PpsSpeed.Slow,
-                    PpsWidth.Wide,
-                    DistanceStage.D4,
-                    isPractice: true
-                ),
-
-                PpsTrialDefinition.CreateBoth(
-                    -1,
-                    PpsSpeed.Slow,
-                    PpsWidth.Narrow,
-                    DistanceStage.D3,
-                    isPractice: true
-                )
+                PpsTrialDefinition.CreateVisualOnly(-1, PpsSpeed.Slow, w, isPractice: true),
+                PpsTrialDefinition.CreateBoth(-1, PpsSpeed.Slow, w, mid, isPractice: true),
+                PpsTrialDefinition.CreateBoth(-1, PpsSpeed.Fast, w, mid, isPractice: true),
             };
 
             AssignIds(trials, blockIndex: 0, practice: true);
             return trials.ToArray();
         }
 
-        static T Pick<T>(T[] arr, System.Random rng)
+        /// <summary>
+        /// A stage roughly in the middle of the active range. Practice trials should not
+        /// fire at the farthest stage (progress 0, so the vibration lands immediately at
+        /// the start of the scored window) nor at D1 (the very last frame of the loom).
+        /// </summary>
+        static DistanceStage MidStage(PpsTaskAsset asset)
         {
-            return arr[rng.Next(0, arr.Length)];
+            var stages = asset.ActiveStages;
+            return stages[stages.Length / 2];
         }
 
         static void Shuffle(List<PpsTrialDefinition> trials, System.Random rng)

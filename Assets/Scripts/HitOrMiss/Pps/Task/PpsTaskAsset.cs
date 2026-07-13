@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace HitOrMiss.Pps
@@ -5,6 +6,10 @@ namespace HitOrMiss.Pps
     /// <summary>
     /// ScriptableObject container for all PPS protocol parameters.
     /// Edit in the Inspector (one asset per study) — no recompilation needed.
+    ///
+    /// NOTE: the C# initialisers below are only defaults for a NEWLY created asset.
+    /// An existing .asset already has its values serialised, so editing this file
+    /// will not change it. Change values in the Inspector.
     /// </summary>
     [CreateAssetMenu(fileName = "PpsTask", menuName = "Parkinson/HitOrMiss/PPS Task Asset")]
     public class PpsTaskAsset : ScriptableObject
@@ -15,47 +20,100 @@ namespace HitOrMiss.Pps
         [Tooltip("Number of experimental blocks")]
         [SerializeField] int m_BlockCount = 3;
 
-        [Tooltip("Total trials per block. Automatically forced to VT + V + T. Balanced default = 140.")]
-        [SerializeField] int m_TrialsPerBlock = 140;
+        [Tooltip("Total trials per block. Derived: forced to VT + V + T.")]
+        [SerializeField] int m_TrialsPerBlock = 154;
 
         [Header("Trial counts per block")]
 
-        [Tooltip("Number of visuotactile trials per block: 3 repetitions x 7 distances x 4 speed-width conditions = 84 by default.")]
-        [SerializeField, Min(0)] int m_VtTrialsPerBlock = 84;
+        [Tooltip("Visuotactile trials per block. Must divide evenly by " +
+                 "(distances x speeds x active widths) or PpsTrialGenerator will throw. " +
+                 "Default 70 = 5 reps x 7 distances x 2 speeds, width factor OFF.")]
+        [SerializeField, Min(0)] int m_VtTrialsPerBlock = 70;
 
-        [Tooltip("Number of visual-only trials per block: 7 repetitions x 4 speed-width conditions = 28 by default.")]
+        [Tooltip("Visual-only (catch) trials per block. Must divide evenly by " +
+                 "(speeds x active widths). Default 28 = 14 reps x 2 speeds, width factor OFF.")]
         [SerializeField, Min(0)] int m_VisualOnlyTrialsPerBlock = 28;
 
-        [Tooltip("Number of tactile-only trials per block: 7 distances x 4 matched timing conditions = 28 by default.")]
-        [SerializeField, Min(0)] int m_TactileOnlyTrialsPerBlock = 28;
+        [Tooltip("Tactile-only (baseline) trials per block. Must divide evenly by " +
+                 "(distances x speeds). T trials NEVER cross width: nothing is rendered, so " +
+                 "width is meaningless and crossing it would only halve the trials per timing " +
+                 "cell. Default 56 = 4 reps x 7 distances x 2 speeds.")]
+        [SerializeField, Min(0)] int m_TactileOnlyTrialsPerBlock = 56;
+
+        [Header("Width factor")]
+        [Tooltip("Width (narrow vs wide LED separation) changes the lateral extent of the looming " +
+                 "pair. It only affects the VISUAL stimulus, so it applies to VT and V trials and " +
+                 "never to T trials.\n\n" +
+                 "OFF (recommended): every trial uses DefaultWidth. Width is not a factor.\n\n" +
+                 "ON: doubles the VT and V cell count, which HALVES the trials per cell at the same " +
+                 "block size. The pilot ran with width crossed and only 9 VT trials per " +
+                 "(distance x speed x width) cell, below every study in the literature. Enable this " +
+                 "only if width is preregistered AND the trial budget accounts for it.")]
+        [SerializeField] bool m_UseWidthFactor = false;
+
+        [Tooltip("Width used on every trial when UseWidthFactor is off.")]
+        [SerializeField] PpsWidth m_DefaultWidth = PpsWidth.Narrow;
 
         [Header("Loom timing")]
+        [Tooltip("Seconds for the SCORED loom only. The warm-up is additional and is derived from " +
+                 "WarmupDistanceMeters at the same velocity, so it is NOT included here. ")]
         [SerializeField] float m_FastDurationSeconds = 1.5f;
-        [SerializeField] float m_SlowDurationSeconds = 3.5f;
-
-        [Tooltip("Extra seconds after loom/vibration during which a response is still accepted")]
-        [SerializeField] float m_ResponseGracePeriodSeconds = 1.0f;
-
-        [Header("Inter-trial interval (fixed, seconds)")]
-        [Tooltip("Fixed inter-trial interval before every trial.")]
-        [SerializeField] float m_ItiSeconds = 1.2f;
+        [SerializeField] float m_SlowDurationSeconds = 4.0f;
 
         [Header("Motion curve (shared by visual loom and tactile-only timing)")]
-        [Tooltip("Normalized loom progress t ∈ [0,1] → curved progress. Stage thresholds are split across the equally spaced distance stages.")]
-        [SerializeField] AnimationCurve m_MotionCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+        [Tooltip("Normalized loom progress t in [0,1] -> curved progress.\n\n" +
+                 "MUST BE LINEAR. Two reasons:\n" +
+                 "  1. A non-linear curve makes the loom's instantaneous velocity vary across the " +
+                 "distance stages, confounding distance with velocity WITHIN a trial. Every PPS " +
+                 "study in the literature uses constant velocity.\n" +
+                 "  2. With EaseInOut (smoothstep) the velocity at the first scored stage is exactly " +
+                 "ZERO, so the warm-up glides in at constant speed, the lights stop dead at D7, then " +
+                 "accelerate away. That is a stronger cue than having no warm-up at all.\n\n" +
+                 "Right-click this asset in the Project window -> 'Set Motion Curve to Linear'.")]
+        [SerializeField] AnimationCurve m_MotionCurve = AnimationCurve.Linear(0f, 0f, 1f, 1f);
 
-        [Header("Spatial layout (all values in METERS, measured from the body anchor)")]
+        [Header("Inter-trial interval")]
+        [Tooltip("ITI is drawn uniformly from [min, max] before every trial. The jitter is what " +
+                 "breaks between-trial temporal anticipation, and it is why the fast/slow duration " +
+                 "padding is no longer needed. A fixed ITI lets the participant learn the rhythm.")]
+        [SerializeField, Min(0f)] float m_ItiMinSeconds = 1.2f;
+        [SerializeField, Min(0f)] float m_ItiMaxSeconds = 1.8f;
 
-        [Tooltip("Distance forward from the body anchor to the fixation crosshair (meters). Usually slightly farther than the loom start distance.")]
+        [Header("Response window")]
+        [Tooltip("Hard ceiling on the RT window, measured from the vibration. The window opens at " +
+                 "trial start (so anticipations and false alarms are still caught) and closes on the " +
+                 "first press or after this interval, whichever comes first. Presses after it are " +
+                 "pacing presses, never reaction times. Petrizzo et al. (2024) excluded RTs above " +
+                 "1000 ms as inattention.")]
+        [SerializeField, Min(0.1f)] float m_ResponseWindowSeconds = 1.0f;
+
+        [Tooltip("Refractory gap between the RT window closing and the advance gate opening. Stops " +
+                 "a late detection press being silently consumed as the advance press.")]
+        [SerializeField, Min(0f)] float m_AdvanceGateDelaySeconds = 0.3f;
+
+        [Tooltip("Safety timeout on the advance gate. Prevents the unbounded hang that produced " +
+                 "71-second 'reaction times' in the pilot.")]
+        [SerializeField, Min(1f)] float m_AdvanceGateTimeoutSeconds = 15f;
+
+        [Tooltip("If true, EVERY trial waits for a press to advance (fully self-paced). If false, " +
+                 "only missed trials do: the pace stays fixed while the participant is engaged, and " +
+                 "control is handed back only when they lose the thread. False is recommended.")]
+        [SerializeField] bool m_GateEveryTrial = false;
+
+        [Header("Spatial layout (all values in METERS, from the body anchor)")]
+
+        [Tooltip("Distance forward from the body anchor to the fixation crosshair (meters).")]
         [SerializeField, Min(0.01f)] float m_CrosshairDistance = 2.6f;
 
         [Tooltip("Vertical offset of the crosshair above the body anchor (meters). Typically eye level.")]
         [SerializeField, Min(0f)] float m_CrosshairHeight = 1.4f;
 
-        [Tooltip("Fallback shoulder width in meters. Used as the narrow LED separation when no participant-specific value is provided.")]
+        [Tooltip("Fallback shoulder width in meters. Used as the narrow LED separation when no " +
+                 "participant-specific value is provided.")]
         [SerializeField, Min(0.01f)] float m_DefaultShoulderWidthMeters = 0.40f;
 
-        [Tooltip("Extra meters added to the narrow separation for the WIDE condition.")]
+        [Tooltip("Extra meters added to the narrow separation for the WIDE condition. Only used " +
+                 "when UseWidthFactor is on, or when DefaultWidth is Wide.")]
         [SerializeField, Min(0f)] float m_WideOffsetMeters = 0.30f;
 
         [Tooltip("Vertical offset of the side LEDs relative to the body anchor.")]
@@ -63,27 +121,31 @@ namespace HitOrMiss.Pps
 
         [Header("Distance stages")]
 
-        [Tooltip("Farthest point / loom start. This corresponds to D7 when using 7 stages.")]
-        [SerializeField, Min(0.01f)] float m_LoomStartDistance = 2.4f;
+        [Tooltip("Farthest SCORED point. Serino et al. (2015) sampled 5-197 cm in VR; " +
+                 "Petrizzo et al. (2024) used 0.25-2.25 m and found the VR PPS boundary at ~1.2 m.")]
+        [SerializeField, Min(0.01f)] float m_LoomStartDistance = 2.25f;
 
-        [Tooltip("Nearest point / loom end. This corresponds to D1 when using 7 stages.")]
-        [SerializeField, Min(0.01f)] float m_LoomEndDistance = 0.6f;
+        [Tooltip("Nearest SCORED point (D1).")]
+        [SerializeField, Min(0.01f)] float m_LoomEndDistance = 0.25f;
 
-        [Tooltip("Number of equally spaced distance stages, including start and end. Use 7 for D7..D1.")]
+        [Tooltip("Number of equally spaced distance stages, including start and end.\n\n" +
+                 "The stages in use are always the N NEAREST labels: 7 gives D7..D1, 6 gives D6..D1, " +
+                 "5 gives D5..D1. The farthest label in use always sits at LoomStartDistance and D1 " +
+                 "always sits at LoomEndDistance, so lowering this widens the spacing rather than " +
+                 "truncating the range.")]
         [SerializeField, Min(2)] int m_DistanceStageCount = 7;
 
         [Header("Loom warm-up (pre-D7 visibility)")]
 
-        [Tooltip("Distance in meters at which the lights first APPEAR, before drifting in to the loom start. " +
-                 "Must be > LoomStartDistance to be visible as a warm-up. The participant sees the LEDs glow " +
-                 "from this far point and drift closer until D7, which is when stage scoring + vibration timing " +
-                 "begins. Pure visual cue; not a measured stage.")]
-        [SerializeField, Min(0.01f)] float m_WarmupDistanceMeters = 4.0f;
-
-        [Tooltip("Seconds spent gliding the lights from WarmupDistance to LoomStartDistance (D7). 0 disables " +
-                 "the warm-up phase. ~0.5-1.0 s is enough for the brain to register their existence before " +
-                 "the timed stages start. Time added BEFORE the loom duration, not inside it.")]
-        [SerializeField, Min(0f)] float m_WarmupDurationSeconds = 0.6f;
+        [Tooltip("Distance in meters at which the lights first APPEAR, before gliding in to the " +
+                 "farthest scored stage.\n\n" +
+                 "MUST be greater than LoomStartDistance, or the warm-up is silently skipped and the " +
+                 "LEDs pop into existence at D7.\n\n" +
+                 "The warm-up DURATION is not set here: it is derived so the glide runs at the loom's " +
+                 "own velocity, which is what makes D7 imperceptible. It is therefore speed-dependent " +
+                 "(longer on slow trials). Tactile-only trials wait the same interval blind, so their " +
+                 "vibration lands at the same elapsed time as the matched VT trial.")]
+        [SerializeField, Min(0.01f)] float m_WarmupDistanceMeters = 3.0f;
 
         [Header("Scale growth (looming cue)")]
 
@@ -114,27 +176,83 @@ namespace HitOrMiss.Pps
         [Tooltip("-1 = time-seeded (non-reproducible). Any other value = reproducible seed.")]
         [SerializeField] int m_RngSeed = -1;
 
-        // ---- Public getters ----
+        // ------------------------------------------------------------------
+        // Stage ordering
+        // ------------------------------------------------------------------
+
+        /// <summary>All seven labels, farthest first. Never reorder.</summary>
+        static readonly DistanceStage[] k_AllStages =
+        {
+            DistanceStage.D7,
+            DistanceStage.D6,
+            DistanceStage.D5,
+            DistanceStage.D4,
+            DistanceStage.D3,
+            DistanceStage.D2,
+            DistanceStage.D1
+        };
+
+        /// <summary>
+        /// The stages actually sampled, farthest first. With DistanceStageCount = N this is
+        /// the N NEAREST labels: 7 -> D7..D1, 6 -> D6..D1, 5 -> D5..D1.
+        ///
+        /// The slicing matters. The old StageIndex hard-coded D7=0 ... D1=6 and then clamped
+        /// to (N-1). At N=6 that mapped BOTH D2 and D1 to index 5, so two stages collapsed
+        /// onto the same distance AND the same firing time, silently and with no error.
+        /// </summary>
+        public DistanceStage[] ActiveStages
+        {
+            get
+            {
+                int n = Mathf.Clamp(m_DistanceStageCount, 2, k_AllStages.Length);
+                var result = new DistanceStage[n];
+                Array.Copy(k_AllStages, k_AllStages.Length - n, result, 0, n);
+                return result;
+            }
+        }
+
+        public bool IsStageActive(DistanceStage stage)
+            => Array.IndexOf(ActiveStages, stage) >= 0;
+
+        // ------------------------------------------------------------------
+        // Width factor
+        // ------------------------------------------------------------------
+
+        public bool UseWidthFactor => m_UseWidthFactor;
+        public PpsWidth DefaultWidth => m_DefaultWidth;
+
+        /// <summary>
+        /// The widths the generator crosses for VISUAL trials (VT and V). One entry when
+        /// the factor is off. Tactile-only trials always use DefaultWidth, because no LEDs
+        /// are rendered and SeparationFor() is never called on them.
+        /// </summary>
+        public PpsWidth[] ActiveWidths =>
+            m_UseWidthFactor
+                ? new[] { PpsWidth.Narrow, PpsWidth.Wide }
+                : new[] { m_DefaultWidth };
+
+        // ------------------------------------------------------------------
+        // Public getters
+        // ------------------------------------------------------------------
 
         public string TaskName => m_TaskName;
         public int BlockCount => m_BlockCount;
 
         public int TrialsPerBlock => m_TrialsPerBlock;
-
         public int VtTrialsPerBlock => m_VtTrialsPerBlock;
         public int VisualOnlyTrialsPerBlock => m_VisualOnlyTrialsPerBlock;
         public int TactileOnlyTrialsPerBlock => m_TactileOnlyTrialsPerBlock;
 
         public float FastDurationSeconds => m_FastDurationSeconds;
         public float SlowDurationSeconds => m_SlowDurationSeconds;
-        public float ResponseGracePeriodSeconds => m_ResponseGracePeriodSeconds;
 
-        public float ItiSeconds => m_ItiSeconds;
+        public float ItiMinSeconds => m_ItiMinSeconds;
+        public float ItiMaxSeconds => Mathf.Max(m_ItiMaxSeconds, m_ItiMinSeconds);
 
-        // Compatibility getters for PpsTaskManager.
-        // Both return the same value so the ITI is fixed, not jittered.
-        public float ItiMinSeconds => m_ItiSeconds;
-        public float ItiMaxSeconds => m_ItiSeconds;
+        public float ResponseWindowSeconds     => m_ResponseWindowSeconds;
+        public float AdvanceGateDelaySeconds   => m_AdvanceGateDelaySeconds;
+        public float AdvanceGateTimeoutSeconds => m_AdvanceGateTimeoutSeconds;
+        public bool  GateEveryTrial            => m_GateEveryTrial;
 
         public AnimationCurve MotionCurve => m_MotionCurve;
 
@@ -154,15 +272,12 @@ namespace HitOrMiss.Pps
         public int DistanceStageCount => m_DistanceStageCount;
 
         public float WarmupDistanceMeters => m_WarmupDistanceMeters;
-        public float WarmupDurationSeconds => m_WarmupDurationSeconds;
 
         public Vector3 ScaleAtD7 => m_ScaleAtD7;
-
-        // Kept for compatibility if LoomingPairController still calls ScaleAtD4.
-        // It now returns the far-stage scale, which is D7.
-        public Vector3 ScaleAtD4 => m_ScaleAtD7;
-
         public Vector3 ScaleAtD1 => m_ScaleAtD1;
+
+        // Kept for compatibility if any older code still calls ScaleAtD4.
+        public Vector3 ScaleAtD4 => m_ScaleAtD7;
 
         public float VibrationDurationMs => m_VibrationDurationMs;
         public float VibrationIntensity => m_VibrationIntensity;
@@ -177,8 +292,119 @@ namespace HitOrMiss.Pps
         public TrialOrder OrderingStrategy => m_OrderingStrategy;
         public int? RngSeed => m_RngSeed < 0 ? null : m_RngSeed;
 
-        // ---- Compatibility getters for existing DistanceLayout code ----
-        // These are now computed automatically from start/end/stage count.
+        // ------------------------------------------------------------------
+        // Warm-up
+        // ------------------------------------------------------------------
+
+        /// <summary>
+        /// The warm-up runs only when the lights start FARTHER than the first scored stage.
+        /// If WarmupDistanceMeters is not greater than LoomStartDistance the glide is
+        /// skipped and the LEDs appear abruptly at D7. This is what happened when
+        /// LoomStartDistance was set to 20 m while the warm-up sat at 4 m.
+        /// </summary>
+        public bool WarmupActive => m_WarmupDistanceMeters > m_LoomStartDistance;
+
+        /// <summary>
+        /// Seconds of warm-up before the first stage callback, at the given speed.
+        ///
+        /// SINGLE SOURCE OF TRUTH. LoomingPairController.RunLoom calls this for the visual
+        /// glide, and PpsTaskManager calls it for the tactile-only blind wait. If the two
+        /// ever computed it independently they could drift apart and T would silently stop
+        /// being delay-matched to VT.
+        ///
+        /// Speed-dependent by design: the glide runs at the loom's own velocity, so there
+        /// is no velocity discontinuity at D7. Slower trials get a longer warm-up.
+        /// </summary>
+        public float WarmupLeadSeconds(PpsSpeed speed)
+        {
+            if (!WarmupActive) return 0f;
+
+            float scoredTravel = m_LoomStartDistance - m_LoomEndDistance;
+            float velocity     = scoredTravel / Mathf.Max(0.0001f, DurationFor(speed));
+            float extra        = m_WarmupDistanceMeters - m_LoomStartDistance;
+
+            return velocity > 0f ? extra / velocity : 0f;
+        }
+
+        /// <summary>Total trial length from trial start, at the given speed.</summary>
+        public float TotalTrialSeconds(PpsSpeed speed)
+            => WarmupLeadSeconds(speed) + DurationFor(speed);
+
+        // ------------------------------------------------------------------
+        // Motion curve
+        // ------------------------------------------------------------------
+
+        /// <summary>True when Evaluate(t) == t across the range, i.e. constant velocity.</summary>
+        public bool IsMotionCurveLinear()
+        {
+            if (m_MotionCurve == null) return false;
+
+            for (int i = 0; i <= 20; i++)
+            {
+                float t = i / 20f;
+                if (Mathf.Abs(m_MotionCurve.Evaluate(t) - t) > 0.01f)
+                    return false;
+            }
+            return true;
+        }
+
+#if UNITY_EDITOR
+        [ContextMenu("Set Motion Curve to Linear")]
+        void SetMotionCurveLinear()
+        {
+            m_MotionCurve = AnimationCurve.Linear(0f, 0f, 1f, 1f);
+            UnityEditor.EditorUtility.SetDirty(this);
+            Debug.Log($"[PpsTaskAsset] '{name}' MotionCurve set to Linear (0,0) -> (1,1).", this);
+        }
+
+        /// <summary>
+        /// Prints the full design: stage distances, firing times, reps per cell, catch
+        /// rate, and estimated session length. Run this after every Inspector change.
+        /// </summary>
+        [ContextMenu("Log Trial Structure")]
+        void LogTrialStructure()
+        {
+            var stages = ActiveStages;
+            var widths = ActiveWidths;
+
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine($"[PpsTaskAsset] '{name}'");
+            sb.AppendLine($"  width factor: {(m_UseWidthFactor ? "ON (narrow + wide)" : $"OFF (all {m_DefaultWidth})")}");
+            sb.AppendLine($"  stages: {stages.Length} | speeds: 2 | widths: {widths.Length}");
+
+            foreach (var s in stages)
+                sb.AppendLine(
+                    $"    {s}: {DistanceForStage(s):F3} m | " +
+                    $"fast fires {WarmupLeadSeconds(PpsSpeed.Fast) + TimeToReachStage(PpsSpeed.Fast, s):F2} s | " +
+                    $"slow fires {WarmupLeadSeconds(PpsSpeed.Slow) + TimeToReachStage(PpsSpeed.Slow, s):F2} s");
+
+            int vtCells = stages.Length * 2 * widths.Length;
+            int tCells  = stages.Length * 2;
+            int vCells  = 2 * widths.Length;
+
+            sb.AppendLine($"  VT: {m_VtTrialsPerBlock}/block / {vtCells} cells = " +
+                          $"{(vtCells > 0 ? m_VtTrialsPerBlock / (float)vtCells : 0):F2} reps/cell/block " +
+                          $"({(vtCells > 0 ? m_BlockCount * m_VtTrialsPerBlock / (float)vtCells : 0):F0} over {m_BlockCount} blocks)");
+            sb.AppendLine($"  T:  {m_TactileOnlyTrialsPerBlock}/block / {tCells} cells = " +
+                          $"{(tCells > 0 ? m_TactileOnlyTrialsPerBlock / (float)tCells : 0):F2} reps/cell/block " +
+                          $"({(tCells > 0 ? m_BlockCount * m_TactileOnlyTrialsPerBlock / (float)tCells : 0):F0} over {m_BlockCount} blocks)");
+            sb.AppendLine($"  V:  {m_VisualOnlyTrialsPerBlock}/block / {vCells} cells");
+            sb.AppendLine($"  catch rate: {(m_TrialsPerBlock > 0 ? 100f * m_VisualOnlyTrialsPerBlock / m_TrialsPerBlock : 0):F1}%");
+            sb.AppendLine($"  trial length: fast {TotalTrialSeconds(PpsSpeed.Fast):F2} s | slow {TotalTrialSeconds(PpsSpeed.Slow):F2} s");
+
+            float meanIti   = 0.5f * (ItiMinSeconds + ItiMaxSeconds);
+            float meanTrial = 0.5f * (TotalTrialSeconds(PpsSpeed.Fast) + TotalTrialSeconds(PpsSpeed.Slow));
+            float minutes   = m_BlockCount * m_TrialsPerBlock * (meanTrial + meanIti) / 60f;
+            sb.AppendLine($"  estimated task time: {minutes:F1} min " +
+                          $"({m_BlockCount} x {m_TrialsPerBlock} = {m_BlockCount * m_TrialsPerBlock} trials, excl. breaks)");
+
+            Debug.Log(sb.ToString(), this);
+        }
+#endif
+
+        // ------------------------------------------------------------------
+        // Distance stages
+        // ------------------------------------------------------------------
 
         public float DistanceD7 => DistanceForStage(DistanceStage.D7);
         public float DistanceD6 => DistanceForStage(DistanceStage.D6);
@@ -217,10 +443,9 @@ namespace HitOrMiss.Pps
         }
 
         /// <summary>
-        /// Returns a runtime-only clone of this asset that can be safely
-        /// mutated for the active session without touching the on-disk
-        /// ScriptableObject. The caller (PpsAppController) is responsible
-        /// for calling Destroy on the clone at session end.
+        /// Runtime-only clone that can be mutated for the active session without touching
+        /// the on-disk ScriptableObject. The caller (PpsAppController) destroys the clone
+        /// at session end.
         /// </summary>
         public PpsTaskAsset CreateSessionClone()
         {
@@ -228,12 +453,8 @@ namespace HitOrMiss.Pps
         }
 
         /// <summary>
-        /// Applies overrides from the clinician form (carried in
-        /// SessionMetadata) to this asset. Only call this on a
+        /// Applies overrides from the clinician form. Only call this on a
         /// CreateSessionClone() result so the on-disk asset stays clean.
-        ///
-        /// Fields with zero or empty values are NOT overridden, so a
-        /// partially filled form still inherits sensible defaults.
         /// </summary>
         public void ApplyTask1SessionOverrides(SessionMetadata md)
         {
@@ -247,8 +468,8 @@ namespace HitOrMiss.Pps
             if (md.task1TactileOnlyTrialsPerBlock > 0)
                 m_TactileOnlyTrialsPerBlock = md.task1TactileOnlyTrialsPerBlock;
 
-            // Keep the derived total in lockstep with the per-modality counts.
-            m_TrialsPerBlock = m_VtTrialsPerBlock + m_VisualOnlyTrialsPerBlock + m_TactileOnlyTrialsPerBlock;
+            m_TrialsPerBlock =
+                m_VtTrialsPerBlock + m_VisualOnlyTrialsPerBlock + m_TactileOnlyTrialsPerBlock;
 
             if (md.task1BreakDurationSeconds > 0f)
                 m_RestDurationSeconds = md.task1BreakDurationSeconds;
@@ -258,27 +479,23 @@ namespace HitOrMiss.Pps
         }
 
         /// <summary>
-        /// Returns the normalized progress value for a given distance stage.
-        /// With 7 stages:
-        /// D7 = 0/6 = 0.000
-        /// D6 = 1/6 = 0.167
-        /// D5 = 2/6 = 0.333
-        /// D4 = 3/6 = 0.500
-        /// D3 = 4/6 = 0.667
-        /// D2 = 5/6 = 0.833
-        /// D1 = 6/6 = 1.000
+        /// Normalized progress for a stage: 0 at the farthest ACTIVE stage, 1 at D1.
+        ///
+        /// The farthest active stage sits at progress 0, so TimeToReachStage returns
+        /// exactly 0 for it. That is why tactile-only trials must add WarmupLeadSeconds:
+        /// without it a T trial at the farthest stage fires on the same frame as trial start.
         /// </summary>
         public float ProgressForStage(DistanceStage stage)
         {
             int index = StageIndex(stage);
-            int maxIndex = Mathf.Max(1, m_DistanceStageCount - 1);
+            int maxIndex = Mathf.Max(1, ActiveStages.Length - 1);
 
             return Mathf.Clamp01((float)index / maxIndex);
         }
 
         /// <summary>
-        /// Returns the distance in meters for a given stage.
-        /// Intermediate stages are equally spaced between loom start and loom end.
+        /// Distance in meters for a stage. Active stages are equally spaced between
+        /// LoomStartDistance and LoomEndDistance, so spacing = (start - end) / (N - 1).
         /// </summary>
         public float DistanceForStage(DistanceStage stage)
         {
@@ -287,8 +504,9 @@ namespace HitOrMiss.Pps
         }
 
         /// <summary>
-        /// Elapsed seconds from loom onset at which the motion curve reaches the given stage.
-        /// Used by tactile-only trials to fire at a time-matched moment.
+        /// Elapsed seconds FROM the farthest active stage at which the motion curve reaches
+        /// the given stage. Does NOT include the warm-up: callers needing time from trial
+        /// start must add WarmupLeadSeconds(speed).
         /// </summary>
         public float TimeToReachStage(PpsSpeed speed, DistanceStage stage)
         {
@@ -322,25 +540,14 @@ namespace HitOrMiss.Pps
             return duration;
         }
 
+        /// <summary>
+        /// Index within ActiveStages: 0 = farthest, N-1 = D1. Derived from the array rather
+        /// than a hard-coded switch, which is what let D2 and D1 collide at N=6.
+        /// </summary>
         int StageIndex(DistanceStage stage)
         {
-            // This assumes the standard PPS labels D7..D1.
-            // If m_DistanceStageCount is 7, all stages are used.
-            // If fewer stages are used, the index is clamped to the available range.
-            int index = stage switch
-            {
-                DistanceStage.D7 => 0,
-                DistanceStage.D6 => 1,
-                DistanceStage.D5 => 2,
-                DistanceStage.D4 => 3,
-                DistanceStage.D3 => 4,
-                DistanceStage.D2 => 5,
-                DistanceStage.D1 => 6,
-                _ => 0,
-            };
-
-            int maxIndex = Mathf.Max(1, m_DistanceStageCount - 1);
-            return Mathf.Clamp(index, 0, maxIndex);
+            int i = Array.IndexOf(ActiveStages, stage);
+            return i >= 0 ? i : 0;
         }
 
         void OnValidate()
@@ -352,9 +559,7 @@ namespace HitOrMiss.Pps
             if (m_TactileOnlyTrialsPerBlock < 0) m_TactileOnlyTrialsPerBlock = 0;
 
             m_TrialsPerBlock =
-                m_VtTrialsPerBlock +
-                m_VisualOnlyTrialsPerBlock +
-                m_TactileOnlyTrialsPerBlock;
+                m_VtTrialsPerBlock + m_VisualOnlyTrialsPerBlock + m_TactileOnlyTrialsPerBlock;
 
             if (m_TrialsPerBlock < 1)
             {
@@ -370,28 +575,72 @@ namespace HitOrMiss.Pps
             if (m_LoomStartDistance <= 0f) m_LoomStartDistance = 0.01f;
             if (m_LoomEndDistance <= 0f) m_LoomEndDistance = 0.01f;
 
-            if (m_DistanceStageCount < 2)
-                m_DistanceStageCount = 2;
+            if (m_DistanceStageCount < 2) m_DistanceStageCount = 2;
+            if (m_DistanceStageCount > 7) m_DistanceStageCount = 7;
 
             if (m_LoomStartDistance <= m_LoomEndDistance)
             {
                 Debug.LogWarning(
-                    $"[PpsTaskAsset] '{name}' has loom distances out of order. " +
-                    $"Expected LoomStartDistance > LoomEndDistance. " +
-                    $"Got start={m_LoomStartDistance}, end={m_LoomEndDistance}."
-                );
+                    $"[PpsTaskAsset] '{name}' loom distances out of order. Expected " +
+                    $"LoomStartDistance > LoomEndDistance. Got start={m_LoomStartDistance}, " +
+                    $"end={m_LoomEndDistance}.", this);
             }
 
-            if (m_DefaultShoulderWidthMeters <= 0f)
-                m_DefaultShoulderWidthMeters = 0.40f;
+            if (!WarmupActive)
+            {
+                Debug.LogWarning(
+                    $"[PpsTaskAsset] '{name}' warm-up is DISABLED: WarmupDistanceMeters " +
+                    $"({m_WarmupDistanceMeters:F2}m) must be GREATER than LoomStartDistance " +
+                    $"({m_LoomStartDistance:F2}m). The LEDs will pop into existence at the first " +
+                    $"scored stage, and tactile-only trials there will fire on the same frame as " +
+                    $"trial start.", this);
+            }
+
+            if (!IsMotionCurveLinear())
+            {
+                Debug.LogWarning(
+                    $"[PpsTaskAsset] '{name}' MotionCurve is NOT linear. The loom will change speed " +
+                    $"across the distance stages, and with EaseInOut its velocity at the first " +
+                    $"scored stage is exactly zero. Right-click this asset in the Project window " +
+                    $"and choose 'Set Motion Curve to Linear'.", this);
+            }
+
+            // Divisibility. PpsTrialGenerator throws on these; warn here so the Inspector
+            // tells you before you press Play.
+            int stages = Mathf.Clamp(m_DistanceStageCount, 2, 7);
+            int widths = m_UseWidthFactor ? 2 : 1;
+
+            int vtCells = stages * 2 * widths;
+            int tCells  = stages * 2;
+            int vCells  = 2 * widths;
+
+            if (m_VtTrialsPerBlock % vtCells != 0)
+                Debug.LogWarning(
+                    $"[PpsTaskAsset] '{name}': VT trials ({m_VtTrialsPerBlock}) do not divide " +
+                    $"evenly by {stages} distances x 2 speeds x {widths} width(s) = {vtCells} cells. " +
+                    $"The design would be unbalanced. Use a multiple of {vtCells}.", this);
+
+            if (m_TactileOnlyTrialsPerBlock % tCells != 0)
+                Debug.LogWarning(
+                    $"[PpsTaskAsset] '{name}': T trials ({m_TactileOnlyTrialsPerBlock}) do not " +
+                    $"divide evenly by {stages} distances x 2 speeds = {tCells} cells. " +
+                    $"Use a multiple of {tCells}.", this);
+
+            if (m_VisualOnlyTrialsPerBlock % vCells != 0)
+                Debug.LogWarning(
+                    $"[PpsTaskAsset] '{name}': V trials ({m_VisualOnlyTrialsPerBlock}) do not " +
+                    $"divide evenly by 2 speeds x {widths} width(s) = {vCells} cells. " +
+                    $"Use a multiple of {vCells}.", this);
+
+            if (m_DefaultShoulderWidthMeters <= 0f) m_DefaultShoulderWidthMeters = 0.40f;
 
             if (m_CrosshairDistance <= 0f) m_CrosshairDistance = 0.1f;
             if (m_CrosshairHeight < 0f) m_CrosshairHeight = 0f;
 
-            if (m_WideOffsetMeters < 0f)
-                m_WideOffsetMeters = 0f;
+            if (m_WideOffsetMeters < 0f) m_WideOffsetMeters = 0f;
 
-            if (m_ItiSeconds < 0f) m_ItiSeconds = 0f;
+            if (m_ItiMinSeconds < 0f) m_ItiMinSeconds = 0f;
+            if (m_ItiMaxSeconds < m_ItiMinSeconds) m_ItiMaxSeconds = m_ItiMinSeconds;
 
             if (m_ScaleAtD7.x <= 0f || m_ScaleAtD7.y <= 0f || m_ScaleAtD7.z <= 0f)
                 m_ScaleAtD7 = Vector3.one * 0.02f;
