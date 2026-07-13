@@ -155,12 +155,6 @@ namespace HitOrMiss.Pps
         [Tooltip("Scale of the looming lights at the nearest stage.")]
         [SerializeField] Vector3 m_ScaleAtD1 = new(0.09f, 0.09f, 0.09f);
 
-        [Header("Vibrotactile")]
-        [SerializeField] float m_VibrationDurationMs = 300f;
-
-        [Range(0f, 1f)]
-        [SerializeField] float m_VibrationIntensity = 1f;
-
         [Header("Phase durations")]
         [SerializeField] float m_RestDurationSeconds = 30f;
 
