@@ -8,11 +8,21 @@ namespace HitOrMiss
         [SerializeField] string m_TaskName = "Hit Or Miss Task";
 
         [Header("Protocol")]
-        [Tooltip("Number of blocks (default 3)")]
+        [Tooltip("Number of blocks.")]
         [SerializeField] int m_BlockCount = 3;
 
-        [Tooltip("Trials per category per block (default 20, so 80 total per block)")]
-        [SerializeField] int m_TrialsPerCategory = 20;
+        [Header("Trials per block by category")]
+        [Tooltip("Clear hit trials per block. Ball enters the shoulder/body boundary.")]
+        [SerializeField] int m_ClearHitTrialsPerBlock = 20;
+
+        [Tooltip("Near hit / ambiguous outside trials per block. Ball passes just outside the shoulder edge.")]
+        [SerializeField] int m_NearHitTrialsPerBlock = 20;
+
+        [Tooltip("Near miss trials per block. Ball passes outside the shoulder edge by a moderate margin.")]
+        [SerializeField] int m_NearMissTrialsPerBlock = 20;
+
+        [Tooltip("Clear miss trials per block. Ball clearly passes outside the shoulder edge.")]
+        [SerializeField] int m_ClearMissTrialsPerBlock = 20;
 
         [Header("Timing")]
         [SerializeField] float m_IntroDuration = 20f;
@@ -30,7 +40,32 @@ namespace HitOrMiss
                  "lives in session metadata. Real participants are scaled by " +
                  "(participant.shoulderWidthCm / this), so a wider participant gets proportionally " +
                  "wider near-hit / near-miss / miss bands. Default 42 cm (the PDF spec example).")]
+        
         [SerializeField] float m_ReferenceShoulderWidthCm = 42f;
+        [Header("Offset bands relative to shoulder edge, in cm")]
+
+        [Tooltip("Clear hit: ball enters the shoulder/body boundary. Negative means inside the shoulder edge.")]
+        [SerializeField] float m_ClearHitMinOffsetCm = -15f;
+
+        [SerializeField] float m_ClearHitMaxOffsetCm = 0f;
+
+        [Tooltip("Near hit / ambiguous outside: ball passes very close to the shoulder edge.")]
+        [SerializeField] float m_NearHitMinOffsetCm = 1f;
+
+        [SerializeField] float m_NearHitMaxOffsetCm = 15f;
+
+        [Tooltip("Near miss: ball passes outside the shoulder edge by a smaller margin.")]
+        [SerializeField] float m_NearMissMinOffsetCm = 15f;
+
+        [SerializeField] float m_NearMissMaxOffsetCm = 30f;
+
+        [Tooltip("Clear miss: ball clearly passes outside the shoulder edge.")]
+        [SerializeField] float m_ClearMissMinOffsetCm = 30f;
+
+        [SerializeField] float m_ClearMissMaxOffsetCm = 60f;
+
+        [Tooltip("If false, offset bands remain exactly as entered above. Recommended false.")]
+        [SerializeField] bool m_ScaleOffsetBandsByShoulderWidth = false;
 
         [Header("Speeds")]
         [SerializeField] float m_FastSpeed = 3.5f;
@@ -107,7 +142,33 @@ namespace HitOrMiss
 
         public string TaskName => m_TaskName;
         public int BlockCount => m_BlockCount;
-        public int TrialsPerCategory => m_TrialsPerCategory;
+
+        public int ClearHitTrialsPerBlock => m_ClearHitTrialsPerBlock;
+        public int NearHitTrialsPerBlock => m_NearHitTrialsPerBlock;
+        public int NearMissTrialsPerBlock => m_NearMissTrialsPerBlock;
+        public int ClearMissTrialsPerBlock => m_ClearMissTrialsPerBlock;
+
+        public float ClearHitMinOffsetCm => m_ClearHitMinOffsetCm;
+        public float ClearHitMaxOffsetCm => m_ClearHitMaxOffsetCm;
+
+        public float NearHitMinOffsetCm => m_NearHitMinOffsetCm;
+        public float NearHitMaxOffsetCm => m_NearHitMaxOffsetCm;
+
+        public float NearMissMinOffsetCm => m_NearMissMinOffsetCm;
+        public float NearMissMaxOffsetCm => m_NearMissMaxOffsetCm;
+
+        public float ClearMissMinOffsetCm => m_ClearMissMinOffsetCm;
+        public float ClearMissMaxOffsetCm => m_ClearMissMaxOffsetCm;
+
+        public bool ScaleOffsetBandsByShoulderWidth => m_ScaleOffsetBandsByShoulderWidth;
+
+        public int TrialsPerBlock =>
+            m_ClearHitTrialsPerBlock
+            + m_NearHitTrialsPerBlock
+            + m_NearMissTrialsPerBlock
+            + m_ClearMissTrialsPerBlock;
+
+
         public float IntroDuration => m_IntroDuration;
         public float RestDuration => m_RestDuration;
         public float OutroDuration => m_OutroDuration;
@@ -224,6 +285,17 @@ namespace HitOrMiss
             return clone;
         }
 
+        public float OffsetScaleForParticipant(float participantShoulderWidthCm)
+        {
+            if (!m_ScaleOffsetBandsByShoulderWidth)
+                return 1f;
+
+            if (participantShoulderWidthCm <= 0f || m_ReferenceShoulderWidthCm <= 0f)
+                return 1f;
+
+            return participantShoulderWidthCm / m_ReferenceShoulderWidthCm;
+        }
+
         /// <summary>
         /// Mutates this asset, intended to be called only on a session clone,
         /// so values from the clinician form's task2_parameters drive the run.
@@ -233,24 +305,64 @@ namespace HitOrMiss
             if (md.task2NumberOfBlocks > 0)
                 m_BlockCount = md.task2NumberOfBlocks;
 
+            // Legacy fallback:
+            // If the session form only gives total trials per block,
+            // split them equally across the four categories.
+            // Prefer setting category-specific values directly in the asset.
             if (md.task2TrialsPerBlock > 0)
             {
-                // Asset stores trials per category; total per block = perCat * 4.
                 int perCat = Mathf.Max(1, md.task2TrialsPerBlock / 4);
-                m_TrialsPerCategory = perCat;
+
+                m_ClearHitTrialsPerBlock = perCat;
+                m_NearHitTrialsPerBlock = perCat;
+                m_NearMissTrialsPerBlock = perCat;
+                m_ClearMissTrialsPerBlock = perCat;
             }
 
             if (md.task2BreakDurationSeconds > 0f)
             {
                 m_BreakDurationSeconds = md.task2BreakDurationSeconds;
-                m_RestDuration = md.task2BreakDurationSeconds; // legacy alias
+                m_RestDuration = md.task2BreakDurationSeconds;
             }
         }
 
         void OnValidate()
         {
             if (m_BlockCount < 1) m_BlockCount = 1;
-            if (m_TrialsPerCategory < 1) m_TrialsPerCategory = 1;
+            m_ClearHitTrialsPerBlock = Mathf.Max(0, m_ClearHitTrialsPerBlock);
+            m_NearHitTrialsPerBlock = Mathf.Max(0, m_NearHitTrialsPerBlock);
+            m_NearMissTrialsPerBlock = Mathf.Max(0, m_NearMissTrialsPerBlock);
+            m_ClearMissTrialsPerBlock = Mathf.Max(0, m_ClearMissTrialsPerBlock);
+
+            if (TrialsPerBlock < 1)
+                m_ClearHitTrialsPerBlock = 1;
+
+            // Keep offset bands ordered.
+            if (m_ClearHitMinOffsetCm > m_ClearHitMaxOffsetCm)
+                (m_ClearHitMinOffsetCm, m_ClearHitMaxOffsetCm) = (m_ClearHitMaxOffsetCm, m_ClearHitMinOffsetCm);
+
+            if (m_NearHitMinOffsetCm > m_NearHitMaxOffsetCm)
+                (m_NearHitMinOffsetCm, m_NearHitMaxOffsetCm) = (m_NearHitMaxOffsetCm, m_NearHitMinOffsetCm);
+
+            if (m_NearMissMinOffsetCm > m_NearMissMaxOffsetCm)
+                (m_NearMissMinOffsetCm, m_NearMissMaxOffsetCm) = (m_NearMissMaxOffsetCm, m_NearMissMinOffsetCm);
+
+            if (m_ClearMissMinOffsetCm > m_ClearMissMaxOffsetCm)
+                (m_ClearMissMinOffsetCm, m_ClearMissMaxOffsetCm) = (m_ClearMissMaxOffsetCm, m_ClearMissMinOffsetCm);
+
+            // Force your intended category geometry.
+            m_ClearHitMinOffsetCm = Mathf.Min(m_ClearHitMinOffsetCm, 0f);
+            m_ClearHitMaxOffsetCm = Mathf.Min(m_ClearHitMaxOffsetCm, 0f);
+
+            m_NearHitMinOffsetCm = Mathf.Max(1f, m_NearHitMinOffsetCm);
+            m_NearHitMaxOffsetCm = Mathf.Max(m_NearHitMinOffsetCm, m_NearHitMaxOffsetCm);
+
+            m_NearMissMinOffsetCm = Mathf.Max(15f, m_NearMissMinOffsetCm);
+            m_NearMissMaxOffsetCm = Mathf.Max(m_NearMissMinOffsetCm, m_NearMissMaxOffsetCm);
+
+            m_ClearMissMinOffsetCm = Mathf.Max(30f, m_ClearMissMinOffsetCm);
+            m_ClearMissMaxOffsetCm = Mathf.Max(m_ClearMissMinOffsetCm, m_ClearMissMaxOffsetCm);
+            
             if (m_SpawnDistance <= 0f) m_SpawnDistance = 1f;
             if (m_FastSpeed <= 0f) m_FastSpeed = 0.5f;
             if (m_SlowSpeed <= 0f) m_SlowSpeed = 0.25f;
