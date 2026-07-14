@@ -13,16 +13,16 @@ namespace HitOrMiss
 
         [Header("Trials per block by category")]
         [Tooltip("Clear hit trials per block. Ball enters the shoulder/body boundary.")]
-        [SerializeField] int m_ClearHitTrialsPerBlock = 40;
+        [SerializeField] int m_ClearHitTrialsPerBlock = 30;
 
         [Tooltip("Near hit / ambiguous outside trials per block. Ball passes just outside the shoulder edge.")]
-        [SerializeField] int m_NearHitTrialsPerBlock = 80;
+        [SerializeField] int m_NearHitTrialsPerBlock = 50;
 
         [Tooltip("Near miss trials per block. Ball passes outside the shoulder edge by a moderate margin.")]
-        [SerializeField] int m_NearMissTrialsPerBlock = 80;
+        [SerializeField] int m_NearMissTrialsPerBlock = 50;
 
         [Tooltip("Clear miss trials per block. Ball clearly passes outside the shoulder edge.")]
-        [SerializeField] int m_ClearMissTrialsPerBlock = 40;
+        [SerializeField] int m_ClearMissTrialsPerBlock = 30;
 
         [Header("Timing")]
         [SerializeField] float m_IntroDuration = 20f;
@@ -309,19 +309,35 @@ namespace HitOrMiss
             // Prefer setting category-specific values directly in the asset.
             if (md.task2TrialsPerBlock > 0)
             {
-                int perCat = Mathf.Max(1, md.task2TrialsPerBlock / 4);
+                int total = md.task2TrialsPerBlock;
+                int perCat = total / 4;
+                int remainder = total % 4;
 
                 m_ClearHitTrialsPerBlock = perCat;
                 m_NearHitTrialsPerBlock = perCat;
                 m_NearMissTrialsPerBlock = perCat;
                 m_ClearMissTrialsPerBlock = perCat;
-            }
 
+                // Distribute leftover trials so total stays exact.
+                if (remainder > 0) m_NearHitTrialsPerBlock++;
+                if (remainder > 1) m_NearMissTrialsPerBlock++;
+                if (remainder > 2) m_ClearHitTrialsPerBlock++;
+            }
             if (md.task2BreakDurationSeconds > 0f)
             {
                 m_BreakDurationSeconds = md.task2BreakDurationSeconds;
                 m_RestDuration = md.task2BreakDurationSeconds;
             }
+
+            Debug.Log(
+            $"[TrajectoryTaskAsset] Runtime config: " +
+            $"blocks={m_BlockCount}, " +
+            $"clearHit={m_ClearHitTrialsPerBlock}, " +
+            $"nearHit={m_NearHitTrialsPerBlock}, " +
+            $"nearMiss={m_NearMissTrialsPerBlock}, " +
+            $"clearMiss={m_ClearMissTrialsPerBlock}, " +
+            $"TrialsPerBlock={TrialsPerBlock}"
+        );
         }
 
         void OnValidate()

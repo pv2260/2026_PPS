@@ -32387,15 +32387,15 @@ MonoBehaviour:
   m_RightLed: {fileID: 1186889165}
   m_Layout: {fileID: 1086280596}
   m_SpawnDepthCore: 1
-  m_CoreDiameterMeters: 0.03
+  m_CoreDiameterMeters: 0.02
   m_CoreMaterial: {fileID: 2100000, guid: 7584234fe05984047ac04b14bf7d5e1b, type: 2}
   m_CoreFallbackColor: {r: 1, g: 0.22352941, b: 0.25490198, a: 0.6431373}
   m_AnimateTail: 1
   m_TailLengthAtD7: 0.1
   m_TailLengthAtD1: 0.8
-  m_HeadSizeAtD7: 0.05
+  m_HeadSizeAtD7: 0.06
   m_HeadSizeAtD1: 0.1
-  m_IntensityAtD7: 4
+  m_IntensityAtD7: 10
   m_IntensityAtD1: 18
   m_TailGrowthCurve:
     serializedVersion: 2
@@ -34856,11 +34856,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: aedf5622e18f8a24dbc9dc52e0c286fc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_ParticipantId: pam
+  m_ParticipantId: pam1407
   m_SessionId: s1
   m_UseSerialBridge: 1
   m_AutoDetectPort: 1
-  m_ComPort: COM7
+  m_ComPort: COM8
   m_BaudRate: 115200
   m_TriggerDuration: 0.01
 --- !u!114 &949874007889434172

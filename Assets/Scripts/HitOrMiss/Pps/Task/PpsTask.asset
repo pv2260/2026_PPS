@@ -56,11 +56,11 @@ MonoBehaviour:
   m_CrosshairHeight: 1.4
   m_DefaultShoulderWidthMeters: 0.4
   m_WideOffsetMeters: 0.3
-  m_LedHeight: 0.9
-  m_LoomStartDistance: 2.25
-  m_LoomEndDistance: 0.25
+  m_LedHeight: 0.85
+  m_LoomStartDistance: 3.25
+  m_LoomEndDistance: 0.15
   m_DistanceStageCount: 7
-  m_WarmupDistanceMeters: 3
+  m_WarmupDistanceMeters: 4
   m_RestDurationSeconds: 30
   m_InstructionsKey: pps.instructions
   m_PracticeIntroKey: pps.practice_intro

@@ -4826,11 +4826,6 @@ PrefabInstance:
       addedObject: {fileID: 1842057812}
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: e8fb48b2097a4fe4c9bad4f438c1eae2, type: 3}
---- !u!1 &584763908 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 3350743831116977716, guid: 849c46acce8682c44806d2b83f3d4027, type: 3}
-  m_PrefabInstance: {fileID: 1410326538155248143}
-  m_PrefabAsset: {fileID: 0}
 --- !u!114 &600042920 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 4743405174481681168, guid: 849c46acce8682c44806d2b83f3d4027, type: 3}
@@ -8730,11 +8725,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3759500561752380470, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
       propertyPath: m_SessionId
-      value: s1
+      value: s1-task2
       objectReference: {fileID: 0}
     - target: {fileID: 3759500561752380470, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
       propertyPath: m_ParticipantId
-      value: pam2-task2
+      value: pam
       objectReference: {fileID: 0}
     - target: {fileID: 3759500561752380470, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
       propertyPath: m_UseSerialBridge
@@ -17047,7 +17042,7 @@ MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 866343555088594807, guid: 849c46acce8682c44806d2b83f3d4027, type: 3}
   m_PrefabInstance: {fileID: 1410326538155248143}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 584763908}
+  m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 104ba756a9c3d934581197d62df91a3e, type: 3}
@@ -23593,10 +23588,6 @@ PrefabInstance:
       propertyPath: m_AnchoredPosition.x
       value: -97
       objectReference: {fileID: 0}
-    - target: {fileID: 866343555088594807, guid: 849c46acce8682c44806d2b83f3d4027, type: 3}
-      propertyPath: m_Root
-      value: 
-      objectReference: {fileID: 584763908}
     - target: {fileID: 866343555088594807, guid: 849c46acce8682c44806d2b83f3d4027, type: 3}
       propertyPath: m_BodyKey
       value: popup15_break

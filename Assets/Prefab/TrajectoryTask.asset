@@ -13,11 +13,11 @@ MonoBehaviour:
   m_Name: TrajectoryTask
   m_EditorClassIdentifier: Assembly-CSharp::HitOrMiss.TrajectoryTaskAsset
   m_TaskName: Hit Or Miss Task
-  m_BlockCount: 3
-  m_ClearHitTrialsPerBlock: 40
-  m_NearHitTrialsPerBlock: 80
-  m_NearMissTrialsPerBlock: 80
-  m_ClearMissTrialsPerBlock: 40
+  m_BlockCount: 2
+  m_ClearHitTrialsPerBlock: 30
+  m_NearHitTrialsPerBlock: 50
+  m_NearMissTrialsPerBlock: 50
+  m_ClearMissTrialsPerBlock: 30
   m_IntroDuration: 20
   m_RestDuration: 30
   m_OutroDuration: 10

@@ -181,7 +181,7 @@ namespace HitOrMiss
                     float duration = m_TriggerDuration;
 
                     // Vibration trigger: hold longer so the Arduino/motor detects it clearly.
-                    if (triggerValue == 127)
+                    if (triggerValue == 64) //127
                         duration = 0.1f;
 
                     m_Arduino.SendTrigger((byte)triggerValue, duration);
@@ -312,7 +312,7 @@ namespace HitOrMiss
                 // Task 1 - PPS
                 case "pps_session_start":           return 61;
                 case "pps_session_end":             return 61;
-                case "pps_vib_fired":               return 127;
+                case "pps_vib_fired":               return 64; //127
                 case "pps_response":                return 62;
                 case "pps_block_paused":            return 61;
                 case "pps_block_resumed":           return 61;
