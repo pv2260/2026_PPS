@@ -172,9 +172,9 @@ namespace HitOrMiss
                 case PopupBehavior.AutoAdvance:
                     yield return ShowForSeconds(duration, showCountdown: false);
                     break;
-
                 case PopupBehavior.BreakWithCountdown:
-                    yield return ShowForSeconds(duration, showCountdown: true);
+                    // Breaks show a countdown but should also let the participant continue manually.
+                    yield return ShowForSeconds(duration, showCountdown: true, allowContinue: true);
                     break;
             }
 }
@@ -190,18 +190,28 @@ namespace HitOrMiss
             Hide();
         }
 
-        IEnumerator ShowForSeconds(float seconds, bool showCountdown)
+        IEnumerator ShowForSeconds(float seconds, bool showCountdown, bool allowContinue = false)
         {
             Show();
+            m_Pressed = false;
+            m_BackPressed = false;
+
             float remaining = Mathf.Max(0f, seconds);
             while (remaining > 0f)
             {
+                if (allowContinue && m_Pressed)
+                    break;
+
                 if (showCountdown && m_CountdownText != null)
                     m_CountdownText.text = FormatCountdown(remaining);
+
                 remaining -= Time.deltaTime;
                 yield return null;
             }
-            if (showCountdown && m_CountdownText != null) m_CountdownText.text = "";
+
+            if (showCountdown && m_CountdownText != null)
+                m_CountdownText.text = "";
+
             Hide();
         }
 

@@ -88,10 +88,10 @@ namespace HitOrMiss
 
         [Header("Easy practice composition")]
         [Tooltip("Easy practice: number of clear hit trials.")]
-        [SerializeField] int m_EasyPracticeClearHits = 2;
+        [SerializeField] int m_EasyPracticeClearHits = 1;
 
         [Tooltip("Easy practice: number of clear miss trials.")]
-        [SerializeField] int m_EasyPracticeClearMisses = 2;
+        [SerializeField] int m_EasyPracticeClearMisses = 1;
 
         [Tooltip("Easy practice: number of near hit trials. Usually 0 because easy practice should be unambiguous.")]
         [SerializeField] int m_EasyPracticeNearHits = 0;
@@ -100,23 +100,23 @@ namespace HitOrMiss
         [SerializeField] int m_EasyPracticeNearMisses = 0;
 
         [Tooltip("If errors are greater than or equal to this value, easy practice repeats and the retry popup is shown.")]
-        [SerializeField] int m_EasyPracticeErrorThreshold = 2;
+        [SerializeField] int m_EasyPracticeErrorThreshold = 0;
 
         [Header("Hard / difficult practice composition")]
         [Tooltip("Hard practice: number of clear hit trials.")]
-        [SerializeField] int m_HardPracticeClearHits = 2;
+        [SerializeField] int m_HardPracticeClearHits = 1;
 
         [Tooltip("Hard practice: number of clear miss trials.")]
-        [SerializeField] int m_HardPracticeClearMisses = 2;
+        [SerializeField] int m_HardPracticeClearMisses = 1;
 
         [Tooltip("Hard practice: number of near hit trials.")]
-        [SerializeField] int m_HardPracticeNearHits = 3;
+        [SerializeField] int m_HardPracticeNearHits = 1;
 
         [Tooltip("Hard practice: number of near miss trials.")]
-        [SerializeField] int m_HardPracticeNearMisses = 3;
+        [SerializeField] int m_HardPracticeNearMisses = 1;
 
         [Tooltip("If errors are greater than or equal to this value, hard/difficult practice repeats and the retry popup is shown.")]
-        [SerializeField] int m_HardPracticeErrorThreshold = 4;
+        [SerializeField] int m_HardPracticeErrorThreshold = 3;
 
         [Header("Popup localization keys (popups 1, 5, 6, 7, 8, 9)")]
         [SerializeField] string m_Popup1IntroKey = "popup1_intro";
