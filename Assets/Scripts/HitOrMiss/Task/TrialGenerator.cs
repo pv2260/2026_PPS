@@ -337,45 +337,6 @@ namespace HitOrMiss
         }
 
 
-            /*
-            * Convert shoulder-edge-relative offset into the Unity coordinate.
-            *
-            * shoulderHalfM = distance from body midline to shoulder edge.
-            * offsetFromShoulderEdgeM:
-            *   negative = inward, toward body center
-            *   positive = outward, away from body
-            *
-            * final ball-center magnitude from body midline:
-            */
-            float magnitude = shoulderHalfM + offsetFromShoulderEdgeM;
-            magnitude = Mathf.Max(0f, magnitude);
-
-            // Randomly assign left/right side.
-            float side = Random.value > 0.5f ? 1f : -1f;
-
-            // This is the actual Unity lateral coordinate relative to body midline.
-            float lateral = magnitude * side;
-
-            result.Add(new TrialDefinition
-            {
-                category = category,
-                spawnDistance = spawnDistance,
-                finalLateralOffset = lateral,
-                speed = 0f, // assigned later by group pattern
-                ballDiameter = ballDiameter,
-                expectedResponse = expected,
-
-                // Add this field to TrialDefinition if you want to log/analyze
-                // the continuous experimental offset directly.
-                shoulderEdgeOffsetM = offsetFromShoulderEdgeM,
-                shoulderEdgeGapM = edgeGapFromShoulderM,
-                
-            });
-        }
-
-        return result;
-    }
-
         /// <summary>
         /// Shuffle so no two consecutive trials share a category. Greedy fix-up after Fisher–Yates.
         /// </summary>

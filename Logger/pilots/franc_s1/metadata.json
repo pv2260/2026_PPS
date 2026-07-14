@@ -1,7 +1,7 @@
 ﻿{
     "participantId": "franc",
     "clinicianInitials": "",
-    "sessionDate": "2026-07-14",
+    "sessionDate": "2026-07-10",
     "sessionId": "s1",
     "sessionNumber": 1,
     "ageYears": 0,
@@ -18,13 +18,13 @@
     "heartRateBandEnabled": false,
     "eyeTrackingEnabled": false,
     "task1NumberOfBlocks": 3,
-    "task1TrialsPerBlock": 154,
-    "task1VtTrialsPerBlock": 70,
-    "task1VisualOnlyTrialsPerBlock": 28,
-    "task1TactileOnlyTrialsPerBlock": 56,
+    "task1TrialsPerBlock": 140,
+    "task1VtTrialsPerBlock": 84,
+    "task1VisualOnlyTrialsPerBlock": 14,
+    "task1TactileOnlyTrialsPerBlock": 42,
     "task1BreakDurationSeconds": 30.0,
     "task1NarrowOffsetCm": 0.0,
-    "task1WideOffsetCm": 30.000001907348634,
+    "task1WideOffsetCm": 100.0,
     "task1LoomingSpeeds": [
         "slow",
         "fast"

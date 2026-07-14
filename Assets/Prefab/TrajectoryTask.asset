@@ -11,32 +11,44 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 89ba434c4b9a3834092f127dea78b586, type: 3}
   m_Name: TrajectoryTask
-  m_EditorClassIdentifier: 
+  m_EditorClassIdentifier: Assembly-CSharp::HitOrMiss.TrajectoryTaskAsset
   m_TaskName: Hit Or Miss Task
-  m_BlockCount: 2
-  m_TrialsPerCategory: 45
-  m_IntroDuration: 3
-  m_RestDuration: 3
-  m_OutroDuration: 3
-  m_SpawnDistance: 15
+  m_BlockCount: 3
+  m_ClearHitTrialsPerBlock: 40
+  m_NearHitTrialsPerBlock: 80
+  m_NearMissTrialsPerBlock: 80
+  m_ClearMissTrialsPerBlock: 40
+  m_IntroDuration: 20
+  m_RestDuration: 30
+  m_OutroDuration: 10
+  m_SpawnDistance: 5
   m_BallDiameter: 0.175
-  m_ReferenceShoulderWidthCm: 43
-  m_FastSpeed: 7.5
-  m_SlowSpeed: 3.5
+  m_ReferenceShoulderWidthCm: 42
+  m_ClearHitMinOffsetCm: -15
+  m_ClearHitMaxOffsetCm: 0
+  m_NearHitMinOffsetCm: 1
+  m_NearHitMaxOffsetCm: 15
+  m_NearMissMinOffsetCm: 15
+  m_NearMissMaxOffsetCm: 30
+  m_ClearMissMinOffsetCm: 30
+  m_ClearMissMaxOffsetCm: 60
+  m_ScaleOffsetBandsByShoulderWidth: 1
+  m_FastSpeed: 3.5
+  m_SlowSpeed: 1.5
   m_ItiMinSeconds: 1.5
-  m_ItiMaxSeconds: 1.5
-  m_BreakDurationSeconds: 10
+  m_ItiMaxSeconds: 2.5
+  m_BreakDurationSeconds: 60
   m_PracticeTrialCount: 2
   m_PracticeFeedbackSeconds: 1
-  m_EasyPracticeClearHits: 1
-  m_EasyPracticeClearMisses: 1
+  m_EasyPracticeClearHits: 2
+  m_EasyPracticeClearMisses: 2
   m_EasyPracticeNearHits: 0
   m_EasyPracticeNearMisses: 0
   m_EasyPracticeErrorThreshold: 2
-  m_HardPracticeClearHits: 1
-  m_HardPracticeClearMisses: 1
-  m_HardPracticeNearHits: 1
-  m_HardPracticeNearMisses: 1
+  m_HardPracticeClearHits: 2
+  m_HardPracticeClearMisses: 2
+  m_HardPracticeNearHits: 3
+  m_HardPracticeNearMisses: 3
   m_HardPracticeErrorThreshold: 4
   m_Popup1IntroKey: popup1_intro
   m_Popup2LeftKey: popup2_left

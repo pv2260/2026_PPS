@@ -20,6 +20,7 @@ namespace HitOrMiss.Pps
         [Tooltip("Number of experimental blocks")]
         [SerializeField] int m_BlockCount = 3;
 
+
         [Tooltip("Total trials per block. Derived: forced to VT + V + T.")]
         [SerializeField] int m_TrialsPerBlock = 154;
 
@@ -103,10 +104,10 @@ namespace HitOrMiss.Pps
         [Header("Spatial layout (all values in METERS, from the body anchor)")]
 
         [Tooltip("Distance forward from the body anchor to the fixation crosshair (meters).")]
-        [SerializeField, Min(0.01f)] float m_CrosshairDistance = 2.6f;
+        [SerializeField, Min(0.01f)] float m_CrosshairDistance = 6.0f;
 
         [Tooltip("Vertical offset of the crosshair above the body anchor (meters). Typically eye level.")]
-        [SerializeField, Min(0f)] float m_CrosshairHeight = 1.4f;
+        [SerializeField, Min(0f)] float m_CrosshairHeight = 0.9f;
 
         [Tooltip("Fallback shoulder width in meters. Used as the narrow LED separation when no " +
                  "participant-specific value is provided.")]
@@ -117,7 +118,7 @@ namespace HitOrMiss.Pps
         [SerializeField, Min(0f)] float m_WideOffsetMeters = 0.30f;
 
         [Tooltip("Vertical offset of the side LEDs relative to the body anchor.")]
-        [SerializeField] float m_LedHeight = 0f;
+        [SerializeField] float m_LedHeight = 0.9f;
 
         [Header("Distance stages")]
 
@@ -147,14 +148,6 @@ namespace HitOrMiss.Pps
                  "vibration lands at the same elapsed time as the matched VT trial.")]
         [SerializeField, Min(0.01f)] float m_WarmupDistanceMeters = 3.0f;
 
-        [Header("Scale growth (looming cue)")]
-
-        [Tooltip("Scale of the looming lights at the farthest stage.")]
-        [SerializeField] Vector3 m_ScaleAtD7 = new(0.02f, 0.02f, 0.02f);
-
-        [Tooltip("Scale of the looming lights at the nearest stage.")]
-        [SerializeField] Vector3 m_ScaleAtD1 = new(0.09f, 0.09f, 0.09f);
-
         [Header("Phase durations")]
         [SerializeField] float m_RestDurationSeconds = 30f;
 
@@ -169,6 +162,15 @@ namespace HitOrMiss.Pps
 
         [Tooltip("-1 = time-seeded (non-reproducible). Any other value = reproducible seed.")]
         [SerializeField] int m_RngSeed = -1;
+
+        [Header("Vibration")]
+        [SerializeField, Min(1)] private int m_VibrationDurationMs = 100;
+
+        public int VibrationDurationMs => m_VibrationDurationMs;
+
+        // Compatibility value only.
+        // The external vibration app controls real intensity.
+        public float VibrationIntensity => 1f;
 
         // ------------------------------------------------------------------
         // Stage ordering
@@ -267,14 +269,6 @@ namespace HitOrMiss.Pps
 
         public float WarmupDistanceMeters => m_WarmupDistanceMeters;
 
-        public Vector3 ScaleAtD7 => m_ScaleAtD7;
-        public Vector3 ScaleAtD1 => m_ScaleAtD1;
-
-        // Kept for compatibility if any older code still calls ScaleAtD4.
-        public Vector3 ScaleAtD4 => m_ScaleAtD7;
-
-        public float VibrationDurationMs => m_VibrationDurationMs;
-        public float VibrationIntensity => m_VibrationIntensity;
 
         public float RestDurationSeconds => m_RestDurationSeconds;
 
@@ -635,12 +629,6 @@ namespace HitOrMiss.Pps
 
             if (m_ItiMinSeconds < 0f) m_ItiMinSeconds = 0f;
             if (m_ItiMaxSeconds < m_ItiMinSeconds) m_ItiMaxSeconds = m_ItiMinSeconds;
-
-            if (m_ScaleAtD7.x <= 0f || m_ScaleAtD7.y <= 0f || m_ScaleAtD7.z <= 0f)
-                m_ScaleAtD7 = Vector3.one * 0.02f;
-
-            if (m_ScaleAtD1.x <= 0f || m_ScaleAtD1.y <= 0f || m_ScaleAtD1.z <= 0f)
-                m_ScaleAtD1 = Vector3.one * 0.09f;
         }
     }
 }

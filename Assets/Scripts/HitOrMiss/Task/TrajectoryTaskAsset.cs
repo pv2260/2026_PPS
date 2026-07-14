@@ -9,20 +9,20 @@ namespace HitOrMiss
 
         [Header("Protocol")]
         [Tooltip("Number of blocks.")]
-        [SerializeField] int m_BlockCount = 3;
+        [SerializeField] int m_BlockCount = 2;
 
         [Header("Trials per block by category")]
         [Tooltip("Clear hit trials per block. Ball enters the shoulder/body boundary.")]
-        [SerializeField] int m_ClearHitTrialsPerBlock = 20;
+        [SerializeField] int m_ClearHitTrialsPerBlock = 40;
 
         [Tooltip("Near hit / ambiguous outside trials per block. Ball passes just outside the shoulder edge.")]
-        [SerializeField] int m_NearHitTrialsPerBlock = 20;
+        [SerializeField] int m_NearHitTrialsPerBlock = 80;
 
         [Tooltip("Near miss trials per block. Ball passes outside the shoulder edge by a moderate margin.")]
-        [SerializeField] int m_NearMissTrialsPerBlock = 20;
+        [SerializeField] int m_NearMissTrialsPerBlock = 80;
 
         [Tooltip("Clear miss trials per block. Ball clearly passes outside the shoulder edge.")]
-        [SerializeField] int m_ClearMissTrialsPerBlock = 20;
+        [SerializeField] int m_ClearMissTrialsPerBlock = 40;
 
         [Header("Timing")]
         [SerializeField] float m_IntroDuration = 20f;
@@ -64,8 +64,8 @@ namespace HitOrMiss
 
         [SerializeField] float m_ClearMissMaxOffsetCm = 60f;
 
-        [Tooltip("If false, offset bands remain exactly as entered above. Recommended false.")]
-        [SerializeField] bool m_ScaleOffsetBandsByShoulderWidth = false;
+        [Tooltip("If false, offset bands remain exactly as entered above.")]
+        [SerializeField] bool m_ScaleOffsetBandsByShoulderWidth = true;
 
         [Header("Speeds")]
         [SerializeField] float m_FastSpeed = 3.5f;
@@ -217,8 +217,6 @@ namespace HitOrMiss
 
         public float ReferenceShoulderWidthCm => m_ReferenceShoulderWidthCm;
 
-        public int TrialsPerBlock => m_TrialsPerCategory * 4; // 4 categories
-
         public TrialDefinition[] GenerateBlock(int blockIndex)
         {
             return TrialGenerator.GenerateBlock(blockIndex, this, 0f);
@@ -339,16 +337,32 @@ namespace HitOrMiss
 
             // Keep offset bands ordered.
             if (m_ClearHitMinOffsetCm > m_ClearHitMaxOffsetCm)
-                (m_ClearHitMinOffsetCm, m_ClearHitMaxOffsetCm) = (m_ClearHitMaxOffsetCm, m_ClearHitMinOffsetCm);
+            {
+                float temp = m_ClearHitMinOffsetCm;
+                m_ClearHitMinOffsetCm = m_ClearHitMaxOffsetCm;
+                m_ClearHitMaxOffsetCm = temp;
+            }
 
             if (m_NearHitMinOffsetCm > m_NearHitMaxOffsetCm)
-                (m_NearHitMinOffsetCm, m_NearHitMaxOffsetCm) = (m_NearHitMaxOffsetCm, m_NearHitMinOffsetCm);
+            {
+                float temp = m_NearHitMinOffsetCm;
+                m_NearHitMinOffsetCm = m_NearHitMaxOffsetCm;
+                m_NearHitMaxOffsetCm = temp;
+            }
 
             if (m_NearMissMinOffsetCm > m_NearMissMaxOffsetCm)
-                (m_NearMissMinOffsetCm, m_NearMissMaxOffsetCm) = (m_NearMissMaxOffsetCm, m_NearMissMinOffsetCm);
+            {
+                float temp = m_NearMissMinOffsetCm;
+                m_NearMissMinOffsetCm = m_NearMissMaxOffsetCm;
+                m_NearMissMaxOffsetCm = temp;
+            }
 
             if (m_ClearMissMinOffsetCm > m_ClearMissMaxOffsetCm)
-                (m_ClearMissMinOffsetCm, m_ClearMissMaxOffsetCm) = (m_ClearMissMaxOffsetCm, m_ClearMissMinOffsetCm);
+            {
+                float temp = m_ClearMissMinOffsetCm;
+                m_ClearMissMinOffsetCm = m_ClearMissMaxOffsetCm;
+                m_ClearMissMaxOffsetCm = temp;
+            }
 
             // Force your intended category geometry.
             m_ClearHitMinOffsetCm = Mathf.Min(m_ClearHitMinOffsetCm, 0f);

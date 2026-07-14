@@ -11,7 +11,7 @@
   "session": {
     "session_number": 1,
     "session_id": "s1",
-    "session_date": "2026-07-14",
+    "session_date": "2026-07-10",
     "session_type": "med_high",
     "dbs_status": "na",
     "clinician_initials": "",
@@ -25,13 +25,13 @@
   },
   "task1_parameters": {
     "number_of_blocks": 3,
-    "trials_per_block": 154,
-    "vt_trials_per_block": 70,
-    "visual_only_trials_per_block": 28,
-    "tactile_only_trials_per_block": 56,
+    "trials_per_block": 140,
+    "vt_trials_per_block": 84,
+    "visual_only_trials_per_block": 14,
+    "tactile_only_trials_per_block": 42,
     "break_duration_seconds": 30,
     "narrow_offset_cm": 0,
-    "wide_offset_cm": 30,
+    "wide_offset_cm": 100,
     "looming_speeds": ["slow", "fast"],
     "practice_vt_only_trials": 2,
     "practice_vt_visual_trials": 4
