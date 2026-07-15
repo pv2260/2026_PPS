@@ -1,7 +1,7 @@
 ﻿{
     "participantId": "pam2-task2",
     "clinicianInitials": "",
-    "sessionDate": "2026-07-15",
+    "sessionDate": "2026-07-14",
     "sessionId": "s1",
     "sessionNumber": 1,
     "ageYears": 0,
@@ -32,7 +32,7 @@
     "task1PracticeVtOnlyTrials": 2,
     "task1PracticeVtVisualTrials": 4,
     "task2NumberOfBlocks": 2,
-    "task2TrialsPerBlock": 160,
+    "task2TrialsPerBlock": 4,
     "task2BreakDurationSeconds": 60.0,
     "task2HitOffsetCm": 0.0,
     "task2NearMissOffsetCm": 5.0,

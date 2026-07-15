@@ -56,22 +56,22 @@ MonoBehaviour:
     english: Practice is now complete.\nThe task will  begin.
     french: "La pratique est termin\xE9e.\\nLa vraie t\xE2che va maintenant commencer."
   - key: popup13_ready
-    english: Are you ready to begin?.\nPress Start when you are ready.
-    french: "\xCAtes-vous pr\xEAt \xE0 commencer ? .\\nAppuyez sur Start quand vous
+    english: Are you ready to begin?\nPress Start when you are ready.
+    french: "\xCAtes-vous pr\xEAt \xE0 commencer ? \\nAppuyez sur Start quand vous
       \xEAtes pr\xEAt."
   - key: popup14_block_intro
     english: Let's start with Block {block}. \nPress Begin Block when you are ready.
     french: "Commen\xE7ons avec le Bloc {block}. \\nAppuyez sur Commencer quand vous
       \xEAtes pr\xEAt"
   - key: popup15_break
-    english: All done with Block {block}. .\nTake a little break.
-    french: "Bloc {block} termin\xE9. .\\nPrenez une petite pause."
+    english: All done with Block {block}. \nTake a little break.
+    french: "Bloc {block} termin\xE9. \\nPrenez une petite pause."
   - key: popup16_next_block
     english: Are you ready to start with Block {block}?.\nLet's go!
     french: "Pr\xEAt(e) \xE0 commencer le Bloc {block} ? .\\nAllons-y !"
   - key: popup17_outro
-    english: You are all done. .\nThank you for your participation.
-    french: "C'est termin\xE9. .\\nMerci pour votre participation."
+    english: You are all done. \nThank you for your participation.
+    french: "C'est termin\xE9. \\nMerci pour votre participation."
   - key: say_hit
     english: HIT
     french: TOUCHE
