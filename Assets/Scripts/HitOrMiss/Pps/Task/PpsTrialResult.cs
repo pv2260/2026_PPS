@@ -115,6 +115,7 @@ namespace HitOrMiss.Pps
 
                 MsOrBlank(trialStartTime),
                 MsOrBlank(loomOnsetTime),
+                MsOrBlank(d7OnsetTime), 
                 MsOrBlank(crossingD7Time),
                 MsOrBlank(crossingD6Time),
                 MsOrBlank(crossingD5Time),
