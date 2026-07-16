@@ -41,7 +41,7 @@ namespace HitOrMiss
 
         [Header("Hit-validation tolerance")]
         [Tooltip("Extra radius (meters) added to the ball when computing impact. The ball's effective collision sphere is its visual radius + this bonus.")]
-        [SerializeField] float m_BallCollisionRadius = 0.05f;
+        [SerializeField] float m_BallCollisionRadius = 0.02f;
 
         [Header("Overreach (every ball passes past the participant)")]
         [Tooltip("Distance in meters the ball continues past the participant plane (perpendicular to player's forward axis at the player's position). Applies to BOTH hit and miss trials so participants see the ball travel past them.")]
@@ -53,9 +53,9 @@ namespace HitOrMiss
         [Tooltip("Lifetime of the procedurally-built splat (seconds). Ignored when SplatPrefab is used.")]
         [SerializeField] float m_SplatLifetime = 1.2f;
         [Tooltip("Final size of the procedurally-built splat at full expansion (meters). Ignored when SplatPrefab is used.")]
-        [SerializeField] float m_SplatPeakSize = 0.45f;
+        [SerializeField] float m_SplatPeakSize = 0.65f;
         [Tooltip("Distance from the player (meters) at which a hit-class ball collides and the splat fires. 0 = disabled — splat fires when the ball crosses the player plane.")]
-        [SerializeField] float m_ImpactDistance = 0f;
+        [SerializeField] float m_ImpactDistance = -0.30f;
         [Tooltip("Restrict splat to trials whose expected response is Hit (Hit and NearHit categories). Miss-class trials (NearMiss, ClearMiss) pass through without bursting.")]
         [SerializeField] bool m_SplatOnlyOnHitClass = true;
 
@@ -174,95 +174,82 @@ namespace HitOrMiss
             }
         }
 
-        void Update()
+      void Update()
+{
+    if (!m_Active || IsComplete) return;
+
+    float elapsed = Time.time - m_StartTime;
+    float t = Mathf.Clamp01(elapsed / Mathf.Max(m_Duration, 0.0001f));
+
+    Vector3 pos = Vector3.Lerp(m_StartPos, m_EndPos, t);
+
+    transform.position = pos;
+
+    // Detect when the ball crosses the player plane.
+    // planeSign > 0  = ball still in front of subject
+    // planeSign == 0 = ball at subject plane
+    // planeSign < 0  = ball behind subject
+    float planeSign = Vector3.Dot(pos - m_PlayerPos, m_PlayerForward);
+
+    // Hit-class splat: fires when the ball reaches the configured distance
+    // in front of the subject.
+    if (!m_SplatFired && m_Trial.WillHit)
+    {
+        //bool reachedImpact;
+        bool reachedImpact = planeSign <= m_ImpactDistance;
+
+//         if (m_ImpactDistance > 0f)
+//         {
+// /*             float ballRadius = (m_Trial.ballDiameter > 0f ? m_Trial.ballDiameter : 0.175f) * 0.5f;
+//             float effectiveImpact = m_ImpactDistance + ballRadius + m_BallCollisionRadius;
+//  */
+//             // Forward-axis distance only, not full 3D distance.
+//             //reachedImpact = planeSign <= effectiveImpact;
+//              reachedImpact = planeSign <= m_ImpactDistance;
+//         }
+//         else
+//         {
+//             reachedImpact = planeSign <= 0f;
+//         }
+
+        if (reachedImpact)
         {
-            if (!m_Active || IsComplete) return;
+            //Vector3 splatOrigin = m_ImpactDistance > 0f ? pos : m_BodyImpactPos;
+            Vector3 splatOrigin = pos;
+            SpawnSplat(splatOrigin);
+            m_SplatFired = true;
 
-            float elapsed = Time.time - m_StartTime;
-            float t = Mathf.Clamp01(elapsed / Mathf.Max(m_Duration, 0.0001f));
+            Debug.Log($"[TrajectoryObjectController] Hit-class splat — despawning ball at impact. trial={TrialId} " +
+                      $"splatPos={splatOrigin} (distToPlayer={Vector3.Distance(splatOrigin, m_PlayerPos):F2}m)");
 
-            Vector3 pos = Vector3.Lerp(m_StartPos, m_EndPos, t);
-
-            transform.position = pos;
-            //UpdateShadow(pos);
-
-            // Detect when the ball crosses the player plane (the plane through
-            // the player's position perpendicular to the player's forward axis).
-            // For a ball travelling along player.forward inward, this is the
-            // moment the ball passes the participant.
-            //   - Before the plane: dot > 0  (ball still in front)
-            //   - On the plane:     dot ≈ 0
-            //   - Past the plane:   dot < 0  (ball is behind the participant)
-            float planeSign = Vector3.Dot(pos - m_PlayerPos, m_PlayerForward);
-
-            // Hit-class splat: fires the first time we reach (or cross) the
-            // configured impact distance in front of the player. For
-            // m_ImpactDistance == 0 the splat fires when the ball crosses
-            // the player plane. Hit-class balls STOP at the splash — they
-            // don't continue past the participant (the splat itself is the
-            // visual end of the trial).
-            if (!m_SplatFired && m_Trial.WillHit)
-            {
-                bool reachedImpact;
-                if (m_ImpactDistance > 0f)
-                {
-                    float ballRadius = (m_Trial.ballDiameter > 0f ? m_Trial.ballDiameter : 0.175f) * 0.5f;
-                    float effectiveImpact = m_ImpactDistance + ballRadius + m_BallCollisionRadius;
-                    reachedImpact = Vector3.Distance(pos, m_PlayerPos) <= effectiveImpact;
-                }
-                else
-                {
-                    reachedImpact = planeSign <= 0f;
-                }
-                if (reachedImpact)
-                {
-                    // Choose splat origin based on the impact mode:
-                    //   ImpactDistance > 0: spawn at the ball's current world
-                    //     position — that's where the actual collision was
-                    //     detected, so the splat sits in front of the player
-                    //     at the configured distance (e.g. 2 m forward).
-                    //   ImpactDistance == 0: legacy body-plane behaviour —
-                    //     spawn at m_BodyImpactPos which is in the player's
-                    //     own plane (Z = 0 relative to player).
-                    Vector3 splatOrigin = m_ImpactDistance > 0f ? pos : m_BodyImpactPos;
-                    SpawnSplat(splatOrigin);
-                    m_SplatFired = true;
-                    // Hit-class: the splash IS the end of the ball's journey.
-                    // Despawn now so it doesn't continue past the participant.
-                    Debug.Log($"[TrajectoryObjectController] Hit-class splat — despawning ball at impact. trial={TrialId} " +
-                              $"splatPos={splatOrigin} (distToPlayer={Vector3.Distance(splatOrigin, m_PlayerPos):F2}m)");
-                    IsComplete = true;
-                    m_Active = false;
-                    Despawn();
-                    return;
-                }
-            }
-
-            // The instant the ball passes behind the participant plane, kill
-            // the LEFT/RIGHT panels and the shadow so nothing lingers in the
-            // peripheral view. The ball itself keeps travelling its remaining
-            // overshoot so it visibly leaves the scene.
-            if (!m_PassedPlayerPlane && planeSign < 0f)
-            {
-                m_PassedPlayerPlane = true;
-                if (m_LeftPanel  != null) m_LeftPanel.SetActive(false);
-                if (m_RightPanel != null) m_RightPanel.SetActive(false);
-                //if (m_Shadow != null) m_Shadow.gameObject.SetActive(false);
-            }
-
-            // Reached the overshoot endpoint — clean up entirely. Despawn the
-            // ball GameObject so the TaskManager doesn't need to wait through
-            // its grace period to remove a stationary invisible ball.
-            if (t >= 1f)
-            {
-                Debug.Log($"[TrajectoryObjectController] Trajectory end: trial={TrialId} " +
-                          $"endDistToPlayer={Vector3.Distance(m_EndPos, m_PlayerPos):F3}m. " +
-                          $"splatFired={m_SplatFired}. Despawning.");
-                IsComplete = true;
-                m_Active = false;
-                Despawn();
-            }
+            IsComplete = true;
+            m_Active = false;
+            Despawn();
+            return;
         }
+    }
+
+    // Hide panels once the ball passes behind the participant.
+    if (!m_PassedPlayerPlane && planeSign < 0f)
+    {
+        m_PassedPlayerPlane = true;
+
+        if (m_LeftPanel != null) m_LeftPanel.SetActive(false);
+        if (m_RightPanel != null) m_RightPanel.SetActive(false);
+    }
+
+    // Clean up at trajectory end.
+    if (t >= 1f)
+    {
+        Debug.Log($"[TrajectoryObjectController] Trajectory end: trial={TrialId} " +
+                  $"endDistToPlayer={Vector3.Distance(m_EndPos, m_PlayerPos):F3}m. " +
+                  $"splatFired={m_SplatFired}. Despawning.");
+
+        IsComplete = true;
+        m_Active = false;
+        Despawn();
+    }
+}
 
         public void ApplyPinchFeedback(SemanticCommand command)
         {
@@ -565,6 +552,6 @@ namespace HitOrMiss
             }
 
             if (age >= m_Lifetime) Destroy(gameObject);
-        }
+       }
     }
 }

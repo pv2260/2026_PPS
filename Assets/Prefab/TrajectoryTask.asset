@@ -14,10 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HitOrMiss.TrajectoryTaskAsset
   m_TaskName: Hit Or Miss Task
   m_BlockCount: 2
-  m_ClearHitTrialsPerBlock: 1
-  m_NearHitTrialsPerBlock: 1
-  m_NearMissTrialsPerBlock: 1
-  m_ClearMissTrialsPerBlock: 1
+  m_ClearHitTrialsPerBlock: 30
+  m_NearHitTrialsPerBlock: 50
+  m_NearMissTrialsPerBlock: 50
+  m_ClearMissTrialsPerBlock: 30
   m_IntroDuration: 20
   m_RestDuration: 30
   m_OutroDuration: 10
@@ -44,12 +44,12 @@ MonoBehaviour:
   m_EasyPracticeClearMisses: 1
   m_EasyPracticeNearHits: 0
   m_EasyPracticeNearMisses: 0
-  m_EasyPracticeErrorThreshold: 1
-  m_HardPracticeClearHits: 0
-  m_HardPracticeClearMisses: 0
-  m_HardPracticeNearHits: 1
-  m_HardPracticeNearMisses: 0
-  m_HardPracticeErrorThreshold: 1
+  m_EasyPracticeErrorThreshold: 4
+  m_HardPracticeClearHits: 2
+  m_HardPracticeClearMisses: 2
+  m_HardPracticeNearHits: 2
+  m_HardPracticeNearMisses: 2
+  m_HardPracticeErrorThreshold: 4
   m_Popup1IntroKey: popup1_intro
   m_Popup2LeftKey: popup2_left
   m_Popup3RightKey: popup3_right
