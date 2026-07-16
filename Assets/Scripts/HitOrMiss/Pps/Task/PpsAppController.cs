@@ -35,6 +35,25 @@ namespace HitOrMiss.Pps
                  "Set to false for the clinician-driven flow that matches Task 2.")]
         [SerializeField] bool m_AutoStartOnPlay = false;
 
+        // ------------------------------------------------------------------
+        // Inspector session (clinician-panel opt-out)
+        // ------------------------------------------------------------------
+        [Header("Inspector session (clinician-panel opt-out)")]
+        [Tooltip("If true, the clinician panel is bypassed and the SessionMetadata entered " +
+                 "below is used directly.\n\n" +
+                 "IMPORTANT: participant id and session are NOT read from here when an " +
+                 "EegMarkerEmitter is present. Type those into the EegMarkerEmitter instead; " +
+                 "the emitter is the single source of truth for id/session so the EEG stream " +
+                 "and the CSV always agree. Use this block for everything else: shoulder width, " +
+                 "group, equipment flags, session type, notes. Any task-count fields left at " +
+                 "zero fall back to the PpsTaskAsset values.")]
+        [SerializeField] bool m_UseInspectorMetadata = false;
+
+        [Tooltip("Session metadata used when 'Use Inspector Metadata' is true. Ignored otherwise. " +
+                 "Leave participantId and sessionNumber blank/zero when an EegMarkerEmitter is in " +
+                 "the scene; they are overwritten by the emitter before logging begins.")]
+        [SerializeField] SessionMetadata m_InspectorMetadata;
+
         SessionMetadata m_SessionMetadata;
         bool m_SessionMetadataSet;
 
@@ -128,9 +147,9 @@ namespace HitOrMiss.Pps
                 m_SessionMetadataSet = true;
                 Debug.Log("[PPSAppController] No metadata set; using defaults derived from the task asset.");
             }
-            // NOTE: when metadata IS already set (clinician form), we do NOT
-            // overwrite it from the asset. The form values are the source of
-            // truth; they get pushed INTO the asset clone below.
+            // NOTE: when metadata IS already set (clinician form OR Inspector
+            // opt-out), we do NOT overwrite it from the asset. Those values are
+            // the source of truth; they get pushed INTO the asset clone below.
 
             // Apply form overrides onto a session-local clone so the on-disk
             // PpsTaskAsset stays untouched. The clone is what the TaskManager
@@ -240,6 +259,24 @@ namespace HitOrMiss.Pps
 
             AutoWireOptionalReferences();
 
+            // Clinician-panel opt-out: seed the session metadata from the
+            // Inspector block before any auto-start decision. This sets
+            // m_SessionMetadataSet = true, so StartSession() will not fall back
+            // to the asset defaults, and the values flow into the session
+            // asset clone the same way the clinician form's values would.
+            // Clinician-panel opt-out: seed the session metadata from the
+            // Inspector block before any auto-start decision. This sets
+            // m_SessionMetadataSet = true, so StartSession() will not fall back
+            // to the asset defaults. Participant id / session in this block are
+            // superseded later by the EegMarkerEmitter when one is present.
+            if (m_UseInspectorMetadata)
+            {
+                SetSessionMetadata(m_InspectorMetadata);
+                Debug.Log("[PPSAppController] Clinician panel bypassed. Using Inspector metadata " +
+                          $"(shoulderWidthCm={m_InspectorMetadata.shoulderWidthCm}). " +
+                          "Participant id / session will come from the EegMarkerEmitter if present.");
+            }
+
             if (m_AutoStartOnPlay)
             {
                 Debug.Log("[PPSAppController] AutoStartOnPlay=true — starting session immediately.");
@@ -247,7 +284,7 @@ namespace HitOrMiss.Pps
             }
             else
             {
-                Debug.Log("[PPSAppController] AutoStartOnPlay=false — waiting for clinician StartSession() (panel or network).");
+                Debug.Log("[PPSAppController] AutoStartOnPlay=false — waiting for StartSession() (clinician panel, network, or a button).");
             }
         }
 
@@ -436,15 +473,31 @@ namespace HitOrMiss.Pps
             // owns the disk.
             if (m_TaskLogger != null)
             {
+                // Participant id + session number have ONE authority: the
+                // EegMarkerEmitter when it is present. This keeps the EEG
+                // marker stream and the CSV / setup.json in agreement, and
+                // means you only ever type the id/session in one place (the
+                // emitter). The Inspector metadata block supplies everything
+                // else (shoulder width, group, equipment, session type,
+                // notes); its participantId / sessionNumber are used only as a
+                // fallback when no emitter is in the scene.
                 if (m_EegMarkerEmitter != null)
                 {
                     m_SessionMetadata.participantId = m_EegMarkerEmitter.ParticipantId;
                     m_SessionMetadata.sessionNumber = ParseSessionNumber(m_EegMarkerEmitter.SessionId);
 
                     Debug.Log(
-                        $"[PPSAppController] Using ID from EegMarkerEmitter: " +
+                        $"[PPSAppController] Participant id / session taken from EegMarkerEmitter: " +
                         $"participant={m_SessionMetadata.participantId}, " +
-                        $"session={m_SessionMetadata.sessionNumber}"
+                        $"session={m_SessionMetadata.sessionNumber}."
+                    );
+                }
+                else if (m_UseInspectorMetadata)
+                {
+                    Debug.Log(
+                        $"[PPSAppController] No EegMarkerEmitter in scene. Using Inspector " +
+                        $"participant id / session: participant={m_SessionMetadata.participantId}, " +
+                        $"session={m_SessionMetadata.sessionNumber}."
                     );
                 }
                 else

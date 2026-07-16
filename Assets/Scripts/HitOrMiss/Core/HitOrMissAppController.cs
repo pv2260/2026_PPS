@@ -69,6 +69,31 @@ namespace HitOrMiss
         [Header("Clinician")]
         [SerializeField] ClinicianControlPanel m_ClinicianPanel;
 
+        // ------------------------------------------------------------------
+        // Start mode (clinician-panel opt-out)
+        // ------------------------------------------------------------------
+        [Header("Start mode (clinician-panel opt-out)")]
+        [Tooltip("If true, the session begins automatically when the scene loads. " +
+                 "Use this to run without the clinician panel. If false, the session " +
+                 "waits for StartSession() from the clinician panel, the network, or a button.")]
+        [SerializeField] bool m_AutoStartOnPlay = false;
+
+        [Tooltip("If true, the clinician panel is bypassed and the SessionMetadata entered " +
+                 "below is used directly.\n\n" +
+                 "IMPORTANT: participant id and session are NOT read from here when an " +
+                 "EegMarkerEmitter is present. Type those into the EegMarkerEmitter instead; " +
+                 "the emitter is the single source of truth for id/session so the EEG stream " +
+                 "and the CSV always agree. Use this block for everything else: shoulder width, " +
+                 "group, equipment flags, session type, notes.")]
+        [SerializeField] bool m_UseInspectorMetadata = false;
+
+        [Tooltip("Session metadata used when 'Use Inspector Metadata' is true. Ignored otherwise. " +
+                 "Leave participantId and sessionId blank when an EegMarkerEmitter is in the scene; " +
+                 "they are overwritten by the emitter before logging begins. Right-click the " +
+                 "component header and choose 'Inspector metadata: fill with defaults' to seed " +
+                 "this block with sensible values (including Task 2 block/trial fields from the asset).")]
+        [SerializeField] SessionMetadata m_InspectorMetadata;
+
         SupportedLanguage m_Language = SupportedLanguage.English;
         TaskPhase m_CurrentPhase = TaskPhase.Idle;
         Coroutine m_SessionCoroutine;
@@ -112,6 +137,55 @@ namespace HitOrMiss
 
             if (m_FixationCross != null)
                 m_FixationCross.Hide();
+        }
+
+        IEnumerator Start()
+        {
+            // Give every other component's Awake a frame to finish wiring
+            // before we potentially auto-start the whole session.
+            yield return null;
+
+            // Clinician-panel opt-out: seed the session metadata from the
+            // Inspector block. SetSessionMetadata sets m_HasExternalSessionMetadata,
+            // so StartSession() uses these values instead of building defaults.
+            // Participant id / session are still superseded by the
+            // EegMarkerEmitter inside StartSession() when one is present.
+            if (m_UseInspectorMetadata)
+            {
+                SetSessionMetadata(m_InspectorMetadata);
+                Debug.Log("[HitOrMissAppController] Clinician panel bypassed. Using Inspector metadata " +
+                          $"(shoulderWidthCm={m_InspectorMetadata.shoulderWidthCm}). " +
+                          "Participant id / session will come from the EegMarkerEmitter if present.");
+            }
+
+            if (m_AutoStartOnPlay)
+            {
+                Debug.Log("[HitOrMissAppController] AutoStartOnPlay=true — starting session immediately.");
+                StartSession();
+            }
+            else
+            {
+                Debug.Log("[HitOrMissAppController] AutoStartOnPlay=false — waiting for StartSession() (clinician panel, network, or a button).");
+            }
+        }
+
+        [ContextMenu("Inspector metadata: fill with defaults")]
+        void FillInspectorMetadataWithDefaults()
+        {
+            string keepId = string.IsNullOrEmpty(m_InspectorMetadata.participantId)
+                ? "P000" : m_InspectorMetadata.participantId;
+
+            m_InspectorMetadata = SessionMetadata.CreateDefault(keepId);
+
+            // Pull the Task 2 block/trial/break fields off the asset so the
+            // override block is non-zero even if ApplyTask2SessionOverrides
+            // copies values unconditionally.
+            if (m_TaskAsset != null)
+                m_InspectorMetadata.PopulateFromTaskAsset(m_TaskAsset);
+
+#if UNITY_EDITOR
+            UnityEditor.EditorUtility.SetDirty(this);
+#endif
         }
 
         void SetPhase(TaskPhase phase)
@@ -258,6 +332,12 @@ namespace HitOrMiss
                 $"BreakDurationSeconds={m_SessionAsset.BreakDurationSeconds}"
             );
 
+            // Participant id + session have ONE authority: the EegMarkerEmitter
+            // when it is present. This keeps the EEG marker stream and the CSV /
+            // setup.json in agreement, and means you only type the id/session in
+            // one place (the emitter). The Inspector metadata block supplies
+            // everything else; its participantId / sessionId stand only when no
+            // emitter is in the scene.
             if (m_EegMarkerEmitter != null)
             {
                 m_EegMarkerEmitter.BeginSession();
