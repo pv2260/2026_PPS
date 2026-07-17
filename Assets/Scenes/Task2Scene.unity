@@ -8863,7 +8863,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3759500561752380470, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
       propertyPath: m_ComPort
-      value: COM8
+      value: COM10
       objectReference: {fileID: 0}
     - target: {fileID: 3759500561752380470, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
       propertyPath: m_SessionId
@@ -9414,6 +9414,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 0}
     - target: {fileID: 6627871660748472693, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
+      propertyPath: m_SessionConfig
+      value: 
+      objectReference: {fileID: 11400000, guid: eece385ad3d34584c80a36ac67237425, type: 2}
+    - target: {fileID: 6627871660748472693, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
       propertyPath: m_ForceLeftPopup
       value: 
       objectReference: {fileID: 0}
@@ -9481,6 +9485,10 @@ PrefabInstance:
       propertyPath: m_ResponseMappingPopup
       value: 
       objectReference: {fileID: 1201546781}
+    - target: {fileID: 6627871660748472693, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
+      propertyPath: m_UseInspectorMetadata
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 6627871660748472693, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
       propertyPath: m_ForcedLeftFillColor.b
       value: 0.10196079

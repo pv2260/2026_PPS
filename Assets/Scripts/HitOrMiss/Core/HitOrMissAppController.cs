@@ -5,13 +5,33 @@ namespace HitOrMiss
 {
     /// <summary>
     /// Top-level orchestrator for the Hit-or-Miss assessment (Task 2).
+    ///
+    /// ONE SOURCE FOR EVERYTHING, funneled through a SessionConfig asset:
+    ///   - protocol  -> SessionConfig.TaskAsset (shared, reusable). Runs directly,
+    ///                  never overridden.
+    ///   - identity  -> SessionConfig (panel off) or the clinical panel (panel on).
+    ///                  Pushed INTO the EegMarkerEmitter via SetIdentity; the
+    ///                  emitter no longer stores id/session itself.
+    ///   - subject   -> SessionConfig.SubjectInfo (panel off) or the panel (panel on).
+    /// SessionConfig.UseClinicalPanel is the switch. SessionMetadata is a
+    /// write-once record assembled from these; nothing reads it back to drive
+    /// the run.
     /// </summary>
     public class HitOrMissAppController : MonoBehaviour
     {
         const float kTooSlowDisplaySeconds = 1.0f;
 
+        [Header("Session")]
+        [Tooltip("The single per-session entry point. References the protocol asset and holds " +
+                 "identity, subject data, and the use-panel switch. Create via " +
+                 "Assets > Create > Parkinson > HitOrMiss > Session Config.")]
+        [SerializeField] SessionConfigAsset m_SessionConfig;
+
+        [Tooltip("When the SessionConfig has the clinical panel OFF, start the session " +
+                 "automatically on Play. Turn this off to start from a button (call StartSession()).")]
+        [SerializeField] bool m_AutoStartWhenPanelOff = true;
+
         [Header("Task")]
-        [SerializeField] TrajectoryTaskAsset m_TaskAsset;
         [SerializeField] TrajectoryTaskManager m_TaskManager;
 
         [Header("Input")]
@@ -69,31 +89,6 @@ namespace HitOrMiss
         [Header("Clinician")]
         [SerializeField] ClinicianControlPanel m_ClinicianPanel;
 
-        // ------------------------------------------------------------------
-        // Start mode (clinician-panel opt-out)
-        // ------------------------------------------------------------------
-        [Header("Start mode (clinician-panel opt-out)")]
-        [Tooltip("If true, the session begins automatically when the scene loads. " +
-                 "Use this to run without the clinician panel. If false, the session " +
-                 "waits for StartSession() from the clinician panel, the network, or a button.")]
-        [SerializeField] bool m_AutoStartOnPlay = false;
-
-        [Tooltip("If true, the clinician panel is bypassed and the SessionMetadata entered " +
-                 "below is used directly.\n\n" +
-                 "IMPORTANT: participant id and session are NOT read from here when an " +
-                 "EegMarkerEmitter is present. Type those into the EegMarkerEmitter instead; " +
-                 "the emitter is the single source of truth for id/session so the EEG stream " +
-                 "and the CSV always agree. Use this block for everything else: shoulder width, " +
-                 "group, equipment flags, session type, notes.")]
-        [SerializeField] bool m_UseInspectorMetadata = false;
-
-        [Tooltip("Session metadata used when 'Use Inspector Metadata' is true. Ignored otherwise. " +
-                 "Leave participantId and sessionId blank when an EegMarkerEmitter is in the scene; " +
-                 "they are overwritten by the emitter before logging begins. Right-click the " +
-                 "component header and choose 'Inspector metadata: fill with defaults' to seed " +
-                 "this block with sensible values (including Task 2 block/trial fields from the asset).")]
-        [SerializeField] SessionMetadata m_InspectorMetadata;
-
         SupportedLanguage m_Language = SupportedLanguage.English;
         TaskPhase m_CurrentPhase = TaskPhase.Idle;
         Coroutine m_SessionCoroutine;
@@ -101,7 +96,6 @@ namespace HitOrMiss
 
         SessionMetadata m_SessionMetadata;
         bool m_HasExternalSessionMetadata;
-        TrajectoryTaskAsset m_SessionAsset;
 
         System.Action<TrialDefinition> m_TooSlowHandler;
 
@@ -123,13 +117,18 @@ namespace HitOrMiss
         public event System.Action SessionStarted;
         public event System.Action SessionEnded;
 
-        TrajectoryTaskAsset Asset => m_SessionAsset != null ? m_SessionAsset : m_TaskAsset;
+        // Protocol comes only from the SessionConfig. The asset is the sole
+        // authority and is never mutated at runtime, so there is no clone.
+        TrajectoryTaskAsset Protocol => m_SessionConfig != null ? m_SessionConfig.TaskAsset : null;
+        TrajectoryTaskAsset Asset => Protocol;
 
         void Awake()
         {
             if (m_TaskManager != null)
             {
-                m_TaskManager.TaskAsset = m_TaskAsset;
+                if (Protocol != null)
+                    m_TaskManager.TaskAsset = Protocol;
+
                 m_TaskManager.SetMarkerEmitter(m_EegMarkerEmitter);
             }
 
@@ -141,51 +140,39 @@ namespace HitOrMiss
 
         IEnumerator Start()
         {
-            // Give every other component's Awake a frame to finish wiring
-            // before we potentially auto-start the whole session.
+            // Give every other component's Awake a frame to finish wiring.
             yield return null;
 
-            // Clinician-panel opt-out: seed the session metadata from the
-            // Inspector block. SetSessionMetadata sets m_HasExternalSessionMetadata,
-            // so StartSession() uses these values instead of building defaults.
-            // Participant id / session are still superseded by the
-            // EegMarkerEmitter inside StartSession() when one is present.
-            if (m_UseInspectorMetadata)
+            if (m_SessionConfig == null)
             {
-                SetSessionMetadata(m_InspectorMetadata);
-                Debug.Log("[HitOrMissAppController] Clinician panel bypassed. Using Inspector metadata " +
-                          $"(shoulderWidthCm={m_InspectorMetadata.shoulderWidthCm}). " +
-                          "Participant id / session will come from the EegMarkerEmitter if present.");
+                Debug.LogWarning("[HitOrMissAppController] No SessionConfig assigned. " +
+                                 "Waiting for StartSession() from the clinical panel, network, or a button.");
+                yield break;
             }
 
-            if (m_AutoStartOnPlay)
+            if (m_SessionConfig.UseClinicalPanel)
             {
-                Debug.Log("[HitOrMissAppController] AutoStartOnPlay=true — starting session immediately.");
+                Debug.Log("[HitOrMissAppController] SessionConfig: clinical panel enabled. " +
+                          "Waiting for the panel to start the session.");
+                yield break;
+            }
+
+            // Panel off: this SessionConfig drives a panel-free run. Assemble the
+            // metadata from it now; identity is pushed to the emitter in StartSession.
+            SetSessionMetadata(m_SessionConfig.BuildMetadata());
+
+            Debug.Log($"[HitOrMissAppController] SessionConfig drives the run (panel off): " +
+                      $"participant={m_SessionConfig.ParticipantId}, session={m_SessionConfig.SessionNumber}.");
+
+            if (m_AutoStartWhenPanelOff)
+            {
+                Debug.Log("[HitOrMissAppController] Auto-starting.");
                 StartSession();
             }
             else
             {
-                Debug.Log("[HitOrMissAppController] AutoStartOnPlay=false — waiting for StartSession() (clinician panel, network, or a button).");
+                Debug.Log("[HitOrMissAppController] AutoStartWhenPanelOff=false — waiting for StartSession() from a button.");
             }
-        }
-
-        [ContextMenu("Inspector metadata: fill with defaults")]
-        void FillInspectorMetadataWithDefaults()
-        {
-            string keepId = string.IsNullOrEmpty(m_InspectorMetadata.participantId)
-                ? "P000" : m_InspectorMetadata.participantId;
-
-            m_InspectorMetadata = SessionMetadata.CreateDefault(keepId);
-
-            // Pull the Task 2 block/trial/break fields off the asset so the
-            // override block is non-zero even if ApplyTask2SessionOverrides
-            // copies values unconditionally.
-            if (m_TaskAsset != null)
-                m_InspectorMetadata.PopulateFromTaskAsset(m_TaskAsset);
-
-#if UNITY_EDITOR
-            UnityEditor.EditorUtility.SetDirty(this);
-#endif
         }
 
         void SetPhase(TaskPhase phase)
@@ -246,9 +233,16 @@ namespace HitOrMiss
                 return;
             }
 
-            if (m_TaskAsset == null)
+            if (m_SessionConfig == null)
             {
-                Debug.LogError("[HitOrMissAppController] No TrajectoryTaskAsset assigned.");
+                Debug.LogError("[HitOrMissAppController] No SessionConfig assigned.");
+                return;
+            }
+
+            var protocol = Protocol;
+            if (protocol == null)
+            {
+                Debug.LogError("[HitOrMissAppController] SessionConfig has no protocol asset (TaskAsset) assigned.");
                 return;
             }
 
@@ -285,23 +279,16 @@ namespace HitOrMiss
             m_InputSource = composite;
             m_TaskManager.SetInputSource(m_InputSource);
 
-            bool externalMetadataProvided = m_HasExternalSessionMetadata;
-
-            if (!externalMetadataProvided)
+            // Metadata source: the clinical panel (via SetSessionMetadata) or the
+            // SessionConfig (assembled in Start, or here as a fallback).
+            if (!m_HasExternalSessionMetadata)
             {
-                string defaultParticipantId =
-                    m_EegMarkerEmitter != null && !string.IsNullOrEmpty(m_EegMarkerEmitter.ParticipantId)
-                        ? m_EegMarkerEmitter.ParticipantId
-                        : ParticipantId;
-
-                m_SessionMetadata = SessionMetadata.CreateDefault(defaultParticipantId);
-                m_SessionMetadata.PopulateFromTaskAsset(m_TaskAsset);
-
-                Debug.Log("[HitOrMissAppController] Created default session metadata from task asset.");
+                m_SessionMetadata = m_SessionConfig.BuildMetadata();
+                Debug.Log("[HitOrMissAppController] Built session metadata from SessionConfig.");
             }
             else
             {
-                Debug.Log("[HitOrMissAppController] Using externally provided session metadata.");
+                Debug.Log("[HitOrMissAppController] Using provided session metadata (panel or config).");
             }
 
             if (string.IsNullOrEmpty(m_SessionMetadata.participantId))
@@ -312,38 +299,33 @@ namespace HitOrMiss
             if (string.IsNullOrEmpty(m_SessionMetadata.sessionDate))
                 m_SessionMetadata.sessionDate = System.DateTime.Now.ToString("yyyy-MM-dd");
 
+            // Protocol: the asset is the sole authority. Run it directly.
+            m_TaskManager.TaskAsset = protocol;
+
+            // Record the protocol that will run into the metadata for setup.json.
+            // One-directional (asset -> record); never read back to drive the run.
+            m_SessionMetadata.PopulateFromTaskAsset(protocol);
+
             Debug.Log(
-                $"[HitOrMissAppController] Metadata before task clone: " +
+                $"[HitOrMissAppController] Protocol from asset (sole authority): " +
                 $"participantId={m_SessionMetadata.participantId}, " +
-                $"task2NumberOfBlocks={m_SessionMetadata.task2NumberOfBlocks}, " +
-                $"task2TrialsPerBlock={m_SessionMetadata.task2TrialsPerBlock}, " +
-                $"task2BreakDurationSeconds={m_SessionMetadata.task2BreakDurationSeconds}, " +
+                $"session={m_SessionMetadata.sessionNumber}, " +
+                $"BlockCount={protocol.BlockCount}, " +
+                $"TrialsPerBlock={protocol.TrialsPerBlock}, " +
                 $"shoulderWidthCm={m_SessionMetadata.shoulderWidthCm}"
             );
 
-            m_SessionAsset = m_TaskAsset.CreateSessionClone();
-            m_SessionAsset.ApplyTask2SessionOverrides(m_SessionMetadata);
-            m_TaskManager.TaskAsset = m_SessionAsset;
-
-            Debug.Log(
-                $"[HitOrMissAppController] Session asset clone applied. " +
-                $"BlockCount={m_SessionAsset.BlockCount}, " +
-                $"TrialsPerBlock={m_SessionAsset.TrialsPerBlock}, " +
-                $"BreakDurationSeconds={m_SessionAsset.BreakDurationSeconds}"
-            );
-
-            // Participant id + session have ONE authority: the EegMarkerEmitter
-            // when it is present. This keeps the EEG marker stream and the CSV /
-            // setup.json in agreement, and means you only type the id/session in
-            // one place (the emitter). The Inspector metadata block supplies
-            // everything else; its participantId / sessionId stand only when no
-            // emitter is in the scene.
+            // Identity flows FROM the metadata (config or panel) INTO the emitter.
+            // The emitter is a sink for identity now, not a source of it.
             if (m_EegMarkerEmitter != null)
             {
+                string sessionLabel = !string.IsNullOrEmpty(m_SessionMetadata.sessionId)
+                    ? m_SessionMetadata.sessionId
+                    : $"S{m_SessionMetadata.sessionNumber}";
+
+                m_EegMarkerEmitter.SetIdentity(m_SessionMetadata.participantId, sessionLabel);
                 m_EegMarkerEmitter.BeginSession();
 
-                m_SessionMetadata.participantId = m_EegMarkerEmitter.ParticipantId;
-                m_SessionMetadata.sessionId = m_EegMarkerEmitter.SessionId;
                 ParticipantId = m_SessionMetadata.participantId;
             }
 
@@ -353,7 +335,7 @@ namespace HitOrMiss
 
                 m_TaskLogger.BeginSession(
                     TaskKind.Task2HitOrMiss,
-                    m_SessionAsset != null ? m_SessionAsset.TaskName : m_TaskAsset.TaskName
+                    protocol.TaskName
                 );
 
                 m_TaskManager.TrialJudged -= m_TaskLogger.LogTrial;
@@ -893,15 +875,6 @@ namespace HitOrMiss
                 m_ClinicianPanel.ExitTaskMode();
 
             m_EegMarkerEmitter?.EndSession();
-
-            if (m_SessionAsset != null)
-            {
-                if (m_TaskManager != null)
-                    m_TaskManager.TaskAsset = m_TaskAsset;
-
-                Destroy(m_SessionAsset);
-                m_SessionAsset = null;
-            }
 
             SetPhase(TaskPhase.Idle);
             m_SessionCoroutine = null;

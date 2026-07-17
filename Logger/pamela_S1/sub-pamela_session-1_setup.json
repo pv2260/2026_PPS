@@ -1,21 +1,21 @@
 ﻿{
   "subject": {
-    "subject_id": "pam",
+    "subject_id": "pamela",
     "age_years": 0,
     "dominant_hand": "unspecified",
     "height_cm": 0,
-    "shoulder_width_cm": 0,
-    "group": "",
+    "shoulder_width_cm": 42,
+    "group": "healthy",
     "has_DBS": false
   },
   "session": {
     "session_number": 1,
-    "session_id": "s1",
-    "session_date": "2026-07-15",
-    "session_type": "med_high",
+    "session_id": "S1",
+    "session_date": "2026-07-17",
+    "session_type": "healthy_s1",
     "dbs_status": "na",
     "clinician_initials": "",
-    "language": ""
+    "language": "english"
   },
   "equipment": {
     "EEG": false,

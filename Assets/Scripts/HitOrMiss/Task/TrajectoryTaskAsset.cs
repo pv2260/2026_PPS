@@ -1,959 +1,424 @@
-using System.Collections;
 using UnityEngine;
 
 namespace HitOrMiss
 {
-    /// <summary>
-    /// Top-level orchestrator for the Hit-or-Miss assessment (Task 2).
-    /// </summary>
-    public class HitOrMissAppController : MonoBehaviour
+    [CreateAssetMenu(fileName = "TrajectoryTask", menuName = "Parkinson/HitOrMiss/Task Asset")]
+    public class TrajectoryTaskAsset : ScriptableObject
     {
-        const float kTooSlowDisplaySeconds = 1.0f;
+        [SerializeField] string m_TaskName = "Hit Or Miss Task";
 
-        [Header("Task")]
-        [SerializeField] TrajectoryTaskAsset m_TaskAsset;
-        [SerializeField] TrajectoryTaskManager m_TaskManager;
+        [Header("Protocol")]
+        [Tooltip("Number of blocks.")]
+        [SerializeField] int m_BlockCount = 2;
 
-        [Header("Input")]
-        [SerializeField] ControllerButtonInput m_ControllerInput;
-        [SerializeField] KeyboardCommandInput m_KeyboardInput;
-        [SerializeField] HandPinchInput m_HandPinchInput;
+        [Header("Trials per block by category")]
+        [Tooltip("Clear hit trials per block. Ball enters the shoulder/body boundary.")]
+        [SerializeField] int m_ClearHitTrialsPerBlock = 30;
 
-        [Header("Logging")]
-        [SerializeField] TaskLogger m_TaskLogger;
-        [SerializeField] EegMarkerEmitter m_EegMarkerEmitter;
+        [Tooltip("Near hit / ambiguous outside trials per block. Ball passes just outside the shoulder edge.")]
+        [SerializeField] int m_NearHitTrialsPerBlock = 50;
 
-        [Header("Localization")]
-        [SerializeField] LocalizedTermTable m_TermTable;
-        [SerializeField] LocalizedUITextBinder[] m_UITextBinders;
+        [Tooltip("Near miss trials per block. Ball passes outside the shoulder edge by a moderate margin.")]
+        [SerializeField] int m_NearMissTrialsPerBlock = 50;
 
-        [Header("Pre-practice popups")]
-        [SerializeField] TaskPopupPanel[] m_PrePracticePopups;
+        [Tooltip("Clear miss trials per block. Ball clearly passes outside the shoulder edge.")]
+        [SerializeField] int m_ClearMissTrialsPerBlock = 30;
 
-        [Header("Controller practice")]
-        [SerializeField] TaskPopupPanel m_ControllerPracticeIntroPanel;
+        [Header("Timing")]
+        [SerializeField] float m_IntroDuration = 20f;
+        [SerializeField] float m_RestDuration = 30f;
+        [SerializeField] float m_OutroDuration = 10f;
 
-        [Header("Controller trigger demo")]
-        [SerializeField] TaskPopupPanel m_TriggerDemoPopup;
-        [SerializeField] HitOrMissControllerIntroDemo m_ControllerIntroDemo;
+        [Header("Trajectory (player-anchored, ball travels in toward player)")]
+        [Tooltip("Distance in front of the player where every ball spawns (meters)")]
+        [SerializeField] float m_SpawnDistance = 5f;
 
-        [Header("Response mapping demo")]
-        [SerializeField] TaskPopupPanel m_ResponseMappingPopup;
-        [SerializeField] HitOrMissResponseMappingDemo m_ResponseMappingDemo;
+        [SerializeField] float m_BallDiameter = 0.175f;
 
-        [Header("Difficult practice")]
-        [SerializeField] TaskPopupPanel m_DifficultPracticeIntroPanel;
-        [SerializeField] TaskPopupPanel m_PracticeRetryPanel;
+        [Header("Per-participant scaling")]
+        [Tooltip("Design-baseline shoulder width in cm. NOT the current participant's value — that " +
+                 "lives in session metadata. Real participants are scaled by " +
+                 "(participant.shoulderWidthCm / this), so a wider participant gets proportionally " +
+                 "wider near-hit / near-miss / miss bands. Default 42 cm (the PDF spec example).")]
+        
+        [SerializeField] float m_ReferenceShoulderWidthCm = 42f;
+        [Header("Offset bands relative to shoulder edge, in cm")]
 
-        [Header("Shared practice feedback")]
-        [SerializeField] TaskPopupPanel m_TooSlowPanel;
-        [SerializeField] ResponseIndicator m_ResponseIndicator;
+        [Tooltip("Clear hit: ball enters the shoulder/body boundary. Negative means inside the shoulder edge.")]
+        [SerializeField] float m_ClearHitMinOffsetCm = -15f;
 
-        [Header("Post-practice")]
-        [SerializeField] TaskPopupPanel m_NoFeedbackPanel;
-        [SerializeField] TaskPopupPanel m_ReadyToStartPanel;
-        [SerializeField] TaskPopupPanel[] m_ExtraPostPracticePopups;
+        [SerializeField] float m_ClearHitMaxOffsetCm = 0f;
 
-        [Header("Per-block popups")]
-        [SerializeField] TaskPopupPanel m_BlockIntroPopup;
-        [SerializeField] TaskPopupPanel m_BreakPopup;
-        [SerializeField] TaskPopupPanel m_BlockReadyPopup;
+        [Tooltip("Near hit / ambiguous outside: ball passes very close to the shoulder edge.")]
+        [SerializeField] float m_NearHitMinOffsetCm = 1f;
 
-        [Header("End")]
-        [SerializeField] TaskPopupPanel m_OutroPopup;
+        [SerializeField] float m_NearHitMaxOffsetCm = 15f;
 
-        [Header("Visuals")]
-        [SerializeField] FixationCrossController m_FixationCross;
-        [SerializeField] StandingCross m_StandingCross;
+        [Tooltip("Near miss: ball passes outside the shoulder edge by a smaller margin.")]
+        [SerializeField] float m_NearMissMinOffsetCm = 15f;
 
-        [Header("Clinician")]
-        [SerializeField] ClinicianControlPanel m_ClinicianPanel;
+        [SerializeField] float m_NearMissMaxOffsetCm = 30f;
 
-        // ------------------------------------------------------------------
-        // Start mode (clinician-panel opt-out)
-        // ------------------------------------------------------------------
-        [Header("Start mode (clinician-panel opt-out)")]
-        [Tooltip("If true, the session begins automatically when the scene loads. " +
-                 "Use this to run without the clinician panel. If false, the session " +
-                 "waits for StartSession() from the clinician panel, the network, or a button.")]
-        [SerializeField] bool m_AutoStartOnPlay = false;
+        [Tooltip("Clear miss: ball clearly passes outside the shoulder edge.")]
+        [SerializeField] float m_ClearMissMinOffsetCm = 30f;
 
-        [Tooltip("If true, the clinician panel is bypassed and the SessionMetadata entered " +
-                 "below is used directly.\n\n" +
-                 "IMPORTANT: participant id and session are NOT read from here when an " +
-                 "EegMarkerEmitter is present. Type those into the EegMarkerEmitter instead; " +
-                 "the emitter is the single source of truth for id/session so the EEG stream " +
-                 "and the CSV always agree. Use this block for everything else: shoulder width, " +
-                 "group, equipment flags, session type, notes.")]
-        [SerializeField] bool m_UseInspectorMetadata = false;
+        [SerializeField] float m_ClearMissMaxOffsetCm = 60f;
 
-        [Tooltip("Session metadata used when 'Use Inspector Metadata' is true. Ignored otherwise. " +
-                 "Leave participantId and sessionId blank when an EegMarkerEmitter is in the scene; " +
-                 "they are overwritten by the emitter before logging begins. Right-click the " +
-                 "component header and choose 'Inspector metadata: fill with defaults' to seed " +
-                 "this block with sensible values (including Task 2 block/trial fields from the asset).")]
-        [SerializeField] SessionMetadata m_InspectorMetadata;
+        [Tooltip("If false, offset bands remain exactly as entered above.")]
+        [SerializeField] bool m_ScaleOffsetBandsByShoulderWidth = true;
 
-        SupportedLanguage m_Language = SupportedLanguage.English;
-        TaskPhase m_CurrentPhase = TaskPhase.Idle;
-        Coroutine m_SessionCoroutine;
-        IResponseInputSource m_InputSource;
+        [Header("Speeds")]
+        [SerializeField] float m_FastSpeed = 3.5f;
+        [SerializeField] float m_SlowSpeed = 1.5f;
 
-        SessionMetadata m_SessionMetadata;
-        bool m_HasExternalSessionMetadata;
-        TrajectoryTaskAsset m_SessionAsset;
+        [Header("Inter-trial interval (jittered, scheduled after each trial's response window closes)")]
+        [SerializeField] float m_ItiMinSeconds = 1.5f;
+        [SerializeField] float m_ItiMaxSeconds = 2.5f;
 
-        System.Action<TrialDefinition> m_TooSlowHandler;
+        [Header("Break between blocks")]
+        [Tooltip("Countdown shown to the participant between blocks (seconds). The spec calls this 'Y minute breaks'.")]
+        [SerializeField] float m_BreakDurationSeconds = 60f;
 
-        public TaskPhase CurrentPhase => m_CurrentPhase;
-        public TrajectoryTaskManager TaskManager => m_TaskManager;
-        public string ParticipantId { get; set; } = "P000";
-        public int CurrentBlockIndex { get; private set; }
+        [Header("Practice")]
+        [Tooltip("Legacy generic practice trial count. Not used by the current easy/hard practice flow.")]
+        [SerializeField] int m_PracticeTrialCount = 2;
 
-        public bool IsPaused => m_TaskManager != null && m_TaskManager.IsPaused;
+        [Tooltip("Seconds the HIT/MISS feedback flash stays on after each practice response.")]
+        [SerializeField] float m_PracticeFeedbackSeconds = 1.0f;
 
-        public bool IsRecording =>
-            m_TaskLogger != null && m_TaskLogger.IsSessionOpen;
+        [Header("Easy practice composition")]
+        [Tooltip("Easy practice: number of clear hit trials.")]
+        [SerializeField] int m_EasyPracticeClearHits = 1;
 
-        public SupportedLanguage CurrentLanguage => m_Language;
+        [Tooltip("Easy practice: number of clear miss trials.")]
+        [SerializeField] int m_EasyPracticeClearMisses = 1;
 
-        public event System.Action SessionPaused;
-        public event System.Action SessionResumed;
-        public event System.Action<TaskPhase> PhaseChanged;
-        public event System.Action SessionStarted;
-        public event System.Action SessionEnded;
+        [Tooltip("Easy practice: number of near hit trials. Usually 0 because easy practice should be unambiguous.")]
+        [SerializeField] int m_EasyPracticeNearHits = 0;
 
-        TrajectoryTaskAsset Asset => m_SessionAsset != null ? m_SessionAsset : m_TaskAsset;
+        [Tooltip("Easy practice: number of near miss trials. Usually 0 because easy practice should be unambiguous.")]
+        [SerializeField] int m_EasyPracticeNearMisses = 0;
 
-        void Awake()
+        [Tooltip("If errors are greater than or equal to this value, easy practice repeats and the retry popup is shown.")]
+        [SerializeField] int m_EasyPracticeErrorThreshold = 0;
+
+        [Header("Hard / difficult practice composition")]
+        [Tooltip("Hard practice: number of clear hit trials.")]
+        [SerializeField] int m_HardPracticeClearHits = 1;
+
+        [Tooltip("Hard practice: number of clear miss trials.")]
+        [SerializeField] int m_HardPracticeClearMisses = 1;
+
+        [Tooltip("Hard practice: number of near hit trials.")]
+        [SerializeField] int m_HardPracticeNearHits = 1;
+
+        [Tooltip("Hard practice: number of near miss trials.")]
+        [SerializeField] int m_HardPracticeNearMisses = 1;
+
+        [Tooltip("If errors are greater than or equal to this value, hard/difficult practice repeats and the retry popup is shown.")]
+        [SerializeField] int m_HardPracticeErrorThreshold = 3;
+
+        [Header("Popup localization keys (popups 1, 5, 6, 7, 8, 9)")]
+        [SerializeField] string m_Popup1IntroKey = "popup1_intro";
+        [SerializeField] string m_Popup2LeftKey = "popup2_left";
+        [SerializeField] string m_Popup3RightKey = "popup3_right";
+        [SerializeField] string m_Popup4PracticeKey = "popup4_practice";
+        [SerializeField] string m_Popup5ReadyKey = "popup5_ready";
+        [SerializeField] string m_Popup6BlockIntroKey = "popup6_block_intro";
+        [SerializeField] string m_Popup7BreakKey = "popup7_break";
+        [SerializeField] string m_Popup8NextBlockKey = "popup8_next_block";
+        [SerializeField] string m_Popup9OutroKey = "popup9_outro";
+
+        [Header("Speed grouping (consumed sequentially within each block; cycles if shorter than block)")]
+        [Tooltip("Each entry defines one group: how many fast vs slow, and which comes first. Default: 7F3S, 3F7S, 7S3F, 6F4S, then cycle.")]
+        [SerializeField]
+        SpeedGroupPattern[] m_SpeedGroupPatterns =
         {
-            if (m_TaskManager != null)
-            {
-                m_TaskManager.TaskAsset = m_TaskAsset;
-                m_TaskManager.SetMarkerEmitter(m_EegMarkerEmitter);
-            }
+            new() { fastCount = 7, slowCount = 3, fastFirst = true  }, // 7 fast, 3 slow
+            new() { fastCount = 3, slowCount = 7, fastFirst = true  }, // 3 fast, 7 slow
+            new() { fastCount = 3, slowCount = 7, fastFirst = false }, // 7 slow, 3 fast
+            new() { fastCount = 6, slowCount = 4, fastFirst = true  }, // 6 fast, 4 slow
+        };
 
-            HideAllPopups();
+        public string TaskName => m_TaskName;
+        public int BlockCount => m_BlockCount;
 
-            if (m_FixationCross != null)
-                m_FixationCross.Hide();
+        public int ClearHitTrialsPerBlock => m_ClearHitTrialsPerBlock;
+        public int NearHitTrialsPerBlock => m_NearHitTrialsPerBlock;
+        public int NearMissTrialsPerBlock => m_NearMissTrialsPerBlock;
+        public int ClearMissTrialsPerBlock => m_ClearMissTrialsPerBlock;
+
+        public float ClearHitMinOffsetCm => m_ClearHitMinOffsetCm;
+        public float ClearHitMaxOffsetCm => m_ClearHitMaxOffsetCm;
+
+        public float NearHitMinOffsetCm => m_NearHitMinOffsetCm;
+        public float NearHitMaxOffsetCm => m_NearHitMaxOffsetCm;
+
+        public float NearMissMinOffsetCm => m_NearMissMinOffsetCm;
+        public float NearMissMaxOffsetCm => m_NearMissMaxOffsetCm;
+
+        public float ClearMissMinOffsetCm => m_ClearMissMinOffsetCm;
+        public float ClearMissMaxOffsetCm => m_ClearMissMaxOffsetCm;
+
+        public bool ScaleOffsetBandsByShoulderWidth => m_ScaleOffsetBandsByShoulderWidth;
+
+        public int TrialsPerBlock =>
+            m_ClearHitTrialsPerBlock
+            + m_NearHitTrialsPerBlock
+            + m_NearMissTrialsPerBlock
+            + m_ClearMissTrialsPerBlock;
+
+
+        public float IntroDuration => m_IntroDuration;
+        public float RestDuration => m_RestDuration;
+        public float OutroDuration => m_OutroDuration;
+
+        public float SpawnDistance => m_SpawnDistance;
+        public float BallDiameter => m_BallDiameter;
+
+        public float FastSpeed => m_FastSpeed;
+        public float SlowSpeed => m_SlowSpeed;
+        public float ItiMinSeconds => m_ItiMinSeconds;
+        public float ItiMaxSeconds => m_ItiMaxSeconds;
+        public SpeedGroupPattern[] SpeedGroupPatterns => m_SpeedGroupPatterns;
+
+        public float BreakDurationSeconds => m_BreakDurationSeconds;
+        public int PracticeTrialCount => m_PracticeTrialCount;
+        public float PracticeFeedbackSeconds => m_PracticeFeedbackSeconds;
+
+        public int EasyPracticeClearHits => m_EasyPracticeClearHits;
+        public int EasyPracticeClearMisses => m_EasyPracticeClearMisses;
+        public int EasyPracticeNearHits => m_EasyPracticeNearHits;
+        public int EasyPracticeNearMisses => m_EasyPracticeNearMisses;
+        public int EasyPracticeErrorThreshold => m_EasyPracticeErrorThreshold;
+
+        public int HardPracticeClearHits => m_HardPracticeClearHits;
+        public int HardPracticeClearMisses => m_HardPracticeClearMisses;
+        public int HardPracticeNearHits => m_HardPracticeNearHits;
+        public int HardPracticeNearMisses => m_HardPracticeNearMisses;
+        public int HardPracticeErrorThreshold => m_HardPracticeErrorThreshold;
+
+        // Aliases kept so the controller can use either "Hard" or "Difficult" naming.
+        public int DifficultPracticeClearHits => m_HardPracticeClearHits;
+        public int DifficultPracticeClearMisses => m_HardPracticeClearMisses;
+        public int DifficultPracticeNearHits => m_HardPracticeNearHits;
+        public int DifficultPracticeNearMisses => m_HardPracticeNearMisses;
+        public int DifficultPracticeErrorThreshold => m_HardPracticeErrorThreshold;
+
+        public string Popup1IntroKey => m_Popup1IntroKey;
+        public string Popup2LeftKey => m_Popup2LeftKey;
+        public string Popup3RightKey => m_Popup3RightKey;
+        public string Popup4PracticeKey => m_Popup4PracticeKey;
+        public string Popup5ReadyKey => m_Popup5ReadyKey;
+        public string Popup6BlockIntroKey => m_Popup6BlockIntroKey;
+        public string Popup7BreakKey => m_Popup7BreakKey;
+        public string Popup8NextBlockKey => m_Popup8NextBlockKey;
+        public string Popup9OutroKey => m_Popup9OutroKey;
+
+        public float ReferenceShoulderWidthCm => m_ReferenceShoulderWidthCm;
+
+        public TrialDefinition[] GenerateBlock(int blockIndex)
+        {
+            return TrialGenerator.GenerateBlock(blockIndex, this, 0f);
         }
 
-        IEnumerator Start()
+        /// <summary>
+        /// Builds a per-block trial list scaled to the participant's shoulder
+        /// width. Pass 0 (or anything ≤ 0) to skip scaling and use the
+        /// reference geometry. Called from HitOrMissAppController with the
+        /// value from SessionMetadata.shoulderWidthCm.
+        /// </summary>
+        public TrialDefinition[] GenerateBlock(int blockIndex, float participantShoulderWidthCm)
         {
-            // Give every other component's Awake a frame to finish wiring
-            // before we potentially auto-start the whole session.
-            yield return null;
-
-            // Clinician-panel opt-out: seed the session metadata from the
-            // Inspector block. SetSessionMetadata sets m_HasExternalSessionMetadata,
-            // so StartSession() uses these values instead of building defaults.
-            // Participant id / session are still superseded by the
-            // EegMarkerEmitter inside StartSession() when one is present.
-            if (m_UseInspectorMetadata)
-            {
-                SetSessionMetadata(m_InspectorMetadata);
-                Debug.Log("[HitOrMissAppController] Clinician panel bypassed. Using Inspector metadata " +
-                          $"(shoulderWidthCm={m_InspectorMetadata.shoulderWidthCm}). " +
-                          "Participant id / session will come from the EegMarkerEmitter if present.");
-            }
-
-            if (m_AutoStartOnPlay)
-            {
-                Debug.Log("[HitOrMissAppController] AutoStartOnPlay=true — starting session immediately.");
-                StartSession();
-            }
-            else
-            {
-                Debug.Log("[HitOrMissAppController] AutoStartOnPlay=false — waiting for StartSession() (clinician panel, network, or a button).");
-            }
+            return TrialGenerator.GenerateBlock(blockIndex, this, participantShoulderWidthCm);
         }
 
-        [ContextMenu("Inspector metadata: fill with defaults")]
-        void FillInspectorMetadataWithDefaults()
+        public TrialDefinition[] GeneratePracticeTrials()
         {
-            string keepId = string.IsNullOrEmpty(m_InspectorMetadata.participantId)
-                ? "P000" : m_InspectorMetadata.participantId;
-
-            m_InspectorMetadata = SessionMetadata.CreateDefault(keepId);
-
-            // Leave the Task 2 protocol to the TrajectoryTaskAsset. Zero these
-            // so ApplyTask2SessionOverrides skips them (each is guarded by > 0)
-            // and the asset's own block count, per-category trial counts, and
-            // break duration are used verbatim. In particular, a non-zero
-            // task2TrialsPerBlock would trigger the legacy equal-split path and
-            // overwrite the asset's 30/50/50/30 category composition with
-            // 40/40/40/40.
-            m_InspectorMetadata.task2NumberOfBlocks = 0;
-            m_InspectorMetadata.task2TrialsPerBlock = 0;
-            m_InspectorMetadata.task2BreakDurationSeconds = 0f;
-
-#if UNITY_EDITOR
-            UnityEditor.EditorUtility.SetDirty(this);
-#endif
+            return TrialGenerator.GeneratePracticeTrials(this, 0f);
         }
 
-        void SetPhase(TaskPhase phase)
+        public TrialDefinition[] GeneratePracticeTrials(float participantShoulderWidthCm)
         {
-            if (m_CurrentPhase == phase)
-                return;
-
-            m_CurrentPhase = phase;
-            PhaseChanged?.Invoke(phase);
+            return TrialGenerator.GeneratePracticeTrials(this, participantShoulderWidthCm);
         }
 
-        public void SetSessionMetadata(SessionMetadata metadata)
+        public TrialDefinition[] GenerateEasyPracticeTrials(float participantShoulderWidthCm)
         {
-            m_SessionMetadata = metadata;
-            m_HasExternalSessionMetadata = true;
-
-            if (!string.IsNullOrEmpty(metadata.participantId))
-                ParticipantId = metadata.participantId;
-        }
-        public void SetLanguage(SupportedLanguage language)
-        {
-            m_Language = language;
-
-            if (m_UITextBinders == null)
-                return;
-
-            foreach (var binder in m_UITextBinders)
-            {
-                if (binder != null)
-                    binder.Language = language;
-            }
+            return TrialGenerator.GeneratePracticeTrialsWithComposition(
+                this,
+                participantShoulderWidthCm,
+                m_EasyPracticeClearHits,
+                m_EasyPracticeClearMisses,
+                m_EasyPracticeNearHits,
+                m_EasyPracticeNearMisses,
+                "EASY_PRACTICE");
         }
 
-        public void ToggleLanguage()
+        public TrialDefinition[] GenerateHardPracticeTrials(float participantShoulderWidthCm)
         {
-            SetLanguage(
-                m_Language == SupportedLanguage.English
-                    ? SupportedLanguage.French
-                    : SupportedLanguage.English
-            );
+            return TrialGenerator.GeneratePracticeTrialsWithComposition(
+                this,
+                participantShoulderWidthCm,
+                m_HardPracticeClearHits,
+                m_HardPracticeClearMisses,
+                m_HardPracticeNearHits,
+                m_HardPracticeNearMisses,
+                "HARD_PRACTICE");
         }
 
-        public void SetLanguageEnglish()
+        public TrialDefinition[] GenerateDifficultPracticeTrials(float participantShoulderWidthCm)
         {
-            SetLanguage(SupportedLanguage.English);
+            return GenerateHardPracticeTrials(participantShoulderWidthCm);
         }
 
-        public void SetLanguageFrench()
+        /// <summary>
+        /// Returns a runtime-only clone of this asset. Modifications to the
+        /// clone do not touch the on-disk source asset.
+        /// </summary>
+        public TrajectoryTaskAsset CreateSessionClone()
         {
-            SetLanguage(SupportedLanguage.French);
+            var clone = Instantiate(this);
+            clone.name = name + " (Session Clone)";
+            return clone;
         }
 
-        public void StartSession()
+        public float OffsetScaleForParticipant(float participantShoulderWidthCm)
         {
-            if (m_CurrentPhase != TaskPhase.Idle)
+            if (!m_ScaleOffsetBandsByShoulderWidth)
+                return 1f;
+
+            if (participantShoulderWidthCm <= 0f || m_ReferenceShoulderWidthCm <= 0f)
+                return 1f;
+
+            return participantShoulderWidthCm / m_ReferenceShoulderWidthCm;
+        }
+
+        /// <summary>
+        /// Mutates this asset, intended to be called only on a session clone,
+        /// so values from the clinician form's task2_parameters drive the run.
+        /// </summary>
+        public void ApplyTask2SessionOverrides(SessionMetadata md)
+        {
+            if (md.task2NumberOfBlocks > 0)
+                m_BlockCount = md.task2NumberOfBlocks;
+
+            // Legacy fallback:
+            // If the session form only gives total trials per block,
+            // split them equally across the four categories.
+            // Prefer setting category-specific values directly in the asset.
+            if (md.task2TrialsPerBlock > 0)
             {
-                Debug.LogWarning("[HitOrMissAppController] Session already running.");
-                return;
-            }
+                int total = md.task2TrialsPerBlock;
+                int perCat = total / 4;
+                int remainder = total % 4;
 
-            if (m_TaskAsset == null)
+                m_ClearHitTrialsPerBlock = perCat;
+                m_NearHitTrialsPerBlock = perCat;
+                m_NearMissTrialsPerBlock = perCat;
+                m_ClearMissTrialsPerBlock = perCat;
+
+                // Distribute leftover trials so total stays exact.
+                if (remainder > 0) m_NearHitTrialsPerBlock++;
+                if (remainder > 1) m_NearMissTrialsPerBlock++;
+                if (remainder > 2) m_ClearHitTrialsPerBlock++;
+            }
+            if (md.task2BreakDurationSeconds > 0f)
             {
-                Debug.LogError("[HitOrMissAppController] No TrajectoryTaskAsset assigned.");
-                return;
+                m_BreakDurationSeconds = md.task2BreakDurationSeconds;
+                m_RestDuration = md.task2BreakDurationSeconds;
             }
-
-            if (m_TaskManager == null)
-            {
-                Debug.LogError("[HitOrMissAppController] No TrajectoryTaskManager assigned.");
-                return;
-            }
-
-            if (m_EegMarkerEmitter == null)
-            {
-                m_EegMarkerEmitter = FindAnyObjectByType<EegMarkerEmitter>();
-
-                if (m_EegMarkerEmitter == null)
-                    Debug.LogWarning("[HitOrMissAppController] No EegMarkerEmitter found. EEG markers disabled.");
-                else
-                    Debug.Log("[HitOrMissAppController] Found EegMarkerEmitter automatically.");
-            }
-
-            m_TaskManager.SetMarkerEmitter(m_EegMarkerEmitter);
-
-            var composite = new CompositeInputSource(
-                m_ControllerInput,
-                m_KeyboardInput,
-                m_HandPinchInput
-            );
-
-            if (composite.Sources.Count == 0)
-            {
-                Debug.LogError("[HitOrMissAppController] No input sources assigned in inspector.");
-                return;
-            }
-
-            m_InputSource = composite;
-            m_TaskManager.SetInputSource(m_InputSource);
-
-            bool externalMetadataProvided = m_HasExternalSessionMetadata;
-
-            if (!externalMetadataProvided)
-            {
-                string defaultParticipantId =
-                    m_EegMarkerEmitter != null && !string.IsNullOrEmpty(m_EegMarkerEmitter.ParticipantId)
-                        ? m_EegMarkerEmitter.ParticipantId
-                        : ParticipantId;
-
-                m_SessionMetadata = SessionMetadata.CreateDefault(defaultParticipantId);
-                m_SessionMetadata.PopulateFromTaskAsset(m_TaskAsset);
-
-                Debug.Log("[HitOrMissAppController] Created default session metadata from task asset.");
-            }
-            else
-            {
-                Debug.Log("[HitOrMissAppController] Using externally provided session metadata.");
-            }
-
-            if (string.IsNullOrEmpty(m_SessionMetadata.participantId))
-                m_SessionMetadata.participantId = ParticipantId;
-            else
-                ParticipantId = m_SessionMetadata.participantId;
-
-            if (string.IsNullOrEmpty(m_SessionMetadata.sessionDate))
-                m_SessionMetadata.sessionDate = System.DateTime.Now.ToString("yyyy-MM-dd");
 
             Debug.Log(
-                $"[HitOrMissAppController] Metadata before task clone: " +
-                $"participantId={m_SessionMetadata.participantId}, " +
-                $"task2NumberOfBlocks={m_SessionMetadata.task2NumberOfBlocks}, " +
-                $"task2TrialsPerBlock={m_SessionMetadata.task2TrialsPerBlock}, " +
-                $"task2BreakDurationSeconds={m_SessionMetadata.task2BreakDurationSeconds}, " +
-                $"shoulderWidthCm={m_SessionMetadata.shoulderWidthCm}"
-            );
-
-            m_SessionAsset = m_TaskAsset.CreateSessionClone();
-            m_SessionAsset.ApplyTask2SessionOverrides(m_SessionMetadata);
-            m_TaskManager.TaskAsset = m_SessionAsset;
-
-            Debug.Log(
-                $"[HitOrMissAppController] Session asset clone applied. " +
-                $"BlockCount={m_SessionAsset.BlockCount}, " +
-                $"TrialsPerBlock={m_SessionAsset.TrialsPerBlock}, " +
-                $"BreakDurationSeconds={m_SessionAsset.BreakDurationSeconds}"
-            );
-
-            // Participant id + session have ONE authority: the EegMarkerEmitter
-            // when it is present. This keeps the EEG marker stream and the CSV /
-            // setup.json in agreement, and means you only type the id/session in
-            // one place (the emitter). The Inspector metadata block supplies
-            // everything else; its participantId / sessionId stand only when no
-            // emitter is in the scene.
-            if (m_EegMarkerEmitter != null)
-            {
-                m_EegMarkerEmitter.BeginSession();
-
-                m_SessionMetadata.participantId = m_EegMarkerEmitter.ParticipantId;
-                m_SessionMetadata.sessionId = m_EegMarkerEmitter.SessionId;
-                ParticipantId = m_SessionMetadata.participantId;
-            }
-
-            if (m_TaskLogger != null)
-            {
-                m_TaskLogger.SetMetadata(m_SessionMetadata);
-
-                m_TaskLogger.BeginSession(
-                    TaskKind.Task2HitOrMiss,
-                    m_SessionAsset != null ? m_SessionAsset.TaskName : m_TaskAsset.TaskName
-                );
-
-                m_TaskManager.TrialJudged -= m_TaskLogger.LogTrial;
-                m_TaskManager.TrialJudged += m_TaskLogger.LogTrial;
-            }
-
-            if (m_ClinicianPanel != null)
-                m_ClinicianPanel.EnterTaskMode();
-
-            m_SessionCoroutine = StartCoroutine(RunSession());
-            SessionStarted?.Invoke();
+            $"[TrajectoryTaskAsset] Runtime config: " +
+            $"blocks={m_BlockCount}, " +
+            $"clearHit={m_ClearHitTrialsPerBlock}, " +
+            $"nearHit={m_NearHitTrialsPerBlock}, " +
+            $"nearMiss={m_NearMissTrialsPerBlock}, " +
+            $"clearMiss={m_ClearMissTrialsPerBlock}, " +
+            $"TrialsPerBlock={TrialsPerBlock}"
+        );
         }
 
-        public void StopSession()
+        void OnValidate()
         {
-            if (m_SessionCoroutine != null)
+            if (m_BlockCount < 1) m_BlockCount = 1;
+            m_ClearHitTrialsPerBlock = Mathf.Max(0, m_ClearHitTrialsPerBlock);
+            m_NearHitTrialsPerBlock = Mathf.Max(0, m_NearHitTrialsPerBlock);
+            m_NearMissTrialsPerBlock = Mathf.Max(0, m_NearMissTrialsPerBlock);
+            m_ClearMissTrialsPerBlock = Mathf.Max(0, m_ClearMissTrialsPerBlock);
+
+            if (TrialsPerBlock < 1)
+                m_ClearHitTrialsPerBlock = 1;
+
+            // Keep offset bands ordered.
+            if (m_ClearHitMinOffsetCm > m_ClearHitMaxOffsetCm)
             {
-                StopCoroutine(m_SessionCoroutine);
-                m_SessionCoroutine = null;
+                float temp = m_ClearHitMinOffsetCm;
+                m_ClearHitMinOffsetCm = m_ClearHitMaxOffsetCm;
+                m_ClearHitMaxOffsetCm = temp;
             }
 
-            if (m_TaskManager != null && m_TaskManager.IsRunning)
-                m_TaskManager.StopBlock();
-
-            EndSession();
-        }
-
-        public void PauseSession()
-        {
-            if (m_CurrentPhase == TaskPhase.Idle)
-                return;
-
-            if (m_TaskManager == null || !m_TaskManager.IsRunning || m_TaskManager.IsPaused)
-                return;
-
-            m_TaskManager.PauseBlock();
-            m_EegMarkerEmitter?.Emit("session_paused");
-
-            if (m_TaskLogger != null)
-                m_TaskLogger.Flush(CurrentBlockIndex, m_TaskManager.NextTrialIndex);
-
-            if (m_ClinicianPanel != null)
-                m_ClinicianPanel.EnterPausedMode();
-
-            SessionPaused?.Invoke();
-        }
-
-        public void ResumeSession()
-        {
-            if (m_TaskManager == null || !m_TaskManager.IsPaused)
-                return;
-
-            m_TaskManager.ResumeBlock();
-            m_EegMarkerEmitter?.Emit("session_resumed");
-
-            if (m_ClinicianPanel != null)
-                m_ClinicianPanel.ExitPausedMode();
-
-            SessionResumed?.Invoke();
-        }
-
-        IEnumerator RunSession()
-        {
-            if (Asset == null)
+            if (m_NearHitMinOffsetCm > m_NearHitMaxOffsetCm)
             {
-                Debug.LogError("[HitOrMissAppController] Cannot run session: Asset is null.");
-                EndSession();
-                yield break;
+                float temp = m_NearHitMinOffsetCm;
+                m_NearHitMinOffsetCm = m_NearHitMaxOffsetCm;
+                m_NearHitMaxOffsetCm = temp;
             }
 
-            if (m_TaskManager == null)
+            if (m_NearMissMinOffsetCm > m_NearMissMaxOffsetCm)
             {
-                Debug.LogError("[HitOrMissAppController] Cannot run session: TaskManager is null.");
-                EndSession();
-                yield break;
+                float temp = m_NearMissMinOffsetCm;
+                m_NearMissMinOffsetCm = m_NearMissMaxOffsetCm;
+                m_NearMissMaxOffsetCm = temp;
             }
 
-            int blockCount = Asset.BlockCount;
-
-            SetPhase(TaskPhase.Intro);
-            m_EegMarkerEmitter?.Emit("phase_intro");
-            yield return RunPrePracticeSequence();
-
-            SetPhase(TaskPhase.Practice);
-            m_EegMarkerEmitter?.Emit("phase_controller_practice");
-            yield return RunControllerPractice();
-
-            m_EegMarkerEmitter?.Emit("phase_difficult_practice");
-            yield return RunDifficultPractice();
-
-            Debug.Log("[SESSION] Difficult practice done. Showing NoFeedback.");
-
-            SetPhase(TaskPhase.Ready);
-            yield return RunOnePopup(m_NoFeedbackPanel);
-
-            Debug.Log("[SESSION] NoFeedback done. Showing ReadyToStart.");
-
-            yield return RunOnePopup(m_ReadyToStartPanel);
-
-            Debug.Log("[SESSION] ReadyToStart done. Entering blocks.");
-
-            yield return RunPopupSequence(m_ExtraPostPracticePopups);
-
-            Debug.Log(
-                $"[SESSION] Starting block loop. " +
-                $"blockCount={blockCount}, " +
-                $"Asset.TrialsPerBlock={Asset.TrialsPerBlock}"
-            );
-
-            m_TaskManager.AutoResolveTimeouts = false;
-
-            for (int b = 0; b < blockCount; b++)
+            if (m_ClearMissMinOffsetCm > m_ClearMissMaxOffsetCm)
             {
-                CurrentBlockIndex = b;
-
-                SetPhase(TaskPhase.BlockIntro);
-                yield return RunOnePopup(m_BlockIntroPopup);
-
-                SetPhase(TaskPhase.Block);
-                m_EegMarkerEmitter?.Emit("phase_block");
-
-                if (m_FixationCross != null)
-                    m_FixationCross.Show();
-
-                var blockTrials = Asset.GenerateBlock(
-                    b,
-                    m_SessionMetadata.shoulderWidthCm
-                );
-
-                int generatedCount = blockTrials != null ? blockTrials.Length : 0;
-
-                Debug.Log(
-                    $"[HitOrMissAppController] Block {b + 1}/{blockCount}: " +
-                    $"generated blockTrials.Length={generatedCount}, " +
-                    $"Asset.TrialsPerBlock={Asset.TrialsPerBlock}, " +
-                    $"shoulderWidthCm={(m_SessionMetadata.shoulderWidthCm)}"
-                );
-
-                if (blockTrials == null || blockTrials.Length == 0)
-                {
-                    Debug.LogError(
-                        $"[HitOrMissAppController] Block {b + 1} generated no trials. Ending session."
-                    );
-
-                    if (m_FixationCross != null)
-                        m_FixationCross.Hide();
-
-                    EndSession();
-                    yield break;
-                }
-
-                if (blockTrials.Length != Asset.TrialsPerBlock)
-                {
-                    Debug.LogError(
-                        $"[HitOrMissAppController] Trial count mismatch in block {b + 1}: " +
-                        $"blockTrials.Length={blockTrials.Length}, " +
-                        $"Asset.TrialsPerBlock={Asset.TrialsPerBlock}. " +
-                        $"This can cause breakage if another component assumes Asset.TrialsPerBlock."
-                    );
-                }
-
-                m_TaskManager.StartTrialList(b, blockTrials);
-
-                while (m_TaskManager.IsRunning)
-                    yield return null;
-
-                Debug.Log(
-                    $"[HitOrMissAppController] Block {b + 1} finished. " +
-                    $"NextTrialIndex={m_TaskManager.NextTrialIndex}"
-                );
-
-                if (m_FixationCross != null)
-                    m_FixationCross.Hide();
-
-                if (b < blockCount - 1)
-                {
-                    SetPhase(TaskPhase.Rest);
-                    m_EegMarkerEmitter?.Emit("phase_rest");
-                    yield return RunOnePopup(m_BreakPopup);
-
-                    SetPhase(TaskPhase.BlockReady);
-                    yield return RunOnePopup(m_BlockReadyPopup);
-                }
+                float temp = m_ClearMissMinOffsetCm;
+                m_ClearMissMinOffsetCm = m_ClearMissMaxOffsetCm;
+                m_ClearMissMaxOffsetCm = temp;
             }
 
-            SetPhase(TaskPhase.Outro);
-            m_EegMarkerEmitter?.Emit("phase_outro");
-            yield return RunOnePopup(m_OutroPopup);
-
-            EndSession();
-        }
-
-        IEnumerator RunControllerPractice()
-        {
-            yield return RunOnePopup(m_ControllerPracticeIntroPanel);
-            yield return RunControllerIntroDemo();
-            yield return RunResponseMappingDemo();
-        }
-
-        IEnumerator RunControllerIntroDemo()
-        {
-            if (m_TriggerDemoPopup == null)
-            {
-                Debug.LogWarning("[HitOrMissAppController] Trigger demo popup not assigned. Skipping.");
-                yield break;
-            }
-
-            if (m_ControllerIntroDemo == null)
-            {
-                Debug.LogWarning("[HitOrMissAppController] HitOrMissControllerIntroDemo not assigned. Skipping.");
-                yield break;
-            }
-
-            if (m_InputSource == null)
-            {
-                Debug.LogError("[HitOrMissAppController] No input source for trigger demo popup.");
-                yield break;
-            }
-
-            var ctx = BuildPopupContext();
-            m_TriggerDemoPopup.SetText(ctx.ResolveText(m_TriggerDemoPopup));
-            m_TriggerDemoPopup.Show();
-
-            m_ControllerIntroDemo.BeginDemo();
-
-            bool leftPressed = false;
-            bool rightPressed = false;
-
-            void Handler(ResponseEvent ev)
-            {
-                if (ev.command == SemanticCommand.Hit)
-                {
-                    leftPressed = true;
-                    m_ControllerIntroDemo.LeftTriggerPressed();
-                }
-                else if (ev.command == SemanticCommand.Miss)
-                {
-                    rightPressed = true;
-                    m_ControllerIntroDemo.RightTriggerPressed();
-                }
-            }
-
-            m_InputSource.ResponseReceived += Handler;
-            m_InputSource.Enable();
-
-            try
-            {
-                while (!leftPressed || !rightPressed)
-                    yield return null;
-
-                yield return new WaitForSeconds(0.6f);
-            }
-            finally
-            {
-                m_InputSource.ResponseReceived -= Handler;
-                m_TriggerDemoPopup.Hide();
-            }
-        }
-
-        IEnumerator RunResponseMappingDemo()
-        {
-            if (m_ResponseMappingPopup == null)
-            {
-                Debug.LogWarning("[HitOrMissAppController] Response mapping popup not assigned. Skipping.");
-                yield break;
-            }
-
-            if (m_ResponseMappingDemo == null)
-            {
-                Debug.LogWarning("[HitOrMissAppController] HitOrMissResponseMappingDemo not assigned. Skipping.");
-                yield break;
-            }
-
-            if (m_InputSource == null)
-            {
-                Debug.LogError("[HitOrMissAppController] No input source for response mapping popup.");
-                yield break;
-            }
-
-            var ctx = BuildPopupContext();
-            m_ResponseMappingPopup.SetText(ctx.ResolveText(m_ResponseMappingPopup));
-            m_ResponseMappingPopup.Show();
-
-            m_ResponseMappingDemo.ResetDemo();
-
-            bool leftPressed = false;
-            bool rightPressed = false;
-
-            void Handler(ResponseEvent ev)
-            {
-                if (ev.command == SemanticCommand.Hit)
-                {
-                    leftPressed = true;
-                    m_ResponseMappingDemo.LeftPressed();
-                }
-                else if (ev.command == SemanticCommand.Miss)
-                {
-                    rightPressed = true;
-                    m_ResponseMappingDemo.RightPressed();
-                }
-            }
-
-            m_InputSource.ResponseReceived += Handler;
-            m_InputSource.Enable();
-
-            try
-            {
-                while (!leftPressed || !rightPressed)
-                    yield return null;
-
-                while (!m_ResponseMappingDemo.ReadyToAdvance)
-                    yield return null;
-            }
-            finally
-            {
-                m_InputSource.ResponseReceived -= Handler;
-                m_ResponseMappingPopup.Hide();
-            }
-        }
-
-        IEnumerator RunDifficultPractice()
-        {
-            yield return RunOnePopup(m_DifficultPracticeIntroPanel);
-
-            while (true)
-            {
-                int errors = 0;
-
-                yield return RunFeedbackPracticeBlock(
-                    composition: (
-                        Asset.DifficultPracticeClearHits,
-                        Asset.DifficultPracticeClearMisses,
-                        Asset.DifficultPracticeNearHits,
-                        Asset.DifficultPracticeNearMisses
-                    ),
-                    onErrorCount: e => errors = e
-                );
-
-                if (errors < Asset.DifficultPracticeErrorThreshold)
-                {
-                    Debug.Log($"[HitOrMissAppController] Difficult practice PASSED — {errors} errors.");
-                    break;
-                }
-
-                Debug.Log($"[HitOrMissAppController] Difficult practice FAILED — {errors} errors. Showing retry.");
-                yield return RunOnePopup(m_PracticeRetryPanel);
-            }
-        }
-
-        IEnumerator RunFeedbackPracticeBlock(
-            (int clearHits, int clearMisses, int nearHits, int nearMisses) composition,
-            System.Action<int> onErrorCount)
-        {
-            bool previousAutoResolveTimeouts = m_TaskManager.AutoResolveTimeouts;
-
-            if (m_ResponseIndicator != null)
-                m_ResponseIndicator.SetPracticeMode(true);
-
-            bool? lastCorrect = null;
-
-            void OnTrialJudged(TrialJudgement j)
-            {
-                lastCorrect = j.result == TrialResult.Correct;
-
-                if (j.wasTooSlow && j.result != TrialResult.NoResponse)
-                    StartCoroutine(FlashTooSlowPanel());
-            }
-
-            void OnResponseIndicator(SemanticCommand cmd, bool matched)
-            {
-                if (m_ResponseIndicator != null)
-                    m_ResponseIndicator.Show(cmd, matched, lastCorrect);
-            }
-
-            int errors = 0;
-
-            void TallyErrors(TrialJudgement j)
-            {
-                if (j.result == TrialResult.Incorrect || j.result == TrialResult.NoResponse)
-                {
-                    errors++;
-                    Debug.Log($"[TALLY] error #{errors} — result={j.result} trial={j.trialId}");
-                }
-            }
-
-            m_TooSlowHandler = _ => StartCoroutine(FlashTooSlowPanel());
-
-            m_TaskManager.TrialJudged += OnTrialJudged;
-            m_TaskManager.TrialJudged += TallyErrors;
-            m_TaskManager.ResponseIndicator += OnResponseIndicator;
-            m_TaskManager.TooSlow += m_TooSlowHandler;
-
-            bool completedNormally = false;
-
-            try
-            {
-                var trials = TrialGenerator.GeneratePracticeTrialsWithComposition(
-                    Asset,
-                    m_SessionMetadata.shoulderWidthCm,
-                    composition.clearHits,
-                    composition.clearMisses,
-                    composition.nearHits,
-                    composition.nearMisses
-                );
-
-                Debug.Log(
-                    $"[HitOrMissAppController] Starting difficult practice. " +
-                    $"trials.Length={(trials != null ? trials.Length : 0)}"
-                );
-
-                m_TaskManager.AutoResolveTimeouts = true;
-
-                if (m_FixationCross != null)
-                    m_FixationCross.Show();
-
-                m_TaskManager.StartTrialList(-1, trials);
-
-                while (m_TaskManager.IsRunning)
-                    yield return null;
-
-                completedNormally = true;
-            }
-            finally
-            {
-                if (m_FixationCross != null)
-                    m_FixationCross.Hide();
-
-                m_TaskManager.AutoResolveTimeouts = previousAutoResolveTimeouts;
-
-                m_TaskManager.TrialJudged -= OnTrialJudged;
-                m_TaskManager.TrialJudged -= TallyErrors;
-                m_TaskManager.ResponseIndicator -= OnResponseIndicator;
-
-                if (m_TooSlowHandler != null)
-                    m_TaskManager.TooSlow -= m_TooSlowHandler;
-
-                m_TooSlowHandler = null;
-
-                if (m_ResponseIndicator != null)
-                    m_ResponseIndicator.SetPracticeMode(false);
-            }
-
-            if (completedNormally)
-                onErrorCount?.Invoke(errors);
-        }
-
-        IEnumerator FlashTooSlowPanel()
-        {
-            if (m_TooSlowPanel == null)
-                yield break;
-
-            m_TooSlowPanel.SetText(BuildPopupContext().ResolveText(m_TooSlowPanel));
-            m_TooSlowPanel.Show();
-
-            yield return new WaitForSeconds(kTooSlowDisplaySeconds);
-
-            m_TooSlowPanel.Hide();
-        }
-
-        IEnumerator RunPopupSequence(TaskPopupPanel[] sequence)
-        {
-            if (sequence == null)
-                yield break;
-
-            foreach (var panel in sequence)
-            {
-                if (panel == null)
-                    continue;
-
-                yield return RunOnePopup(panel);
-            }
-        }
-
-        PopupContext BuildPopupContext()
-        {
-            return new PopupContext
-            {
-                Localize = (key, fallback) => GetLocalizedString(key, fallback),
-                GetBreakDuration = () => Asset != null ? Asset.BreakDurationSeconds : 60f,
-                GetOutroDuration = () => Asset != null ? Asset.OutroDuration : 10f,
-                CurrentBlockNumber = CurrentBlockIndex + 1,
-            };
-        }
-
-        IEnumerator RunOnePopup(TaskPopupPanel panel)
-        {
-            if (panel == null)
-                yield break;
-
-            yield return panel.Run(BuildPopupContext());
-        }
-
-        IEnumerator RunPrePracticeSequence()
-        {
-            if (m_PrePracticePopups == null)
-                yield break;
-
-            for (int i = 0; i < m_PrePracticePopups.Length; i++)
-            {
-                var panel = m_PrePracticePopups[i];
-
-                if (panel == null)
-                    continue;
-
-                yield return RunOnePopup(panel);
-            }
-        }
-
-        void EndSession()
-        {
-            if (m_TaskManager != null)
-            {
-                if (m_TaskLogger != null)
-                    m_TaskManager.TrialJudged -= m_TaskLogger.LogTrial;
-
-                if (m_TooSlowHandler != null)
-                {
-                    m_TaskManager.TooSlow -= m_TooSlowHandler;
-                    m_TooSlowHandler = null;
-                }
-
-                m_TaskManager.AutoResolveTimeouts = false;
-            }
-
-            if (m_TaskLogger != null)
-                m_TaskLogger.EndSession();
-
-            HideAllPopups();
-
-            if (m_FixationCross != null)
-                m_FixationCross.Hide();
-
-            if (m_ResponseIndicator != null)
-                m_ResponseIndicator.SetPracticeMode(false);
-
-            if (m_ClinicianPanel != null)
-                m_ClinicianPanel.ExitTaskMode();
-
-            m_EegMarkerEmitter?.EndSession();
-
-            if (m_SessionAsset != null)
-            {
-                if (m_TaskManager != null)
-                    m_TaskManager.TaskAsset = m_TaskAsset;
-
-                Destroy(m_SessionAsset);
-                m_SessionAsset = null;
-            }
-
-            SetPhase(TaskPhase.Idle);
-            m_SessionCoroutine = null;
-            SessionEnded?.Invoke();
-        }
-
-        void HideAllPopups()
-        {
-            HideArray(m_PrePracticePopups);
-            HideArray(m_ExtraPostPracticePopups);
-
-            if (m_ControllerPracticeIntroPanel != null) m_ControllerPracticeIntroPanel.Hide();
-            if (m_TriggerDemoPopup != null) m_TriggerDemoPopup.Hide();
-            if (m_ResponseMappingPopup != null) m_ResponseMappingPopup.Hide();
-            if (m_DifficultPracticeIntroPanel != null) m_DifficultPracticeIntroPanel.Hide();
-            if (m_PracticeRetryPanel != null) m_PracticeRetryPanel.Hide();
-            if (m_TooSlowPanel != null) m_TooSlowPanel.Hide();
-            if (m_NoFeedbackPanel != null) m_NoFeedbackPanel.Hide();
-            if (m_ReadyToStartPanel != null) m_ReadyToStartPanel.Hide();
-            if (m_BlockIntroPopup != null) m_BlockIntroPopup.Hide();
-            if (m_BreakPopup != null) m_BreakPopup.Hide();
-            if (m_BlockReadyPopup != null) m_BlockReadyPopup.Hide();
-            if (m_OutroPopup != null) m_OutroPopup.Hide();
-        }
-
-        static void HideArray(TaskPopupPanel[] arr)
-        {
-            if (arr == null)
-                return;
-
-            foreach (var p in arr)
-            {
-                if (p != null)
-                    p.Hide();
-            }
-        }
-
-        string GetLocalizedString(string key, string fallback)
-        {
-            if (string.IsNullOrEmpty(key) || m_TermTable == null)
-                return fallback;
-
-            string v = m_TermTable.Get(key, m_Language);
-
-            return string.IsNullOrEmpty(v) || (v.StartsWith("[") && v.EndsWith("]"))
-                ? fallback
-                : v;
+            // Force your intended category geometry.
+            m_ClearHitMinOffsetCm = Mathf.Min(m_ClearHitMinOffsetCm, 0f);
+            m_ClearHitMaxOffsetCm = Mathf.Min(m_ClearHitMaxOffsetCm, 0f);
+
+            m_NearHitMinOffsetCm = Mathf.Max(1f, m_NearHitMinOffsetCm);
+            m_NearHitMaxOffsetCm = Mathf.Max(m_NearHitMinOffsetCm, m_NearHitMaxOffsetCm);
+
+            m_NearMissMinOffsetCm = Mathf.Max(15f, m_NearMissMinOffsetCm);
+            m_NearMissMaxOffsetCm = Mathf.Max(m_NearMissMinOffsetCm, m_NearMissMaxOffsetCm);
+
+            m_ClearMissMinOffsetCm = Mathf.Max(30f, m_ClearMissMinOffsetCm);
+            m_ClearMissMaxOffsetCm = Mathf.Max(m_ClearMissMinOffsetCm, m_ClearMissMaxOffsetCm);
+            
+            if (m_SpawnDistance <= 0f) m_SpawnDistance = 1f;
+            if (m_FastSpeed <= 0f) m_FastSpeed = 0.5f;
+            if (m_SlowSpeed <= 0f) m_SlowSpeed = 0.25f;
+            if (m_FastSpeed <= m_SlowSpeed) m_FastSpeed = m_SlowSpeed + 0.1f;
+            if (m_BallDiameter <= 0f) m_BallDiameter = 0.1f;
+            if (m_ItiMinSeconds < 0f) m_ItiMinSeconds = 0f;
+            if (m_ItiMaxSeconds < m_ItiMinSeconds) m_ItiMaxSeconds = m_ItiMinSeconds;
+            if (m_PracticeTrialCount < 1) m_PracticeTrialCount = 1;
+
+            m_EasyPracticeClearHits = Mathf.Max(0, m_EasyPracticeClearHits);
+            m_EasyPracticeClearMisses = Mathf.Max(0, m_EasyPracticeClearMisses);
+            m_EasyPracticeNearHits = Mathf.Max(0, m_EasyPracticeNearHits);
+            m_EasyPracticeNearMisses = Mathf.Max(0, m_EasyPracticeNearMisses);
+            m_EasyPracticeErrorThreshold = Mathf.Max(1, m_EasyPracticeErrorThreshold);
+
+            m_HardPracticeClearHits = Mathf.Max(0, m_HardPracticeClearHits);
+            m_HardPracticeClearMisses = Mathf.Max(0, m_HardPracticeClearMisses);
+            m_HardPracticeNearHits = Mathf.Max(0, m_HardPracticeNearHits);
+            m_HardPracticeNearMisses = Mathf.Max(0, m_HardPracticeNearMisses);
+            m_HardPracticeErrorThreshold = Mathf.Max(1, m_HardPracticeErrorThreshold);
+
+            if (m_EasyPracticeClearHits + m_EasyPracticeClearMisses + m_EasyPracticeNearHits + m_EasyPracticeNearMisses < 1)
+                m_EasyPracticeClearHits = 1;
+
+            if (m_HardPracticeClearHits + m_HardPracticeClearMisses + m_HardPracticeNearHits + m_HardPracticeNearMisses < 1)
+                m_HardPracticeNearHits = 1;
         }
     }
 }

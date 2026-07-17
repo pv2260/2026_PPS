@@ -6096,7 +6096,7 @@ Transform:
   m_GameObject: {fileID: 337559547}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.9, z: 0.5833334}
+  m_LocalPosition: {x: 0, y: 0.85, z: 0.66666675}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -7307,7 +7307,7 @@ Transform:
   m_GameObject: {fileID: 415176896}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.9, z: 1.5833333}
+  m_LocalPosition: {x: 0, y: 0.85, z: 2.2166667}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -12325,7 +12325,7 @@ Transform:
   m_GameObject: {fileID: 712710162}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.9, z: 1.25}
+  m_LocalPosition: {x: 0, y: 0.85, z: 1.7}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -18349,7 +18349,7 @@ Transform:
   m_GameObject: {fileID: 1097870506}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.9, z: 2.25}
+  m_LocalPosition: {x: 0, y: 0.85, z: 3.25}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -19561,7 +19561,7 @@ Transform:
   m_GameObject: {fileID: 1165992207}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.9, z: 0.9166666}
+  m_LocalPosition: {x: 0, y: 0.85, z: 1.1833333}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -25495,7 +25495,7 @@ Transform:
   m_GameObject: {fileID: 1517097854}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.9, z: 0.25}
+  m_LocalPosition: {x: 0, y: 0.85, z: 0.15}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -33362,7 +33362,7 @@ Transform:
   m_GameObject: {fileID: 2042596683}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.9, z: 1.9166666}
+  m_LocalPosition: {x: 0, y: 0.85, z: 2.7333333}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -34856,11 +34856,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: aedf5622e18f8a24dbc9dc52e0c286fc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  m_ParticipantId: pam
-  m_SessionId: s1
   m_UseSerialBridge: 1
   m_AutoDetectPort: 1
-  m_ComPort: COM7
+  m_ComPort: COM10
   m_BaudRate: 115200
   m_TriggerDuration: 0.01
 --- !u!114 &949874007889434172
@@ -35813,17 +35811,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 87798779b0645064288d7e8560711f5c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HitOrMiss.Pps.PPSAppController
+  m_SessionConfig: {fileID: 11400000, guid: 3ff8f41115dacd647bbd27ca0de1801d, type: 2}
+  m_AutoStartWhenPanelOff: 1
   m_KeyboardInput: {fileID: 251103580821447724}
   m_ControllerInputBehaviour: {fileID: 7659978567479148310}
   m_Ui: {fileID: 1643808109}
   m_TaskManager: {fileID: 867388212}
-  m_TaskAsset: {fileID: 11400000, guid: b6a0232453b4a5f4182f868a7d2920f0, type: 2}
   m_TaskLogger: {fileID: 949874007889434172}
   m_EegMarkerEmitter: {fileID: 295281198655078072}
   m_FixationCross: {fileID: 0}
   m_StandingCross: {fileID: 0}
   m_ClinicianPanel: {fileID: 0}
-  m_AutoStartOnPlay: 1
 --- !u!1 &9041478014344155232
 GameObject:
   m_ObjectHideFlags: 0

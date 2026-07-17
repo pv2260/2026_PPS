@@ -431,40 +431,20 @@ namespace HitOrMiss.Pps
         }
 
         /// <summary>
-        /// Runtime-only clone that can be mutated for the active session without touching
-        /// the on-disk ScriptableObject. The caller (PpsAppController) destroys the clone
-        /// at session end.
+        /// Runtime-only clone. Kept as a utility. The PPS controller no longer
+        /// clones for overrides, because the asset is now the sole authority for
+        /// protocol and is never mutated at runtime.
         /// </summary>
         public PpsTaskAsset CreateSessionClone()
         {
             return Instantiate(this);
         }
 
-        /// <summary>
-        /// Applies overrides from the clinician form. Only call this on a
-        /// CreateSessionClone() result so the on-disk asset stays clean.
-        /// </summary>
-        public void ApplyTask1SessionOverrides(SessionMetadata md)
-        {
-            if (md.task1NumberOfBlocks > 0)
-                m_BlockCount = md.task1NumberOfBlocks;
-
-            if (md.task1VtTrialsPerBlock > 0)
-                m_VtTrialsPerBlock = md.task1VtTrialsPerBlock;
-            if (md.task1VisualOnlyTrialsPerBlock > 0)
-                m_VisualOnlyTrialsPerBlock = md.task1VisualOnlyTrialsPerBlock;
-            if (md.task1TactileOnlyTrialsPerBlock > 0)
-                m_TactileOnlyTrialsPerBlock = md.task1TactileOnlyTrialsPerBlock;
-
-            m_TrialsPerBlock =
-                m_VtTrialsPerBlock + m_VisualOnlyTrialsPerBlock + m_TactileOnlyTrialsPerBlock;
-
-            if (md.task1BreakDurationSeconds > 0f)
-                m_RestDurationSeconds = md.task1BreakDurationSeconds;
-
-            if (md.task1WideOffsetCm > 0f)
-                m_WideOffsetMeters = md.task1WideOffsetCm / 100f;
-        }
+        // NOTE: ApplyTask1SessionOverrides has been removed. The asset is the sole
+        // authority for protocol (block count, per-modality trial counts, break,
+        // wide offset). Nothing in SessionMetadata overrides these anymore.
+        // SessionMetadata.task1_* fields are a write-once record for setup.json,
+        // populated FROM this asset via SessionMetadata.PopulateFromPpsTaskAsset.
 
         /// <summary>
         /// Normalized progress for a stage: 0 at the farthest ACTIVE stage, 1 at D1.

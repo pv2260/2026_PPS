@@ -103,13 +103,6 @@ namespace HitOrMiss
 
             m_TaskKind = taskKind;
 
-           // m_SessionDir = Path.Combine(
-           //     Directory.GetCurrentDirectory(),
-          //      "Logger",
-           //     $"{m_ParticipantId}_{m_SessionId}"
-           // );
-           // Directory.CreateDirectory(m_SessionDir);
-
             // Pam added for new logger system
             if (m_EegMarkerEmitter == null)
             {

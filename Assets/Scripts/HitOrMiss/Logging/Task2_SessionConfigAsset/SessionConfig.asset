@@ -1,0 +1,34 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ff4a72688fefd284cbc87f81722dead8, type: 3}
+  m_Name: SessionConfig
+  m_EditorClassIdentifier: Assembly-CSharp::HitOrMiss.SessionConfigAsset
+  m_TaskAsset: {fileID: 11400000, guid: 25825ccfc43601042871a2c0397396c7, type: 2}
+  m_UseClinicalPanel: 0
+  m_ParticipantId: pam-task2-test
+  m_SessionNumber: 1
+  m_SubjectInfo:
+    ageYears: 33
+    dominantHand: 0
+    heightCm: 0
+    shoulderWidthCm: 42
+    subjectGroup: healthy
+    hasDbs: 0
+    sessionType: 2
+    dbsStatus: 0
+    language: english
+    eegEnabled: 0
+    emgEnabled: 0
+    heartRateBandEnabled: 0
+    eyeTrackingEnabled: 0
+    clinicianInitials: 
+    clinicianNotes: 

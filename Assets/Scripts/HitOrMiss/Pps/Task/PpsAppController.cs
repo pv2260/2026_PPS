@@ -3,8 +3,31 @@ using UnityEngine;
 
 namespace HitOrMiss.Pps
 {
+    /// <summary>
+    /// Top-level orchestrator for the PPS looming task (Task 1).
+    ///
+    /// ONE SOURCE FOR EVERYTHING, funneled through a PpsSessionConfig asset:
+    ///   - protocol  -> PpsSessionConfig.TaskAsset (shared, reusable). Runs
+    ///                  directly, never overridden.
+    ///   - identity  -> PpsSessionConfig (panel off) or the clinical panel
+    ///                  (panel on). Pushed INTO the EegMarkerEmitter via
+    ///                  SetIdentity; the emitter no longer stores id/session.
+    ///   - subject   -> PpsSessionConfig.SubjectInfo (panel off) or the panel.
+    /// PpsSessionConfig.UseClinicalPanel is the switch. SessionMetadata is a
+    /// write-once record; nothing reads it back to drive the run.
+    /// </summary>
     public class PpsAppController : MonoBehaviour
     {
+        [Header("Session")]
+        [Tooltip("The single per-session entry point. References the PPS protocol asset and holds " +
+                 "identity, subject data, and the use-panel switch. Create via " +
+                 "Assets > Create > Parkinson > HitOrMiss > PPS Session Config.")]
+        [SerializeField] private PpsSessionConfigAsset m_SessionConfig;
+
+        [Tooltip("When the PpsSessionConfig has the clinical panel OFF, start the session " +
+                 "automatically on Play. Turn this off to start from a button (call StartSession()).")]
+        [SerializeField] private bool m_AutoStartWhenPanelOff = true;
+
         [Header("Input")]
         [SerializeField] private KeyboardCommandInput m_KeyboardInput;
         [SerializeField] private MonoBehaviour m_ControllerInputBehaviour;
@@ -13,7 +36,6 @@ namespace HitOrMiss.Pps
 
         [SerializeField] private SessionFlowPanels m_Ui;
         [SerializeField] private PpsTaskManager m_TaskManager;
-        [SerializeField] private PpsTaskAsset m_TaskAsset;
 
         [Header("Logging")]
         [SerializeField] TaskLogger m_TaskLogger;
@@ -29,39 +51,13 @@ namespace HitOrMiss.Pps
         [Header("Clinician")]
         [SerializeField] ClinicianControlPanel m_ClinicianPanel;
 
-        [Header("Start mode")]
-        [Tooltip("If true, the task begins automatically when the scene loads (legacy / dev shortcut). " +
-                 "If false, waits for StartSession() to be called by the clinician panel or the HTTP server. " +
-                 "Set to false for the clinician-driven flow that matches Task 2.")]
-        [SerializeField] bool m_AutoStartOnPlay = false;
-
-        // ------------------------------------------------------------------
-        // Inspector session (clinician-panel opt-out)
-        // ------------------------------------------------------------------
-        [Header("Inspector session (clinician-panel opt-out)")]
-        [Tooltip("If true, the clinician panel is bypassed and the SessionMetadata entered " +
-                 "below is used directly.\n\n" +
-                 "IMPORTANT: participant id and session are NOT read from here when an " +
-                 "EegMarkerEmitter is present. Type those into the EegMarkerEmitter instead; " +
-                 "the emitter is the single source of truth for id/session so the EEG stream " +
-                 "and the CSV always agree. Use this block for everything else: shoulder width, " +
-                 "group, equipment flags, session type, notes. Any task-count fields left at " +
-                 "zero fall back to the PpsTaskAsset values.")]
-        [SerializeField] bool m_UseInspectorMetadata = false;
-
-        [Tooltip("Session metadata used when 'Use Inspector Metadata' is true. Ignored otherwise. " +
-                 "Leave participantId and sessionNumber blank/zero when an EegMarkerEmitter is in " +
-                 "the scene; they are overwritten by the emitter before logging begins.")]
-        [SerializeField] SessionMetadata m_InspectorMetadata;
-
         SessionMetadata m_SessionMetadata;
         bool m_SessionMetadataSet;
 
-        // Runtime-only clone of m_TaskAsset that carries the clinician form's
-        // overrides (block count, per-modality trial counts, ITI, etc). Lives
-        // for the duration of one session; destroyed on EndSession / Stop.
-        PpsTaskAsset m_SessionAsset;
-        PpsTaskAsset Asset => m_SessionAsset != null ? m_SessionAsset : m_TaskAsset;
+        // Protocol comes only from the SessionConfig. The asset is the sole
+        // authority and is never mutated at runtime, so there is no clone.
+        PpsTaskAsset Protocol => m_SessionConfig != null ? m_SessionConfig.TaskAsset : null;
+        PpsTaskAsset Asset => Protocol;
 
         Coroutine m_SessionCoroutine;
         private bool m_Running;
@@ -87,16 +83,7 @@ namespace HitOrMiss.Pps
         public bool IsRecording => m_TaskLogger != null && m_TaskLogger.IsSessionOpen;
         private bool m_RestartCurrentBlockRequested;
 
-        public string ParticipantId
-        {
-            get
-            {
-                if (m_EegMarkerEmitter != null)
-                    return m_EegMarkerEmitter.ParticipantId;
-
-                return m_SessionMetadata.participantId;
-            }
-        }
+        public string ParticipantId => m_SessionMetadata.participantId;
 
         /// <summary>
         /// Asks the running task to wind down at the next checkpoint.
@@ -110,8 +97,8 @@ namespace HitOrMiss.Pps
 
         /// <summary>
         /// Applies session metadata before StartSession (or via StartSession overload).
-        /// Subject id and shoulder width are propagated to the task manager so the
-        /// LED separation and log filename reflect the participant on record.
+        /// Shoulder width is propagated to the task manager so the LED separation
+        /// reflects the participant on record.
         /// </summary>
         public void SetSessionMetadata(SessionMetadata metadata)
         {
@@ -141,34 +128,43 @@ namespace HitOrMiss.Pps
                 return;
             }
 
+            if (m_SessionConfig == null)
+            {
+                Debug.LogError("[PPSAppController] No PpsSessionConfig assigned.");
+                return;
+            }
+
+            if (Protocol == null)
+            {
+                Debug.LogError("[PPSAppController] PpsSessionConfig has no PpsTaskAsset assigned.");
+                return;
+            }
+
+            // Metadata source: the clinical panel (via SetSessionMetadata) or the
+            // SessionConfig (assembled in Start, or here as a fallback).
             if (!m_SessionMetadataSet)
             {
-                m_SessionMetadata.PopulateFromPpsTaskAsset(m_TaskAsset);
-                m_SessionMetadataSet = true;
-                Debug.Log("[PPSAppController] No metadata set; using defaults derived from the task asset.");
+                SetSessionMetadata(m_SessionConfig.BuildMetadata());
+                Debug.Log("[PPSAppController] Built session metadata from PpsSessionConfig.");
             }
-            // NOTE: when metadata IS already set (clinician form OR Inspector
-            // opt-out), we do NOT overwrite it from the asset. Those values are
-            // the source of truth; they get pushed INTO the asset clone below.
 
-            // Apply form overrides onto a session-local clone so the on-disk
-            // PpsTaskAsset stays untouched. The clone is what the TaskManager
-            // and PpsTrialGenerator read for block count, trial counts, ITI,
-            // wide offset, etc.
-            if (m_TaskAsset != null)
-            {
-                m_SessionAsset = m_TaskAsset.CreateSessionClone();
-                m_SessionAsset.ApplyTask1SessionOverrides(m_SessionMetadata);
-                if (m_TaskManager != null) m_TaskManager.TaskAsset = m_SessionAsset;
+            // Protocol: the asset is the sole authority. Run it directly, no clone.
+            if (m_TaskManager != null)
+                m_TaskManager.TaskAsset = Protocol;
 
-                Debug.Log("[PPSAppController] Session asset clone applied. " +
-                          $"BlockCount={m_SessionAsset.BlockCount}, " +
-                          $"VT={m_SessionAsset.VtTrialsPerBlock}, " +
-                          $"V={m_SessionAsset.VisualOnlyTrialsPerBlock}, " +
-                          $"T={m_SessionAsset.TactileOnlyTrialsPerBlock}, " +
-                          $"Break={m_SessionAsset.RestDurationSeconds}s, " +
-                          $"WideOffset={m_SessionAsset.WideOffsetMeters}m");
-            }
+            // Record the protocol that will run into the metadata for setup.json.
+            // One-directional (asset -> record); never read back to drive the run.
+            m_SessionMetadata.PopulateFromPpsTaskAsset(Protocol);
+
+            Debug.Log("[PPSAppController] Protocol from asset (sole authority): " +
+                      $"participant={m_SessionMetadata.participantId}, " +
+                      $"session={m_SessionMetadata.sessionNumber}, " +
+                      $"BlockCount={Protocol.BlockCount}, " +
+                      $"VT={Protocol.VtTrialsPerBlock}, " +
+                      $"V={Protocol.VisualOnlyTrialsPerBlock}, " +
+                      $"T={Protocol.TactileOnlyTrialsPerBlock}, " +
+                      $"Break={Protocol.RestDurationSeconds}s, " +
+                      $"WideOffset={Protocol.WideOffsetMeters}m");
 
             m_StopRequested = false;
             m_SessionCoroutine = StartCoroutine(RunSessionInternal());
@@ -251,40 +247,39 @@ namespace HitOrMiss.Pps
                 Debug.LogError("[PPSAppController] TaskManager is not assigned.");
                 yield break;
             }
-            if (m_TaskAsset == null)
+            if (m_SessionConfig == null)
             {
-                Debug.LogError("[PPSAppController] TaskAsset is not assigned.");
+                Debug.LogError("[PPSAppController] No PpsSessionConfig assigned.");
+                yield break;
+            }
+            if (Protocol == null)
+            {
+                Debug.LogError("[PPSAppController] PpsSessionConfig has no PpsTaskAsset assigned.");
                 yield break;
             }
 
             AutoWireOptionalReferences();
 
-            // Clinician-panel opt-out: seed the session metadata from the
-            // Inspector block before any auto-start decision. This sets
-            // m_SessionMetadataSet = true, so StartSession() will not fall back
-            // to the asset defaults, and the values flow into the session
-            // asset clone the same way the clinician form's values would.
-            // Clinician-panel opt-out: seed the session metadata from the
-            // Inspector block before any auto-start decision. This sets
-            // m_SessionMetadataSet = true, so StartSession() will not fall back
-            // to the asset defaults. Participant id / session in this block are
-            // superseded later by the EegMarkerEmitter when one is present.
-            if (m_UseInspectorMetadata)
+            if (m_SessionConfig.UseClinicalPanel)
             {
-                SetSessionMetadata(m_InspectorMetadata);
-                Debug.Log("[PPSAppController] Clinician panel bypassed. Using Inspector metadata " +
-                          $"(shoulderWidthCm={m_InspectorMetadata.shoulderWidthCm}). " +
-                          "Participant id / session will come from the EegMarkerEmitter if present.");
+                Debug.Log("[PPSAppController] PpsSessionConfig: clinical panel enabled. " +
+                          "Waiting for the panel to start the session.");
+                yield break;
             }
 
-            if (m_AutoStartOnPlay)
+            // Panel off: this SessionConfig drives a panel-free run.
+            SetSessionMetadata(m_SessionConfig.BuildMetadata());
+            Debug.Log($"[PPSAppController] PpsSessionConfig drives the run (panel off): " +
+                      $"participant={m_SessionConfig.ParticipantId}, session={m_SessionConfig.SessionNumber}.");
+
+            if (m_AutoStartWhenPanelOff)
             {
-                Debug.Log("[PPSAppController] AutoStartOnPlay=true — starting session immediately.");
+                Debug.Log("[PPSAppController] Auto-starting.");
                 StartSession();
             }
             else
             {
-                Debug.Log("[PPSAppController] AutoStartOnPlay=false — waiting for StartSession() (clinician panel, network, or a button).");
+                Debug.Log("[PPSAppController] AutoStartWhenPanelOff=false — waiting for StartSession() from a button.");
             }
         }
 
@@ -335,6 +330,14 @@ namespace HitOrMiss.Pps
 
             if (m_EegMarkerEmitter != null)
             {
+                // Identity flows FROM the metadata (config or panel) INTO the
+                // emitter, before BeginSession opens the marker CSV. The emitter
+                // is a sink for identity now, not a source of it.
+                string sessionLabel = !string.IsNullOrEmpty(m_SessionMetadata.sessionId)
+                    ? m_SessionMetadata.sessionId
+                    : $"S{m_SessionMetadata.sessionNumber}";
+
+                m_EegMarkerEmitter.SetIdentity(m_SessionMetadata.participantId, sessionLabel);
                 m_EegMarkerEmitter.BeginSession();
                 m_TaskManager.SetMarkerEmitter(m_EegMarkerEmitter);
             }
@@ -470,41 +473,10 @@ namespace HitOrMiss.Pps
             // Logging: open the shared TaskLogger with TaskKind.Task1Pps so
             // file names, setup.json, and session.json all carry the task1
             // layout. PpsTaskManager only emits TrialCompleted; the logger
-            // owns the disk.
+            // owns the disk. Identity in the metadata already came from the
+            // SessionConfig (or panel) and was pushed to the emitter earlier.
             if (m_TaskLogger != null)
             {
-                // Participant id + session number have ONE authority: the
-                // EegMarkerEmitter when it is present. This keeps the EEG
-                // marker stream and the CSV / setup.json in agreement, and
-                // means you only ever type the id/session in one place (the
-                // emitter). The Inspector metadata block supplies everything
-                // else (shoulder width, group, equipment, session type,
-                // notes); its participantId / sessionNumber are used only as a
-                // fallback when no emitter is in the scene.
-                if (m_EegMarkerEmitter != null)
-                {
-                    m_SessionMetadata.participantId = m_EegMarkerEmitter.ParticipantId;
-                    m_SessionMetadata.sessionNumber = ParseSessionNumber(m_EegMarkerEmitter.SessionId);
-
-                    Debug.Log(
-                        $"[PPSAppController] Participant id / session taken from EegMarkerEmitter: " +
-                        $"participant={m_SessionMetadata.participantId}, " +
-                        $"session={m_SessionMetadata.sessionNumber}."
-                    );
-                }
-                else if (m_UseInspectorMetadata)
-                {
-                    Debug.Log(
-                        $"[PPSAppController] No EegMarkerEmitter in scene. Using Inspector " +
-                        $"participant id / session: participant={m_SessionMetadata.participantId}, " +
-                        $"session={m_SessionMetadata.sessionNumber}."
-                    );
-                }
-                else
-                {
-                    Debug.LogWarning("[PPSAppController] No EegMarkerEmitter assigned. Using existing session metadata.");
-                }
-
                 m_TaskLogger.ParticipantId = m_SessionMetadata.participantId;
 
                 m_TaskLogger.SetMetadata(m_SessionMetadata);
@@ -574,9 +546,8 @@ namespace HitOrMiss.Pps
         }
 
         /// <summary>
-        /// Unsubscribes the logger from TrialCompleted, closes the session
-        /// folder, and restores the original PpsTaskAsset on the task manager
-        /// (destroying the runtime clone). Safe to call multiple times.
+        /// Unsubscribes the logger from TrialCompleted and closes the session
+        /// folder. Safe to call multiple times.
         /// </summary>
         void CloseLoggingSession()
         {
@@ -590,15 +561,6 @@ namespace HitOrMiss.Pps
                     m_LoggerTrialHandler = null;
                 }
                 m_TaskLogger.EndSession();
-            }
-
-            // Hand the manager back the on-disk asset and dispose of the
-            // session clone so we don't leak ScriptableObjects across runs.
-            if (m_SessionAsset != null)
-            {
-                if (m_TaskManager != null) m_TaskManager.TaskAsset = m_TaskAsset;
-                Destroy(m_SessionAsset);
-                m_SessionAsset = null;
             }
         }
 
@@ -625,23 +587,6 @@ namespace HitOrMiss.Pps
                 m_Ui.HideStandingCross();
                 yield return m_Ui.ShowEndAndWait("Task stopped.\n\nThank you.");
             }
-        }
-
-        private int ParseSessionNumber(string sessionId)
-        {
-            if (string.IsNullOrWhiteSpace(sessionId))
-                return 1;
-
-            sessionId = sessionId.Trim();
-
-            if (sessionId.StartsWith("S", System.StringComparison.OrdinalIgnoreCase))
-                sessionId = sessionId.Substring(1);
-
-            if (int.TryParse(sessionId, out int parsed))
-                return parsed;
-
-            Debug.LogWarning($"[PPSAppController] Could not parse session ID '{sessionId}'. Defaulting to session 1.");
-            return 1;
         }
     }
 }
