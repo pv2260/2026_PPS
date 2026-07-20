@@ -1,0 +1,9 @@
+﻿{
+    "participantId": "pam-task1-test",
+    "sessionId": "S1",
+    "taskKind": "Task1Pps",
+    "timestamp": "2026-07-20T17:33:07.2731923+02:00",
+    "currentBlockIndex": 0,
+    "nextTrialIndex": 1,
+    "trialsCompleted": 1
+}

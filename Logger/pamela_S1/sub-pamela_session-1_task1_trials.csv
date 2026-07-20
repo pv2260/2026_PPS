@@ -1,5 +1,0 @@
-﻿subject_id,session_number,block_number,trial_number,trial_type,response_made,current_speed,width,distance_level,trial_start_ms,loom_onset_ms,d7_onset_ms,position_D7_ms,position_D6_ms,position_D5_ms,position_D4_ms,position_D3_ms,position_D2_ms,position_D1_ms,vibrotactile_onset_ms,response_time_ms,reaction_time_ms,distance_m,loom_start_m,loom_end_m,vibration_device,trial_interrupted,timestamp
-pamela,1,1,1,VT,1,slow,narrow,D3,50480.203,50480.203,51454.718,51454.718,52108.518,52777.111,53445.133,54113.879,54781.191,55449.278,54113.879,51969.247,-2144.6,1.183,3.250,0.150,None,0,2026-07-17T14:52:34.7941282+02:00
-pamela,1,1,2,VT,1,slow,narrow,D4,57092.214,57092.214,58067.378,58067.378,58721.848,59390.422,60058.613,60727.132,61395.616,62064.447,60058.613,59111.611,-947.0,1.700,3.250,0.150,None,0,2026-07-17T14:52:41.4075034+02:00
-pamela,1,1,3,V,1,slow,narrow,,63859.939,63859.939,64834.538,64834.538,65488.471,66156.644,66825.117,67492.996,68161.253,68829.326,,67924.859,,,3.250,0.150,None,0,2026-07-17T14:52:48.1728775+02:00
-pamela,1,1,4,T,1,slow,narrow,D3,70611.591,,,,,,,,,,74258.787,73744.456,-514.3,1.183,3.250,0.150,None,0,2026-07-17T14:52:54.9253646+02:00
