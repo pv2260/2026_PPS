@@ -926,7 +926,7 @@ namespace HitOrMiss
         {
             HideArray(m_PrePracticePopups);
             HideArray(m_ExtraPostPracticePopups);
-            if (m_WelcomePanel != null) m_WelcomePanel.SetActive(false);
+
             if (m_ControllerPracticeIntroPanel != null) m_ControllerPracticeIntroPanel.Hide();
             if (m_TriggerDemoPopup != null) m_TriggerDemoPopup.Hide();
             if (m_ResponseMappingPopup != null) m_ResponseMappingPopup.Hide();
@@ -939,7 +939,7 @@ namespace HitOrMiss
             if (m_BreakPopup != null) m_BreakPopup.Hide();
             if (m_BlockReadyPopup != null) m_BlockReadyPopup.Hide();
             if (m_OutroPopup != null) m_OutroPopup.Hide();
-            
+            if (m_WelcomePanel != null) m_WelcomePanel.SetActive(false);
         }
 
         static void HideArray(TaskPopupPanel[] arr)
