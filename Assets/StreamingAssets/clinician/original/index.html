@@ -3,30 +3,12 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Percep PD — Clinician Panel</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <title>HitMiss — Clinician Console</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <header>
-    <div class="brand">
-      <img class="brand-logo" src="NR_Logo_Red.webp" alt="NeuroRestore" />
-      <div class="brand-text">
-        <span class="brand-title">Percep <span class="accent">PD</span></span>
-        <span class="brand-sub">clinician panel</span>
-      </div>
-    </div>
-
-    <div class="header-spacer"></div>
-
-    <!-- Which Unity scene is currently loaded on the headset -->
-    <span id="taskBadge" class="task-badge">
-      <span class="dot"></span>
-      <span id="taskBadgeLabel">No task loaded</span>
-    </span>
-
+    <div class="brand">HitMiss <span class="muted">clinician console</span></div>
     <div class="status-block">
       <span id="connStatus" class="conn-pill conn-disconnected">disconnected</span>
       <span id="phasePill" class="phase-pill">idle</span>
@@ -43,15 +25,15 @@
 
   <div id="waitingBanner" class="waiting-banner" hidden>
     <span class="waiting-spinner"></span>
-    <span class="waiting-text">Waiting for the headset. Make sure Unity is in Play mode on the same Wi-Fi.</span>
+    <span class="waiting-text">Waiting for headset. Make sure Unity is in Play mode on the same Wi-Fi.</span>
   </div>
 
   <main>
 
     <!-- ============== New Session ============== -->
     <section id="newSession" class="tab-panel active">
-      <h2>Start new session</h2>
-      <p class="muted">Fill in the participant and condition, then press Start. The panel automatically detects which scene is loaded on the headset (PPS or Hit-or-Miss) and starts that task.</p>
+      <h2>Start New Session</h2>
+      <p class="muted">Fill in the participant + condition, then press Start. The headset will run the experience as soon as Start is acknowledged.</p>
 
       <form id="sessionForm" class="form">
         <fieldset>
@@ -176,37 +158,27 @@
 
         <fieldset id="task2Fieldset">
           <legend>Task 2 — Hit-or-Miss</legend>
-          <p class="muted field-note">Trials are drawn per category from four bands anchored to the shoulder edge, plus a grey zone straddling the boundary. The offset bands and grey-zone half-width are set in the Unity SessionConfig asset; the counts, blocks, break, and speeds below drive the run.</p>
           <div class="form-grid">
             <label>Number of blocks
-              <input name="task2NumberOfBlocks" type="number" min="1" value="3" />
+              <input name="task2NumberOfBlocks" type="number" min="1" value="4" />
+            </label>
+            <label>Trials per block
+              <input name="task2TrialsPerBlock" type="number" min="1" value="40" />
             </label>
             <label>Break duration (s)
-              <input name="task2BreakDurationSeconds" type="number" min="0" value="60" />
+              <input name="task2BreakDurationSeconds" type="number" min="0" value="30" />
             </label>
-            <label>Clear-hit trials / block
-              <input name="task2ClearHitTrialsPerBlock" type="number" min="0" value="9" />
+            <label>Hit offset (cm)
+              <input name="task2HitOffsetCm" type="number" step="0.5" value="0" />
             </label>
-            <label>Near-hit trials / block
-              <input name="task2NearHitTrialsPerBlock" type="number" min="0" value="24" />
+            <label>Near-miss offset (cm)
+              <input name="task2NearMissOffsetCm" type="number" step="0.5" value="5" />
             </label>
-            <label>Near-miss trials / block
-              <input name="task2NearMissTrialsPerBlock" type="number" min="0" value="24" />
+            <label>Miss offset (cm)
+              <input name="task2MissOffsetCm" type="number" step="0.5" value="15" />
             </label>
-            <label>Clear-miss trials / block
-              <input name="task2ClearMissTrialsPerBlock" type="number" min="0" value="9" />
-            </label>
-            <label>Grey-zone trials / block
-              <input name="task2GreyZoneTrialsPerBlock" type="number" min="0" value="6" />
-            </label>
-            <label>Trials per block = CH + NH + NM + CM + grey
-              <input name="task2TrialsPerBlock" type="number" min="1" value="72" readonly />
-            </label>
-            <label>Fast speed (m/s)
-              <input name="task2FastSpeed" type="number" min="0" step="0.1" value="3.5" />
-            </label>
-            <label>Slow speed (m/s)
-              <input name="task2SlowSpeed" type="number" min="0" step="0.1" value="1.5" />
+            <label>Ball speeds
+              <input name="task2BallSpeeds" placeholder="slow,fast" value="slow,fast" />
             </label>
           </div>
         </fieldset>
@@ -216,7 +188,7 @@
         </label>
 
         <div class="actions">
-          <button type="submit" class="primary" id="startBtn">Start session</button>
+          <button type="submit" class="primary">Start session</button>
           <span id="startError" class="error"></span>
         </div>
       </form>
@@ -276,7 +248,7 @@
   </main>
 
   <footer class="muted">
-    Server: <span id="serverUrl">…</span> · Protocol <span id="protoVer">…</span> · NeuroRestore · CHUV / EPFL
+    Server: <span id="serverUrl">…</span> · Protocol <span id="protoVer">…</span>
   </footer>
 
   <script src="app.js"></script>

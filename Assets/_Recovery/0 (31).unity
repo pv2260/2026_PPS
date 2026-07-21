@@ -9792,7 +9792,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ce428f9ac6eb4f94a9324fda1c54d752, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::HitOrMiss.Network.HitMissNetworkServer
-  m_Port: 7777
+  m_Port: 7778
   m_BindToAllInterfaces: 1
   m_AppController: {fileID: 984165673}
   m_TaskManager: {fileID: 984165672}
