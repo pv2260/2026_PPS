@@ -20,6 +20,7 @@ namespace HitOrMiss.Pps
         [SerializeField] GameObject m_BlockCounterPanel;
         [SerializeField] GameObject m_BreakPanel;
         [SerializeField] GameObject m_PausePanel;
+        [SerializeField] GameObject m_AttentionCheckPanel;
         [SerializeField] GameObject m_EndPanel;
 
         [Header("Optional Dynamic Text")]
@@ -144,6 +145,7 @@ namespace HitOrMiss.Pps
             SetActive(m_BlockCounterPanel, false);
             SetActive(m_BreakPanel, false);
             SetActive(m_PausePanel, false);
+            SetActive(m_AttentionCheckPanel, false);
             SetActive(m_EndPanel, false);
         }
 
@@ -293,6 +295,17 @@ namespace HitOrMiss.Pps
             }
 
             SetActive(m_PracticeFeedbackPanel, false);
+        }
+
+        public IEnumerator ShowAttentionCheckAndWait()
+        {
+            Debug.Log("[UI FLOW] Showing attention check.");
+
+            ClearBackRequest();
+
+            yield return ShowAndWait(m_AttentionCheckPanel);
+
+            Debug.Log("[UI FLOW] Attention check completed.");
         }
 
         public void OnBack()

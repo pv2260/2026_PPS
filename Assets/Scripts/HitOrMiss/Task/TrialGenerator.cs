@@ -4,23 +4,30 @@ using UnityEngine;
 namespace HitOrMiss
 {
     /// <summary>
-    /// Generates the per-block trial list. 4 categories × <see cref="TrajectoryTaskAsset.TrialsPerCategory"/>.
-    /// Each ball spawns at the same point in front of the player and travels in a straight line
-    /// toward an end point laterally offset from the player. The category is encoded entirely in
-    /// that final lateral offset, anchored on the participant's shoulder edge:
-    ///   • ClearHit  — dead-center on torso.
-    ///   • NearHit   — inside the shoulder line (still hits the body).
-    ///   • NearMiss  — just outside the shoulder edge by 0–10 cm.
-    ///   • ClearMiss — well outside the shoulder edge by 20–35 cm.
-    /// All ranges scale with the participant's actual shoulder width so a narrower participant
-    /// gets a narrower body but the bands stay anchored on their shoulder edge.
+    /// Generates the per-block trial list, anchored on the participant's shoulder edge.
+    /// The category is encoded entirely in the final lateral offset. Convention
+    /// (matches the preregistration): the signed EDGE offset is measured from the
+    /// shoulder edge, negative = ball edge INSIDE the body (physical hit), positive =
+    /// ball edge OUTSIDE the shoulder (physical miss).
+    ///   • ClearHit  — edge well inside  (large negative, e.g. -30..-15). Judged HIT.
+    ///   • NearHit   — edge just inside   (small negative, e.g. -15..-2).  Judged HIT, near boundary.
+    ///   • NearMiss  — edge just outside  (small positive, e.g.  +2..+15). Judged MISS, near boundary.
+    ///   • ClearMiss — edge well outside  (large positive, e.g. +15..+30). Judged MISS.
+    ///   • Grey zone — sparse trials within +/- GreyZoneHalfWidthCm of the boundary,
+    ///                 labelled NearHit/NearMiss by sign (no fifth enum value).
+    ///
+    /// The expected response is ALWAYS derived from the sign of the physical edge offset,
+    /// never hard-coded per category, so a mislabelled category cannot score a participant
+    /// incorrectly. The body half-width tracks the participant's real shoulders; the offset
+    /// bands do NOT rescale unless the asset flag ScaleOffsetBandsByShoulderWidth is set.
+    /// perceivedBoundaryOffsetCm shifts offset 0 onto the participant's staircase-estimated
+    /// collision boundary (default 0 = physical shoulder edge).
     /// </summary>
     public static class TrialGenerator
     {
         /// <summary>
-        /// Returns the per-participant lateral scale factor.
-        /// <paramref name="shoulderWidthCm"/> ≤ 0 returns 1.0 (no scaling),
-        /// useful when metadata isn't yet set.
+        /// Returns the per-participant lateral scale factor for the BODY half-width.
+        /// <paramref name="shoulderWidthCm"/> &lt;= 0 returns 1.0 (no scaling).
         /// </summary>
         static float ComputeShoulderScale(TrajectoryTaskAsset asset, float shoulderWidthCm)
         {
@@ -67,18 +74,28 @@ namespace HitOrMiss
                     break;
             }
 
+            // Only the body half-width tracks shoulder width; the bands stay fixed in cm
+            // unless the asset explicitly opts into band scaling.
             float scale = asset.ScaleOffsetBandsByShoulderWidth ? shoulderScale : 1f;
 
             return Random.Range(minCm, maxCm) * scale;
+        }
+
+        /// <summary>
+        /// Response is decided ONLY by the sign of the physical edge offset:
+        /// edge inside the body (&lt; 0) is a physical hit, edge outside (&gt;= 0) is a miss.
+        /// Tangent (exactly 0) counts as a miss (no penetration).
+        /// </summary>
+        static SemanticCommand ExpectedFromEdgeGap(float physicalEdgeGapM)
+        {
+            return physicalEdgeGapM < 0f ? SemanticCommand.Hit : SemanticCommand.Miss;
         }
 
 
         /// <summary>
         /// Generates a small set of practice trials for the practice phase
         /// (PDF popup 4). Alternates Hit / Miss outcomes so the participant
-        /// experiences both possible responses with feedback. Practice trials
-        /// are flagged <see cref="TrialDefinition.isPractice"/> = true so the
-        /// logger skips them.
+        /// experiences both possible responses with feedback.
         /// </summary>
         public static TrialDefinition[] GeneratePracticeTrials(TrajectoryTaskAsset asset, float shoulderWidthCm = 0f)
         {
@@ -110,11 +127,7 @@ namespace HitOrMiss
         /// <summary>
         /// Returns exactly TWO demo trials: [clear_hit, clear_miss] in that
         /// fixed order. Used by the ball-demo phase where the participant
-        /// just watches — the controller passes these to the TaskManager
-        /// with passive=true so input is ignored.
-        ///
-        /// Both trials run at SlowSpeed so the demo is easy to follow visually
-        /// and are flagged isPractice=true so the logger skips them.
+        /// just watches.
         /// </summary>
         public static TrialDefinition[] GenerateBallDemoTrials(
             TrajectoryTaskAsset asset, float shoulderWidthCm = 0f)
@@ -145,13 +158,10 @@ namespace HitOrMiss
 
         /// <summary>
         /// Builds a practice block with an explicit category composition.
-        /// Used for the two active-practice phases:
-        ///   • Easy:      (2, 2, 0, 0)  → 4 trials
-        ///   • Difficult: (2, 2, 3, 3)  → 10 trials
-        ///
-        /// Trials are shuffled with the same no-consecutive-category rule as
-        /// a normal block, run at SlowSpeed (no fast/slow mixing during
-        /// practice), and flagged isPractice=true.
+        /// Trials are shuffled with the no-consecutive-category rule, run at
+        /// SlowSpeed, and flagged isPractice = true. The expected response for
+        /// each trial is derived from its edge-offset sign, so the SemanticCommand
+        /// arguments below are only nominal hints.
         /// </summary>
         public static TrialDefinition[] GeneratePracticeTrialsWithComposition(
             TrajectoryTaskAsset asset, float shoulderWidthCm,
@@ -168,9 +178,9 @@ namespace HitOrMiss
             );
 
             var trials = new List<TrialDefinition>(total);
-            
+
             if (clearHits   > 0) trials.AddRange(GenerateCategory(TrialCategory.ClearHit,  SemanticCommand.Hit,  clearHits,   asset.SpawnDistance, asset.BallDiameter, asset, scale));
-            if (nearHits > 0) trials.AddRange(GenerateCategory(TrialCategory.NearHit, SemanticCommand.Miss, nearHits, asset.SpawnDistance, asset.BallDiameter, asset, scale));            
+            if (nearHits    > 0) trials.AddRange(GenerateCategory(TrialCategory.NearHit,   SemanticCommand.Hit,  nearHits,    asset.SpawnDistance, asset.BallDiameter, asset, scale));
             if (nearMisses  > 0) trials.AddRange(GenerateCategory(TrialCategory.NearMiss,  SemanticCommand.Miss, nearMisses,  asset.SpawnDistance, asset.BallDiameter, asset, scale));
             if (clearMisses > 0) trials.AddRange(GenerateCategory(TrialCategory.ClearMiss, SemanticCommand.Miss, clearMisses, asset.SpawnDistance, asset.BallDiameter, asset, scale));
 
@@ -190,11 +200,12 @@ namespace HitOrMiss
             return trials.ToArray();
         }
 
-        
+
         public static TrialDefinition[] GenerateBlock(
             int blockIndex,
             TrajectoryTaskAsset asset,
-            float shoulderWidthCm = 0f)
+            float shoulderWidthCm = 0f,
+            float perceivedBoundaryOffsetCm = 0f)
         {
             float spawnDistance = asset.SpawnDistance;
             float ballDiameter = asset.BallDiameter;
@@ -211,19 +222,21 @@ namespace HitOrMiss
                     spawnDistance,
                     ballDiameter,
                     asset,
-                    scale));
+                    scale,
+                    perceivedBoundaryOffsetCm));
             }
 
             if (asset.NearHitTrialsPerBlock > 0)
             {
                 trials.AddRange(GenerateCategory(
                     TrialCategory.NearHit,
-                    SemanticCommand.Miss,
+                    SemanticCommand.Hit,
                     asset.NearHitTrialsPerBlock,
                     spawnDistance,
                     ballDiameter,
                     asset,
-                    scale));
+                    scale,
+                    perceivedBoundaryOffsetCm));
             }
 
             if (asset.NearMissTrialsPerBlock > 0)
@@ -235,7 +248,8 @@ namespace HitOrMiss
                     spawnDistance,
                     ballDiameter,
                     asset,
-                    scale));
+                    scale,
+                    perceivedBoundaryOffsetCm));
             }
 
             if (asset.ClearMissTrialsPerBlock > 0)
@@ -247,7 +261,21 @@ namespace HitOrMiss
                     spawnDistance,
                     ballDiameter,
                     asset,
-                    scale));
+                    scale,
+                    perceivedBoundaryOffsetCm));
+            }
+
+            // Sparse grey-zone sampling straddling the boundary. Each grey trial
+            // is labelled NearHit or NearMiss by the sign of its edge offset.
+            if (asset.GreyZoneTrialsPerBlock > 0)
+            {
+                trials.AddRange(GenerateGreyZone(
+                    asset.GreyZoneTrialsPerBlock,
+                    spawnDistance,
+                    ballDiameter,
+                    asset,
+                    scale,
+                    perceivedBoundaryOffsetCm));
             }
 
             ShuffleNoConsecutive(trials);
@@ -273,7 +301,80 @@ namespace HitOrMiss
             float spawnDistance,
             float ballDiameter,
             TrajectoryTaskAsset asset,
-            float shoulderScale)
+            float shoulderScale,
+            float perceivedBoundaryOffsetCm = 0f)
+        {
+            var result = new List<TrialDefinition>(count);
+
+            float referenceShoulderCm =
+                asset != null && asset.ReferenceShoulderWidthCm > 0f
+                    ? asset.ReferenceShoulderWidthCm
+                    : 42f;
+
+            // Body half-width tracks the participant's real shoulders.
+            float participantShoulderCm = referenceShoulderCm * shoulderScale;
+            float shoulderHalfM = participantShoulderCm * 0.01f * 0.5f;
+            float ballRadiusM = ballDiameter * 0.5f;
+
+            for (int i = 0; i < count; i++)
+            {
+                // Offset sampled relative to the participant's (perceived) boundary.
+                float sampledEdgeGapCm = RandomEdgeGapCmForCategory(asset, category, shoulderScale);
+
+                // Physical edge offset relative to the shoulder edge. With the
+                // staircase term at 0 this equals the sampled value. When wired,
+                // the whole sampling window slides onto the participant's crossover
+                // while hit/miss ground truth stays physical.
+                float physicalEdgeGapCm = sampledEdgeGapCm + perceivedBoundaryOffsetCm;
+                float physicalEdgeGapM = physicalEdgeGapCm * 0.01f;
+
+                // Convert edge-based offset to a ball-CENTER coordinate.
+                //   nearest ball edge = center - ballRadius
+                //   edgeGap = nearest edge - shoulder edge
+                //   => center relative to shoulder edge = ballRadius + edgeGap
+                float centerOffsetFromShoulderEdgeM = ballRadiusM + physicalEdgeGapM;
+
+                float magnitude = shoulderHalfM + centerOffsetFromShoulderEdgeM;
+                magnitude = Mathf.Max(0f, magnitude);
+
+                float side = Random.value > 0.5f ? 1f : -1f;
+                float lateral = magnitude * side;
+
+                // Response is decided by physical geometry, not the category label.
+                SemanticCommand derivedExpected = ExpectedFromEdgeGap(physicalEdgeGapM);
+
+                result.Add(new TrialDefinition
+                {
+                    category = category,
+                    spawnDistance = spawnDistance,
+                    finalLateralOffset = lateral,
+                    speed = 0f,
+                    ballDiameter = ballDiameter,
+                    expectedResponse = derivedExpected,
+
+                    // Continuous physical edge offset: this is the value to log and analyse.
+                    shoulderEdgeGapM = physicalEdgeGapM,
+                    shoulderEdgeOffsetM = physicalEdgeGapM,
+                });
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Sparse trials sampled uniformly within +/- GreyZoneHalfWidthCm of the
+        /// boundary. Each is labelled NearHit (edge inside) or NearMiss (edge
+        /// outside) by the sign of its physical edge offset, with the expected
+        /// response derived the same way. Identify grey trials in analysis by
+        /// |shoulderEdgeGapM| &lt;= half width.
+        /// </summary>
+        static List<TrialDefinition> GenerateGreyZone(
+            int count,
+            float spawnDistance,
+            float ballDiameter,
+            TrajectoryTaskAsset asset,
+            float shoulderScale,
+            float perceivedBoundaryOffsetCm = 0f)
         {
             var result = new List<TrialDefinition>(count);
 
@@ -286,50 +387,33 @@ namespace HitOrMiss
             float shoulderHalfM = participantShoulderCm * 0.01f * 0.5f;
             float ballRadiusM = ballDiameter * 0.5f;
 
+            float halfCm = asset != null ? Mathf.Max(0f, asset.GreyZoneHalfWidthCm) : 2f;
+
             for (int i = 0; i < count; i++)
             {
-                // This is the exact experimental offset relative to the shoulder edge.
-                // Negative = ball overlaps body boundary.
-                // Positive = ball passes outside shoulder edge.
-                float edgeGapCm = RandomEdgeGapCmForCategory(
-                    asset,
-                    category,
-                    shoulderScale);
+                float sampledEdgeGapCm = Random.Range(-halfCm, halfCm);
+                float physicalEdgeGapCm = sampledEdgeGapCm + perceivedBoundaryOffsetCm;
+                float physicalEdgeGapM = physicalEdgeGapCm * 0.01f;
 
-                float edgeGapM = edgeGapCm * 0.01f;
-
-                // Convert edge-based offset to ball-center coordinate.
-                //
-                // For the right side:
-                // nearest ball edge = center - ballRadius
-                // edgeGap = nearest edge - shoulder edge
-                // therefore:
-                // center relative to shoulder edge = ballRadius + edgeGap
-                //
-                // The same magnitude is mirrored left/right later.
-                float centerOffsetFromShoulderEdgeM = ballRadiusM + edgeGapM;
-
-                float magnitude = shoulderHalfM + centerOffsetFromShoulderEdgeM;
-                magnitude = Mathf.Max(0f, magnitude);
+                float centerOffsetFromShoulderEdgeM = ballRadiusM + physicalEdgeGapM;
+                float magnitude = Mathf.Max(0f, shoulderHalfM + centerOffsetFromShoulderEdgeM);
 
                 float side = Random.value > 0.5f ? 1f : -1f;
                 float lateral = magnitude * side;
 
+                TrialCategory cat = physicalEdgeGapM < 0f ? TrialCategory.NearHit : TrialCategory.NearMiss;
+                SemanticCommand exp = ExpectedFromEdgeGap(physicalEdgeGapM);
+
                 result.Add(new TrialDefinition
                 {
-                    category = category,
+                    category = cat,
                     spawnDistance = spawnDistance,
                     finalLateralOffset = lateral,
                     speed = 0f,
                     ballDiameter = ballDiameter,
-                    expectedResponse = expected,
-
-                    // This is the value you want to log/analyze.
-                    // It matches your task design exactly.
-                    shoulderEdgeGapM = edgeGapM,
-
-                    // Kept as an alias if your logger already uses this name.
-                    shoulderEdgeOffsetM = edgeGapM,
+                    expectedResponse = exp,
+                    shoulderEdgeGapM = physicalEdgeGapM,
+                    shoulderEdgeOffsetM = physicalEdgeGapM,
                 });
             }
 
@@ -338,7 +422,7 @@ namespace HitOrMiss
 
 
         /// <summary>
-        /// Shuffle so no two consecutive trials share a category. Greedy fix-up after Fisher–Yates.
+        /// Shuffle so no two consecutive trials share a category. Greedy fix-up after Fisher-Yates.
         /// </summary>
         static void ShuffleNoConsecutive(List<TrialDefinition> trials)
         {
@@ -422,9 +506,8 @@ namespace HitOrMiss
             runLengths.Add(trials.Count - runStart);
 
             // Second pass: write per-trial metadata. prevSpeed is the
-            // immediately preceding trial's speed (per spec) — NOT the
-            // previous run's speed. The first trial of the block has
-            // prevSpeed = 0 so the resolver can detect "start".
+            // immediately preceding trial's speed (per spec). The first trial of
+            // the block has prevSpeed = 0 so the resolver can detect "start".
             float immediatePrevSpeed = 0f;
             for (int run = 0; run < runStarts.Count; run++)
             {
@@ -526,9 +609,7 @@ namespace HitOrMiss
 
                 runLength = Mathf.Min(runLength, remainingTrials);
 
-                // Avoid leaving a final tiny run of 1–2 trials.
-                // If only 1 or 2 trials would remain, absorb them into this run
-                // as long as the run does not exceed the maximum length.
+                // Avoid leaving a final tiny run of 1-2 trials.
                 int leftover = remainingTrials - runLength;
                 if (leftover > 0 && leftover < 3 && runLength + leftover <= 9)
                     runLength += leftover;
@@ -539,9 +620,9 @@ namespace HitOrMiss
 
         /// <summary>
         /// Synthesizes a stable <c>trajectoryId</c> string and approach angle
-        /// for each trial. The id encodes category + side + lateral-offset bin
-        /// so trials sharing a shape group together in analysis. The angle is
-        /// derived from <c>finalLateralOffset / spawnDistance</c>.
+        /// for each trial. The id encodes category + side + signed EDGE-offset bin
+        /// (in cm) so trials sharing a shape group together in analysis. The angle
+        /// is derived from <c>finalLateralOffset / spawnDistance</c>.
         /// </summary>
         static void AssignTrajectoryDescriptors(List<TrialDefinition> trials)
         {
@@ -551,8 +632,12 @@ namespace HitOrMiss
                 string side = Mathf.Approximately(t.finalLateralOffset, 0f)
                     ? "C"
                     : (t.finalLateralOffset > 0f ? "R" : "L");
-                int offsetBinCm = Mathf.RoundToInt(Mathf.Abs(t.finalLateralOffset) * 100f);
-                t.trajectoryId = $"{t.category}_{side}_{offsetBinCm:D2}";
+
+                // Bin on the signed edge offset (inside negative, outside positive),
+                // not the full lateral world position.
+                int edgeBinCm = Mathf.RoundToInt(t.shoulderEdgeGapM * 100f);
+                string sign = edgeBinCm < 0 ? "N" : "P";
+                t.trajectoryId = $"{t.category}_{side}_{sign}{Mathf.Abs(edgeBinCm):D2}";
 
                 if (t.spawnDistance > 0.001f)
                     t.trajectoryAngleDeg = Mathf.Rad2Deg * Mathf.Atan2(t.finalLateralOffset, t.spawnDistance);
@@ -565,16 +650,20 @@ namespace HitOrMiss
 
         /// <summary>
         /// Forces the first trial of every speed run to be near-boundary.
-        /// About half are NearHit and half are NearMiss.
-        /// This is done after run metadata is assigned, so run-start trials
-        /// are identified using trialInRun == 1.
+        /// About half are NearHit and half are NearMiss. Expected responses are
+        /// derived from edge-offset sign inside GenerateCategory, so run-start
+        /// trials are scored correctly regardless of which side they land on.
+        /// Not called by GenerateBlock (it changes category counts); enable only
+        /// if you accept approximate per-category counts in exchange for
+        /// guaranteed near-boundary run starts.
         /// </summary>
         static void ForceRunStartsNearBoundary(
             List<TrialDefinition> trials,
             float spawnDistance,
             float ballDiameter,
             TrajectoryTaskAsset asset,
-            float shoulderScale)
+            float shoulderScale,
+            float perceivedBoundaryOffsetCm = 0f)
         {
             if (trials == null || trials.Count == 0)
                 return;
@@ -588,7 +677,6 @@ namespace HitOrMiss
 
                 bool useNearHit = runStartCount % 2 == 0;
 
-                // Add a little randomness so the sequence is not perfectly alternating.
                 if (Random.value > 0.5f)
                     useNearHit = !useNearHit;
 
@@ -596,9 +684,11 @@ namespace HitOrMiss
                     ? TrialCategory.NearHit
                     : TrialCategory.NearMiss;
 
-                SemanticCommand desiredResponse = SemanticCommand.Miss;
+                // Nominal hint only; the replacement's response is set by sign.
+                SemanticCommand desiredResponse = useNearHit
+                    ? SemanticCommand.Hit
+                    : SemanticCommand.Miss;
 
-                // Generate one fresh near-boundary trajectory with jittered offset.
                 var replacement = GenerateCategory(
                     desiredCategory,
                     desiredResponse,
@@ -606,7 +696,8 @@ namespace HitOrMiss
                     spawnDistance,
                     ballDiameter,
                     asset,
-                    shoulderScale
+                    shoulderScale,
+                    perceivedBoundaryOffsetCm
                 )[0];
 
                 var t = trials[i];
@@ -615,8 +706,6 @@ namespace HitOrMiss
                 t.finalLateralOffset = replacement.finalLateralOffset;
                 t.ballDiameter = replacement.ballDiameter;
                 t.expectedResponse = replacement.expectedResponse;
-
-                // Only keep this if you added shoulderEdgeOffsetM to TrialDefinition.
                 t.shoulderEdgeOffsetM = replacement.shoulderEdgeOffsetM;
                 t.shoulderEdgeGapM = replacement.shoulderEdgeGapM;
 

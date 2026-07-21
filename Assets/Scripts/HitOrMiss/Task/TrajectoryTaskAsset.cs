@@ -9,20 +9,29 @@ namespace HitOrMiss
 
         [Header("Protocol")]
         [Tooltip("Number of blocks.")]
-        [SerializeField] int m_BlockCount = 2;
+        [SerializeField] int m_BlockCount = 3;
 
-        [Header("Trials per block by category")]
-        [Tooltip("Clear hit trials per block. Ball enters the shoulder/body boundary.")]
-        [SerializeField] int m_ClearHitTrialsPerBlock = 30;
+        [Header("Trials per block by category (settled design: 9 / 24 / 24 / 9 + 6 grey = 72)")]
+        [Tooltip("Clear hit trials per block. Ball edge is well INSIDE the shoulder edge (large negative offset). Light anchor.")]
+        [SerializeField] int m_ClearHitTrialsPerBlock = 9;
 
-        [Tooltip("Near hit / ambiguous outside trials per block. Ball passes just outside the shoulder edge.")]
-        [SerializeField] int m_NearHitTrialsPerBlock = 50;
+        [Tooltip("Near hit trials per block. Ball edge is just INSIDE the shoulder edge (small negative offset). Heavy, near the boundary.")]
+        [SerializeField] int m_NearHitTrialsPerBlock = 24;
 
-        [Tooltip("Near miss trials per block. Ball passes outside the shoulder edge by a moderate margin.")]
-        [SerializeField] int m_NearMissTrialsPerBlock = 50;
+        [Tooltip("Near miss trials per block. Ball edge is just OUTSIDE the shoulder edge (small positive offset). Heavy, near the boundary.")]
+        [SerializeField] int m_NearMissTrialsPerBlock = 24;
 
-        [Tooltip("Clear miss trials per block. Ball clearly passes outside the shoulder edge.")]
-        [SerializeField] int m_ClearMissTrialsPerBlock = 30;
+        [Tooltip("Clear miss trials per block. Ball edge is well OUTSIDE the shoulder edge (large positive offset). Light anchor.")]
+        [SerializeField] int m_ClearMissTrialsPerBlock = 9;
+
+        [Header("Grey zone (VR tracking-uncertainty band straddling offset 0)")]
+        [Tooltip("Sparse trials sampled within +/- GreyZoneHalfWidthCm of the boundary. " +
+                 "They carry no fifth category: each is labelled NearHit or NearMiss by the sign of its edge offset, " +
+                 "so the response key stays consistent. Identify them in analysis by |shoulderEdgeGapM| <= half width.")]
+        [SerializeField] int m_GreyZoneTrialsPerBlock = 6;
+
+        [Tooltip("Half-width of the grey zone in cm (VR tracking uncertainty). Grey trials draw an edge offset uniformly in [-half, +half].")]
+        [SerializeField] float m_GreyZoneHalfWidthCm = 2f;
 
         [Header("Timing")]
         [SerializeField] float m_IntroDuration = 20f;
@@ -36,36 +45,37 @@ namespace HitOrMiss
         [SerializeField] float m_BallDiameter = 0.175f;
 
         [Header("Per-participant scaling")]
-        [Tooltip("Design-baseline shoulder width in cm. NOT the current participant's value — that " +
-                 "lives in session metadata. Real participants are scaled by " +
-                 "(participant.shoulderWidthCm / this), so a wider participant gets proportionally " +
-                 "wider near-hit / near-miss / miss bands. Default 42 cm (the PDF spec example).")]
-        
+        [Tooltip("Design-baseline shoulder width in cm. NOT the current participant's value - that " +
+                 "lives in session metadata. The participant's real shoulder width sets the body " +
+                 "half-width (where offset 0 sits); it does NOT rescale the offset bands themselves. " +
+                 "Default 42 cm (the PDF spec example).")]
+
         [SerializeField] float m_ReferenceShoulderWidthCm = 42f;
-        [Header("Offset bands relative to shoulder edge, in cm")]
+        [Header("Offset bands relative to shoulder edge, in cm (convention: negative = inside body, positive = outside)")]
 
-        [Tooltip("Clear hit: ball enters the shoulder/body boundary. Negative means inside the shoulder edge.")]
-        [SerializeField] float m_ClearHitMinOffsetCm = -15f;
+        [Tooltip("Clear hit: ball edge well inside the shoulder edge. Both values negative, e.g. -30 .. -15.")]
+        [SerializeField] float m_ClearHitMinOffsetCm = -30f;
 
-        [SerializeField] float m_ClearHitMaxOffsetCm = 0f;
+        [SerializeField] float m_ClearHitMaxOffsetCm = -15f;
 
-        [Tooltip("Near hit / ambiguous outside: ball passes very close to the shoulder edge.")]
-        [SerializeField] float m_NearHitMinOffsetCm = 1f;
+        [Tooltip("Near hit: ball edge just inside the shoulder edge. Both values negative, e.g. -15 .. -2.")]
+        [SerializeField] float m_NearHitMinOffsetCm = -15f;
 
-        [SerializeField] float m_NearHitMaxOffsetCm = 15f;
+        [SerializeField] float m_NearHitMaxOffsetCm = -2f;
 
-        [Tooltip("Near miss: ball passes outside the shoulder edge by a smaller margin.")]
-        [SerializeField] float m_NearMissMinOffsetCm = 15f;
+        [Tooltip("Near miss: ball edge just outside the shoulder edge. Both values positive, e.g. +2 .. +15.")]
+        [SerializeField] float m_NearMissMinOffsetCm = 2f;
 
-        [SerializeField] float m_NearMissMaxOffsetCm = 30f;
+        [SerializeField] float m_NearMissMaxOffsetCm = 15f;
 
-        [Tooltip("Clear miss: ball clearly passes outside the shoulder edge.")]
-        [SerializeField] float m_ClearMissMinOffsetCm = 30f;
+        [Tooltip("Clear miss: ball edge well outside the shoulder edge. Both values positive, e.g. +15 .. +30.")]
+        [SerializeField] float m_ClearMissMinOffsetCm = 15f;
 
-        [SerializeField] float m_ClearMissMaxOffsetCm = 60f;
+        [SerializeField] float m_ClearMissMaxOffsetCm = 30f;
 
-        [Tooltip("If false, offset bands remain exactly as entered above.")]
-        [SerializeField] bool m_ScaleOffsetBandsByShoulderWidth = true;
+        [Tooltip("If true, the offset bands are multiplied by the shoulder-width ratio. Leave FALSE: " +
+                 "the bands are fixed cm, and only the body half-width tracks the participant's shoulders.")]
+        [SerializeField] bool m_ScaleOffsetBandsByShoulderWidth = false;
 
         [Header("Speeds")]
         [SerializeField] float m_FastSpeed = 3.5f;
@@ -148,6 +158,9 @@ namespace HitOrMiss
         public int NearMissTrialsPerBlock => m_NearMissTrialsPerBlock;
         public int ClearMissTrialsPerBlock => m_ClearMissTrialsPerBlock;
 
+        public int GreyZoneTrialsPerBlock => m_GreyZoneTrialsPerBlock;
+        public float GreyZoneHalfWidthCm => m_GreyZoneHalfWidthCm;
+
         public float ClearHitMinOffsetCm => m_ClearHitMinOffsetCm;
         public float ClearHitMaxOffsetCm => m_ClearHitMaxOffsetCm;
 
@@ -166,7 +179,8 @@ namespace HitOrMiss
             m_ClearHitTrialsPerBlock
             + m_NearHitTrialsPerBlock
             + m_NearMissTrialsPerBlock
-            + m_ClearMissTrialsPerBlock;
+            + m_ClearMissTrialsPerBlock
+            + m_GreyZoneTrialsPerBlock;
 
 
         public float IntroDuration => m_IntroDuration;
@@ -219,18 +233,20 @@ namespace HitOrMiss
 
         public TrialDefinition[] GenerateBlock(int blockIndex)
         {
-            return TrialGenerator.GenerateBlock(blockIndex, this, 0f);
+            return TrialGenerator.GenerateBlock(blockIndex, this, 0f, 0f);
         }
 
         /// <summary>
         /// Builds a per-block trial list scaled to the participant's shoulder
-        /// width. Pass 0 (or anything ≤ 0) to skip scaling and use the
-        /// reference geometry. Called from HitOrMissAppController with the
-        /// value from SessionMetadata.shoulderWidthCm.
+        /// width. Pass 0 (or anything <= 0) to skip shoulder scaling and use
+        /// the reference geometry. perceivedBoundaryOffsetCm shifts offset 0 to
+        /// the participant's staircase-estimated collision boundary (0 = physical
+        /// shoulder edge). Called from HitOrMissAppController with the value from
+        /// SessionMetadata.
         /// </summary>
-        public TrialDefinition[] GenerateBlock(int blockIndex, float participantShoulderWidthCm)
+        public TrialDefinition[] GenerateBlock(int blockIndex, float participantShoulderWidthCm, float perceivedBoundaryOffsetCm = 0f)
         {
-            return TrialGenerator.GenerateBlock(blockIndex, this, participantShoulderWidthCm);
+            return TrialGenerator.GenerateBlock(blockIndex, this, participantShoulderWidthCm, perceivedBoundaryOffsetCm);
         }
 
         public TrialDefinition[] GeneratePracticeTrials()
@@ -304,24 +320,27 @@ namespace HitOrMiss
                 m_BlockCount = md.task2NumberOfBlocks;
 
             // Legacy fallback:
-            // If the session form only gives total trials per block,
-            // split them equally across the four categories.
-            // Prefer setting category-specific values directly in the asset.
+            // If the session form only gives total trials per block, split them
+            // across the four psychometric categories using the settled weighting
+            // (light clear anchors, heavy near zones). Grey-zone trials are NOT
+            // part of this split; set m_GreyZoneTrialsPerBlock directly.
+            // Prefer setting category-specific values in the asset instead.
             if (md.task2TrialsPerBlock > 0)
             {
                 int total = md.task2TrialsPerBlock;
-                int perCat = total / 4;
-                int remainder = total % 4;
+                int clear = Mathf.RoundToInt(total * 0.125f); // ~1/8 each clear anchor
+                int near = Mathf.Max(0, (total - 2 * clear) / 2);
 
-                m_ClearHitTrialsPerBlock = perCat;
-                m_NearHitTrialsPerBlock = perCat;
-                m_NearMissTrialsPerBlock = perCat;
-                m_ClearMissTrialsPerBlock = perCat;
+                m_ClearHitTrialsPerBlock = clear;
+                m_ClearMissTrialsPerBlock = clear;
+                m_NearHitTrialsPerBlock = near;
+                m_NearMissTrialsPerBlock = near;
 
-                // Distribute leftover trials so total stays exact.
-                if (remainder > 0) m_NearHitTrialsPerBlock++;
-                if (remainder > 1) m_NearMissTrialsPerBlock++;
-                if (remainder > 2) m_ClearHitTrialsPerBlock++;
+                // Push any rounding leftover into the near zones (where the slope lives).
+                int assigned = clear * 2 + near * 2;
+                int remainder = total - assigned;
+                if (remainder > 0) m_NearHitTrialsPerBlock += (remainder + 1) / 2;
+                if (remainder > 1) m_NearMissTrialsPerBlock += remainder / 2;
             }
             if (md.task2BreakDurationSeconds > 0f)
             {
@@ -336,6 +355,7 @@ namespace HitOrMiss
             $"nearHit={m_NearHitTrialsPerBlock}, " +
             $"nearMiss={m_NearMissTrialsPerBlock}, " +
             $"clearMiss={m_ClearMissTrialsPerBlock}, " +
+            $"grey={m_GreyZoneTrialsPerBlock}, " +
             $"TrialsPerBlock={TrialsPerBlock}"
         );
         }
@@ -347,52 +367,43 @@ namespace HitOrMiss
             m_NearHitTrialsPerBlock = Mathf.Max(0, m_NearHitTrialsPerBlock);
             m_NearMissTrialsPerBlock = Mathf.Max(0, m_NearMissTrialsPerBlock);
             m_ClearMissTrialsPerBlock = Mathf.Max(0, m_ClearMissTrialsPerBlock);
+            m_GreyZoneTrialsPerBlock = Mathf.Max(0, m_GreyZoneTrialsPerBlock);
+            m_GreyZoneHalfWidthCm = Mathf.Max(0f, m_GreyZoneHalfWidthCm);
 
             if (TrialsPerBlock < 1)
                 m_ClearHitTrialsPerBlock = 1;
 
-            // Keep offset bands ordered.
+            // Keep offset bands ordered (min <= max) as entered.
             if (m_ClearHitMinOffsetCm > m_ClearHitMaxOffsetCm)
-            {
-                float temp = m_ClearHitMinOffsetCm;
-                m_ClearHitMinOffsetCm = m_ClearHitMaxOffsetCm;
-                m_ClearHitMaxOffsetCm = temp;
-            }
+                (m_ClearHitMinOffsetCm, m_ClearHitMaxOffsetCm) = (m_ClearHitMaxOffsetCm, m_ClearHitMinOffsetCm);
 
             if (m_NearHitMinOffsetCm > m_NearHitMaxOffsetCm)
-            {
-                float temp = m_NearHitMinOffsetCm;
-                m_NearHitMinOffsetCm = m_NearHitMaxOffsetCm;
-                m_NearHitMaxOffsetCm = temp;
-            }
+                (m_NearHitMinOffsetCm, m_NearHitMaxOffsetCm) = (m_NearHitMaxOffsetCm, m_NearHitMinOffsetCm);
 
             if (m_NearMissMinOffsetCm > m_NearMissMaxOffsetCm)
-            {
-                float temp = m_NearMissMinOffsetCm;
-                m_NearMissMinOffsetCm = m_NearMissMaxOffsetCm;
-                m_NearMissMaxOffsetCm = temp;
-            }
+                (m_NearMissMinOffsetCm, m_NearMissMaxOffsetCm) = (m_NearMissMaxOffsetCm, m_NearMissMinOffsetCm);
 
             if (m_ClearMissMinOffsetCm > m_ClearMissMaxOffsetCm)
-            {
-                float temp = m_ClearMissMinOffsetCm;
-                m_ClearMissMinOffsetCm = m_ClearMissMaxOffsetCm;
-                m_ClearMissMaxOffsetCm = temp;
-            }
+                (m_ClearMissMinOffsetCm, m_ClearMissMaxOffsetCm) = (m_ClearMissMaxOffsetCm, m_ClearMissMinOffsetCm);
 
-            // Force your intended category geometry.
-            m_ClearHitMinOffsetCm = Mathf.Min(m_ClearHitMinOffsetCm, 0f);
+            // Enforce convention-correct geometry (edge offset relative to the shoulder edge):
+            //   ClearHit  : both negative (well inside)   e.g. -30 .. -15
+            //   NearHit   : both negative (just inside)   e.g. -15 .. -2
+            //   NearMiss  : both positive (just outside)  e.g.  +2 .. +15
+            //   ClearMiss : both positive (well outside)  e.g. +15 .. +30
+            // Inside categories are clamped <= 0; outside categories are clamped >= 0.
             m_ClearHitMaxOffsetCm = Mathf.Min(m_ClearHitMaxOffsetCm, 0f);
+            m_ClearHitMinOffsetCm = Mathf.Min(m_ClearHitMinOffsetCm, m_ClearHitMaxOffsetCm);
 
-            m_NearHitMinOffsetCm = Mathf.Max(1f, m_NearHitMinOffsetCm);
-            m_NearHitMaxOffsetCm = Mathf.Max(m_NearHitMinOffsetCm, m_NearHitMaxOffsetCm);
+            m_NearHitMaxOffsetCm = Mathf.Min(m_NearHitMaxOffsetCm, 0f);
+            m_NearHitMinOffsetCm = Mathf.Min(m_NearHitMinOffsetCm, m_NearHitMaxOffsetCm);
 
-            m_NearMissMinOffsetCm = Mathf.Max(15f, m_NearMissMinOffsetCm);
-            m_NearMissMaxOffsetCm = Mathf.Max(m_NearMissMinOffsetCm, m_NearMissMaxOffsetCm);
+            m_NearMissMinOffsetCm = Mathf.Max(m_NearMissMinOffsetCm, 0f);
+            m_NearMissMaxOffsetCm = Mathf.Max(m_NearMissMaxOffsetCm, m_NearMissMinOffsetCm);
 
-            m_ClearMissMinOffsetCm = Mathf.Max(30f, m_ClearMissMinOffsetCm);
-            m_ClearMissMaxOffsetCm = Mathf.Max(m_ClearMissMinOffsetCm, m_ClearMissMaxOffsetCm);
-            
+            m_ClearMissMinOffsetCm = Mathf.Max(m_ClearMissMinOffsetCm, 0f);
+            m_ClearMissMaxOffsetCm = Mathf.Max(m_ClearMissMaxOffsetCm, m_ClearMissMinOffsetCm);
+
             if (m_SpawnDistance <= 0f) m_SpawnDistance = 1f;
             if (m_FastSpeed <= 0f) m_FastSpeed = 0.5f;
             if (m_SlowSpeed <= 0f) m_SlowSpeed = 0.25f;

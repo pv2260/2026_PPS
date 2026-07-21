@@ -327,7 +327,7 @@ namespace HitOrMiss
             {
                 var trial = m_ActiveTrials[i];
                 float trialElapsed = Time.time - trial.SpawnTime;
-                float duration = trial.Definition.Duration;
+                float duration = trial.EffectiveDuration > 0f ? trial.EffectiveDuration : trial.Definition.Duration;
                 float deadline = duration + m_ResponseGracePeriod;
 
 
@@ -578,10 +578,11 @@ namespace HitOrMiss
                 controller.Activate(Time.time);
                 rt.ObjectController = controller;
                 rt.BallMotionStartTime = Time.timeAsDouble;
+                rt.EffectiveDuration = controller.MotionDuration;
             }
 
             m_ActiveTrials.Add(rt);
-            m_LastSpawnEndTime = Time.time + trial.Duration + m_ResponseGracePeriod;
+            m_LastSpawnEndTime = Time.time + rt.EffectiveDuration + m_ResponseGracePeriod;
 
             // Compute and stash the BCD trigger code at spawn so resolve can
             // copy it into the judgement, and so the marker stream has a
@@ -638,7 +639,8 @@ namespace HitOrMiss
             {
                 if (trial.Resolved) continue;
                 float trialElapsed = Time.time - trial.SpawnTime;
-                float deadline = trial.Definition.Duration + m_ResponseGracePeriod;
+                float effDeadline = trial.EffectiveDuration > 0f ? trial.EffectiveDuration : trial.Definition.Duration;
+                float deadline = effDeadline + m_ResponseGracePeriod;
                 if (trialElapsed < 0f || trialElapsed > deadline) continue;
 
                 if (trial.SpawnTime > bestSpawnTime)
@@ -842,12 +844,14 @@ namespace HitOrMiss
             public float InterTrialIntervalMs;
             public bool Resolved;
             public TrajectoryObjectController ObjectController;
+            public float EffectiveDuration;   // real ball flight time from the controller; falls back to Definition.Duration
             public int TrialTriggerCode;            // BCD code computed at spawn
             public double TriggerTimestamp;         // engine seconds when BCD was emitted
 
             public RuntimeTrial(TrialDefinition def)
             {
                 Definition = def;
+                EffectiveDuration = def.Duration; // overwritten with the controller's real flight time after spawn
             }
         }
     }

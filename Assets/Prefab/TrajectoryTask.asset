@@ -13,26 +13,28 @@ MonoBehaviour:
   m_Name: TrajectoryTask
   m_EditorClassIdentifier: Assembly-CSharp::HitOrMiss.TrajectoryTaskAsset
   m_TaskName: Hit Or Miss Task
-  m_BlockCount: 2
-  m_ClearHitTrialsPerBlock: 30
-  m_NearHitTrialsPerBlock: 50
-  m_NearMissTrialsPerBlock: 50
-  m_ClearMissTrialsPerBlock: 30
+  m_BlockCount: 3
+  m_ClearHitTrialsPerBlock: 9
+  m_NearHitTrialsPerBlock: 24
+  m_NearMissTrialsPerBlock: 24
+  m_ClearMissTrialsPerBlock: 9
+  m_GreyZoneTrialsPerBlock: 6
+  m_GreyZoneHalfWidthCm: 2
   m_IntroDuration: 20
   m_RestDuration: 30
   m_OutroDuration: 10
   m_SpawnDistance: 5
   m_BallDiameter: 0.175
   m_ReferenceShoulderWidthCm: 42
-  m_ClearHitMinOffsetCm: -15
-  m_ClearHitMaxOffsetCm: 0
-  m_NearHitMinOffsetCm: 1
-  m_NearHitMaxOffsetCm: 15
-  m_NearMissMinOffsetCm: 15
-  m_NearMissMaxOffsetCm: 30
-  m_ClearMissMinOffsetCm: 30
-  m_ClearMissMaxOffsetCm: 60
-  m_ScaleOffsetBandsByShoulderWidth: 1
+  m_ClearHitMinOffsetCm: -30
+  m_ClearHitMaxOffsetCm: -15
+  m_NearHitMinOffsetCm: -15
+  m_NearHitMaxOffsetCm: -2
+  m_NearMissMinOffsetCm: 2
+  m_NearMissMaxOffsetCm: 15
+  m_ClearMissMinOffsetCm: 15
+  m_ClearMissMaxOffsetCm: 30
+  m_ScaleOffsetBandsByShoulderWidth: 0
   m_FastSpeed: 3.5
   m_SlowSpeed: 1.5
   m_ItiMinSeconds: 1.5
@@ -44,12 +46,12 @@ MonoBehaviour:
   m_EasyPracticeClearMisses: 1
   m_EasyPracticeNearHits: 0
   m_EasyPracticeNearMisses: 0
-  m_EasyPracticeErrorThreshold: 4
-  m_HardPracticeClearHits: 2
-  m_HardPracticeClearMisses: 2
-  m_HardPracticeNearHits: 2
-  m_HardPracticeNearMisses: 2
-  m_HardPracticeErrorThreshold: 4
+  m_EasyPracticeErrorThreshold: 1
+  m_HardPracticeClearHits: 1
+  m_HardPracticeClearMisses: 1
+  m_HardPracticeNearHits: 1
+  m_HardPracticeNearMisses: 1
+  m_HardPracticeErrorThreshold: 3
   m_Popup1IntroKey: popup1_intro
   m_Popup2LeftKey: popup2_left
   m_Popup3RightKey: popup3_right

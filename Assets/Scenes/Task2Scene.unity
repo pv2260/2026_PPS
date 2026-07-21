@@ -9410,6 +9410,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 576617807}
     - target: {fileID: 6627871660748472693, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
+      propertyPath: m_WelcomePanel
+      value: 
+      objectReference: {fileID: 1462779316}
+    - target: {fileID: 6627871660748472693, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
       propertyPath: m_FixationCross
       value: 
       objectReference: {fileID: 0}
@@ -9572,7 +9576,7 @@ PrefabInstance:
     - target: {fileID: 6627871660748472693, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
       propertyPath: 'm_PrePracticePopups.Array.data[1]'
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 2080271990}
     - target: {fileID: 6627871660748472693, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
       propertyPath: 'm_PrePracticePopups.Array.data[2]'
       value: 

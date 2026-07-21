@@ -47,6 +47,11 @@ namespace HitOrMiss
         [SerializeField] LocalizedTermTable m_TermTable;
         [SerializeField] LocalizedUITextBinder[] m_UITextBinders;
 
+        [Header("Welcome")]
+        [Tooltip("Plain panel shown once at session start, before the popup sequence. A GameObject, " +
+                 "not part of the TaskPopupPanel system. Dismissed by any trigger press.")]
+        [SerializeField] GameObject m_WelcomePanel;
+
         [Header("Pre-practice popups")]
         [SerializeField] TaskPopupPanel[] m_PrePracticePopups;
 
@@ -133,6 +138,9 @@ namespace HitOrMiss
             }
 
             HideAllPopups();
+
+            if (m_WelcomePanel != null)
+                m_WelcomePanel.SetActive(false);
 
             if (m_FixationCross != null)
                 m_FixationCross.Hide();
@@ -417,6 +425,39 @@ namespace HitOrMiss
 
             SetPhase(TaskPhase.Intro);
             m_EegMarkerEmitter?.Emit("phase_intro");
+
+            // Welcome panel: a plain GameObject shown once before the popup flow.
+            // Dismissed by any trigger press; falls back to a short timer if no
+            // input source is wired, so the session can never hang here.
+            if (m_WelcomePanel != null)
+            {
+                m_WelcomePanel.SetActive(true);
+
+                if (m_InputSource != null)
+                {
+                    bool advance = false;
+                    void OnWelcomeResponse(ResponseEvent _) => advance = true;
+
+                    m_InputSource.ResponseReceived += OnWelcomeResponse;
+                    m_InputSource.Enable();
+                    try
+                    {
+                        while (!advance)
+                            yield return null;
+                    }
+                    finally
+                    {
+                        m_InputSource.ResponseReceived -= OnWelcomeResponse;
+                    }
+                }
+                else
+                {
+                    yield return new WaitForSeconds(3f);
+                }
+
+                m_WelcomePanel.SetActive(false);
+            }
+
             yield return RunPrePracticeSequence();
 
             SetPhase(TaskPhase.Practice);
@@ -898,6 +939,7 @@ namespace HitOrMiss
             if (m_BreakPopup != null) m_BreakPopup.Hide();
             if (m_BlockReadyPopup != null) m_BlockReadyPopup.Hide();
             if (m_OutroPopup != null) m_OutroPopup.Hide();
+            if (m_WelcomePanel != null) m_WelcomePanel.SetActive(false);
         }
 
         static void HideArray(TaskPopupPanel[] arr)

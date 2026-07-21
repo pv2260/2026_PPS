@@ -45,7 +45,7 @@ namespace HitOrMiss
 
         [Header("Overreach (every ball passes past the participant)")]
         [Tooltip("Distance in meters the ball continues past the participant plane (perpendicular to player's forward axis at the player's position). Applies to BOTH hit and miss trials so participants see the ball travel past them.")]
-        [SerializeField] float m_OverreachMeters = 2.0f;
+        [SerializeField] float m_OverreachMeters = 0.15f;
 
         [Header("Splat on impact")]
         [Tooltip("Prefab spawned at the moment of body-plane impact (hit-class trials only). If empty a default splat is built procedurally.")]
@@ -54,8 +54,8 @@ namespace HitOrMiss
         [SerializeField] float m_SplatLifetime = 1.2f;
         [Tooltip("Final size of the procedurally-built splat at full expansion (meters). Ignored when SplatPrefab is used.")]
         [SerializeField] float m_SplatPeakSize = 0.65f;
-        [Tooltip("Distance from the player (meters) at which a hit-class ball collides and the splat fires. 0 = disabled — splat fires when the ball crosses the player plane.")]
-        [SerializeField] float m_ImpactDistance = -0.30f;
+        [Tooltip("Forward-axis distance (meters) at which a hit-class ball stops and the splat fires. Positive = the ball halts this far IN FRONT of the participant so the splash is visible. Negative = behind. 0 = at the player plane.")]
+        [SerializeField] float m_ImpactDistance = 0.30f;
         [Tooltip("Restrict splat to trials whose expected response is Hit (Hit and NearHit categories). Miss-class trials (NearMiss, ClearMiss) pass through without bursting.")]
         [SerializeField] bool m_SplatOnlyOnHitClass = true;
 
@@ -83,6 +83,13 @@ namespace HitOrMiss
 
         public string TrialId { get; private set; }
         public bool IsComplete { get; private set; }
+
+        /// <summary>
+        /// Actual time of flight of this ball in seconds, including the overreach
+        /// stretch. The scheduler reads this for the response deadline so the window
+        /// tracks what the participant actually sees, instead of the straight-line
+        /// spawnDistance/speed estimate on TrialDefinition.
+        public float MotionDuration => m_Duration;
 
         public void Initialize(TrialDefinition trial, Vector3 playerPosition, Vector3 playerForward)
         {
