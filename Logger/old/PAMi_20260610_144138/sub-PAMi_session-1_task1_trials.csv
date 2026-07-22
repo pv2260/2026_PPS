@@ -1,3 +1,0 @@
-﻿trial,block,sensory_condition,position,speed,width,stimulus_onset_ms,position_D7_ms, position_D6_ms, position_D5_ms, position_D4_ms,position_D3_ms,position_D2_ms,position_D1_ms,vibrotactile_onset_ms,response_time_ms,response_made
-B1_T01,1,T,D1,fast,narrow,,,,,,,,,,58026.717,True
-B1_T02,1,VT,D1,slow,wide,60379.420,60379.420,61145.474,61534.772,61868.517,62216.956,62593.233,63358.798,,60880.035,True

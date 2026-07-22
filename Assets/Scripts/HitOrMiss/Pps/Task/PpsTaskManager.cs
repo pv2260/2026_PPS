@@ -318,6 +318,15 @@ namespace HitOrMiss.Pps
         public IEnumerator RunTrials(PpsTrialDefinition[] trials)
             => RunTrials(trials, blockIndex: -1);
 
+        /// <summary>
+        /// Assigned by the app controller: coroutine that shows the
+        /// attention-check panel and completes when the participant responds.
+        /// Invoked every <see cref="PpsTaskAsset.AttentionCheckEveryNTrials"/>
+        /// completed MAIN-block trials — never during practice (blockIndex -1)
+        /// and never after a block's final trial.
+        /// </summary>
+        public System.Func<IEnumerator> AttentionCheckRoutine;
+
         public IEnumerator RunTrials(PpsTrialDefinition[] trials, int blockIndex)
         {
             if (m_TaskAsset == null)
@@ -403,6 +412,29 @@ namespace HitOrMiss.Pps
                     yield break;
 
                 m_TrialsCompletedInBlock++;
+
+                // ------------------------------------------------------------
+                // Periodic attention check. Main blocks only (practice passes
+                // blockIndex -1); skipped after the block's final trial. The
+                // next iteration's jittered ITI follows the check, so the gap
+                // before the next loom stays protocol-normal. Markers bracket
+                // the panel so response latency is recoverable from the EEG
+                // marker stream.
+                // ------------------------------------------------------------
+                int checkEvery = m_TaskAsset != null ? m_TaskAsset.AttentionCheckEveryNTrials : 0;
+                if (checkEvery > 0
+                    && blockIndex >= 0
+                    && AttentionCheckRoutine != null
+                    && m_TrialsCompletedInBlock % checkEvery == 0
+                    && m_TrialsCompletedInBlock < m_TotalTrialsInBlock)
+                {
+                    m_MarkerEmitter?.Emit("pps_attention_check_shown");
+                    yield return AttentionCheckRoutine();
+                    m_MarkerEmitter?.Emit("pps_attention_check_done");
+
+                    if (m_AbortCurrentRunRequested)
+                        yield break;
+                }
             }
         }
 

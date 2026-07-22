@@ -82,7 +82,10 @@ namespace HitOrMiss.Network
         void OnEnable()
         {
             m_ClinicianRoot = Path.Combine(Application.streamingAssetsPath, "clinician");
-            m_LogsRoot = Path.Combine(Application.persistentDataPath, "Logs");
+            // Session library root comes from SessionPaths — the same single
+            // source EegMarkerEmitter writes into, so the Sessions tab always
+            // lists what was actually recorded.
+            m_LogsRoot = SessionPaths.Root;
             Directory.CreateDirectory(m_LogsRoot);
 
             WarmStaticCache();
@@ -353,8 +356,8 @@ namespace HitOrMiss.Network
                         catch { /* leave fields blank */ }
                     }
 
-                    string trialsPath = Path.Combine(dir, "trials.csv");
-                    if (File.Exists(trialsPath))
+                    string trialsPath = FindSessionFile(dir, "trials");
+                    if (trialsPath != null)
                         summary.trialCount = Math.Max(0, File.ReadAllLines(trialsPath).Length - 1);
 
                     summary.hasProgressSnapshot = File.Exists(Path.Combine(dir, "progress.json"));
@@ -385,31 +388,58 @@ namespace HitOrMiss.Network
                 return;
             }
 
-            string filename = kind switch
-            {
-                "metadata"    => "metadata.json",
-                "trials"      => "trials.csv",
-                "eyetracking" => "eyetracking.csv",
-                "session"     => "session.json",
-                "progress"    => "progress.json",
-                _             => null,
-            };
-            if (filename == null)
+            string filePath = FindSessionFile(dir, kind);
+            if (filePath == null)
             {
                 resp.StatusCode = 404;
-                resp.SetJson(JsonUtility.ToJson(AckResponse.Fail("unknown_kind", kind)));
-                return;
-            }
-
-            string filePath = Path.Combine(dir, filename);
-            if (!File.Exists(filePath))
-            {
-                resp.StatusCode = 404;
-                resp.SetJson(JsonUtility.ToJson(AckResponse.Fail("file_not_found", filename)));
+                resp.SetJson(JsonUtility.ToJson(AckResponse.Fail(
+                    kind is "metadata" or "trials" or "eyetracking" or "session" or "setup" or "progress"
+                        ? "file_not_found" : "unknown_kind",
+                    kind)));
                 return;
             }
 
             ServeFile(resp, filePath);
+        }
+
+        /// <summary>
+        /// Resolves a session-library file kind to an actual file in the
+        /// session folder. Tries the legacy literal name first (trials.csv),
+        /// then the spec naming written by TaskLogger
+        /// (sub-{id}_session-{n}_task{1|2}_trials.csv etc.). Returns the full
+        /// path, or null when no matching file exists.
+        /// </summary>
+        static string FindSessionFile(string dir, string kind)
+        {
+            (string literal, string pattern) = kind switch
+            {
+                "metadata"    => ("metadata.json",    (string)null),
+                "trials"      => ("trials.csv",       "*_trials.csv"),
+                "eyetracking" => ("eyetracking.csv",  "*_eyetracking.csv"),
+                "session"     => ("session.json",     "*_session.json"),
+                "setup"       => ("setup.json",       "*_setup.json"),
+                "progress"    => ("progress.json",    (string)null),
+                _             => ((string)null,       (string)null),
+            };
+            if (literal == null) return null;
+
+            string literalPath = Path.Combine(dir, literal);
+            if (File.Exists(literalPath)) return literalPath;
+
+            if (pattern != null)
+            {
+                try
+                {
+                    var matches = Directory.GetFiles(dir, pattern);
+                    if (matches.Length > 0)
+                    {
+                        Array.Sort(matches, StringComparer.OrdinalIgnoreCase);
+                        return matches[0];
+                    }
+                }
+                catch { /* unreadable dir — treat as not found */ }
+            }
+            return null;
         }
 
         // ---- Static file serving ----
@@ -654,7 +684,12 @@ namespace HitOrMiss.Network
                 received           = "",
                 result             = result.responded ? "Correct" : "NoResponse",
                 isCorrect          = result.responded,
-                reactionTimeMs     = result.reactionTimeMs,
+                // NaN is not valid JSON — JsonUtility emits it literally and
+                // the browser's JSON.parse then rejects the whole payload,
+                // which is why no-response trials showed as "undefined" in
+                // the panel. -1 is the "no RT" sentinel; app.js renders it
+                // as "—".
+                reactionTimeMs     = SanitizeMs(result.reactionTimeMs),
                 speedMps           = 0f,
                 isSwitchTrial      = false,
             });
@@ -720,11 +755,19 @@ namespace HitOrMiss.Network
                 received = j.received.ToString(),
                 result = j.result.ToString(),
                 isCorrect = j.isCorrect,
-                reactionTimeMs = j.reactionTimeMs,
+                reactionTimeMs = SanitizeMs(j.reactionTimeMs),
                 speedMps = j.speedMps,
                 isSwitchTrial = j.isSwitchTrial,
             });
         }
+
+        /// <summary>
+        /// JsonUtility writes NaN/Infinity literally, which is invalid JSON
+        /// and makes the clinician SPA's JSON.parse throw away the whole
+        /// event payload. Map them to -1 ("no value"); the SPA shows "—".
+        /// </summary>
+        static double SanitizeMs(double v) =>
+            double.IsNaN(v) || double.IsInfinity(v) ? -1.0 : v;
 
         void OnBlockStarted(int blockIndex)
         {

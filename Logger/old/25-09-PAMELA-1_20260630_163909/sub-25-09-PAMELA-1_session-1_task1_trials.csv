@@ -1,6 +1,0 @@
-﻿subject_id,session_number,block_number,trial_number,trial_type,response_made,current_speed,width,distance_level,trial_start_ms,stimulus_onset_ms,position_D4_ms,position_D3_ms,position_D2_ms,position_D1_ms,vibrotactile_onset_ms,response_time_ms,reaction_time_ms,vibration_device,trial_interrupted,timestamp
-25-09-PAMELA-1,1,1,1,VT,1,slow,wide,D7,64452.873,64452.873,65951.268,66283.260,66681.933,67456.031,64452.873,66192.340,1739.5,None,0,2026-06-30T16:40:16.4716883+02:00
-25-09-PAMELA-1,1,1,2,T,1,fast,narrow,D6,68684.971,,,,,,68949.792,73498.675,4548.9,None,0,2026-06-30T16:40:22.5022546+02:00
-25-09-PAMELA-1,1,1,3,T,1,slow,wide,D5,74706.088,,,,,,75891.436,78626.099,2734.7,None,0,2026-06-30T16:40:27.6314599+02:00
-25-09-PAMELA-1,1,1,4,VT,1,slow,narrow,D7,79832.954,79832.954,81330.058,81661.116,82043.581,82822.387,79832.954,84507.835,4674.9,None,0,2026-06-30T16:40:33.5125561+02:00
-25-09-PAMELA-1,1,1,5,V,1,fast,narrow,,85714.800,85714.800,86218.392,86324.737,86466.867,86705.695,,86402.667,,None,0,2026-06-30T16:40:37.7442264+02:00

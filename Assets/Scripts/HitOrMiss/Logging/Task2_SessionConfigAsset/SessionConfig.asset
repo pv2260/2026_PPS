@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: SessionConfig
   m_EditorClassIdentifier: Assembly-CSharp::HitOrMiss.SessionConfigAsset
   m_TaskAsset: {fileID: 11400000, guid: 25825ccfc43601042871a2c0397396c7, type: 2}
-  m_UseClinicalPanel: 0
+  m_UseClinicalPanel: 1
   m_ParticipantId: pam-task2-test
   m_SessionNumber: 1
   m_SubjectInfo:

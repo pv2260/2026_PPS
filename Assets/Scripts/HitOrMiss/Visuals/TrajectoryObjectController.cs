@@ -24,10 +24,6 @@ namespace HitOrMiss
     /// </summary>
     public class TrajectoryObjectController : MonoBehaviour
     {
-        //[Header("Shadow")]
-        //[SerializeField] GameObject m_ShadowPrefab;
-        //[Tooltip("World Y of the ground plane for shadow projection")]
-        //[SerializeField] float m_GroundY = 0f;
 
         [Header("Pinch feedback (side panels)")]
         [Tooltip("Child GameObject shown when the participant gives a LEFT pinch (Hit). Should display YES on blue.")]
@@ -96,6 +92,20 @@ namespace HitOrMiss
             m_Trial = trial;
             TrialId = trial.trialId;
 
+            // DIAGNOSTIC GUARD: if the player anchor arrives non-finite
+            // (e.g. a head-tracking hiccup), name it here instead of letting
+            // it poison every position below and flood the console with
+            // "Invalid AABB / transform is corrupt" from all child renderers.
+            if (!IsFiniteVec(playerPosition) || !IsFiniteVec(playerForward))
+            {
+                Debug.LogError($"[TrajectoryObjectController] NON-FINITE player pose at Initialize. " +
+                               $"trial={trial.trialId} playerPos={playerPosition} playerForward={playerForward}. " +
+                               $"Ball will not run.");
+                IsComplete = true;
+                m_Active = false;
+                return;
+            }
+
             Vector3 forward = playerForward.sqrMagnitude > 0.0001f ? playerForward.normalized : Vector3.forward;
             Vector3 right = Vector3.Cross(Vector3.up, forward).normalized;
             if (right.sqrMagnitude < 0.0001f) right = Vector3.right;
@@ -156,7 +166,7 @@ namespace HitOrMiss
 
             ResetPanelsToDefault();
 
-            //CreateShadow(diameter);
+          
             SetVisible(false);
             m_Active = false;
             IsComplete = false;
@@ -189,6 +199,21 @@ namespace HitOrMiss
     float t = Mathf.Clamp01(elapsed / Mathf.Max(m_Duration, 0.0001f));
 
     Vector3 pos = Vector3.Lerp(m_StartPos, m_EndPos, t);
+
+    // DIAGNOSTIC GUARD: never assign a non-finite position to the transform.
+    // One red line with the full state, then a clean despawn — instead of
+    // hundreds of "Invalid AABB / IsFinite(distance...)" errors from every
+    // renderer and canvas riding on this ball.
+    if (!IsFiniteVec(pos))
+    {
+        Debug.LogError($"[TrajectoryObjectController] NON-FINITE ball position mid-flight. trial={TrialId} " +
+                       $"t={t:F4} elapsed={elapsed:F4} duration={m_Duration:F4} " +
+                       $"start={m_StartPos} end={m_EndPos} playerPos={m_PlayerPos} forward={m_PlayerForward}");
+        IsComplete = true;
+        m_Active = false;
+        Despawn();
+        return;
+    }
 
     transform.position = pos;
 
@@ -421,93 +446,41 @@ namespace HitOrMiss
             Color tint = m_PinchColorApplied ? m_PinchTint : Color.white;
 
             var rend = go.GetComponent<Renderer>();
-            var splatShader = Shader.Find("PPS/BallSplat");
-            if (splatShader != null)
+            
+            // Find the primary shader or grab a generic fallback shader guaranteed to exist
+            Shader splatShader = Shader.Find("PPS/BallSplat") 
+                            ?? Shader.Find("Universal Render Pipeline/Unlit") 
+                            ?? Shader.Find("Unlit/Color")
+                            ?? Shader.Find("Sprites/Default");
+
+            if (splatShader != null && rend != null)
             {
                 var mat = new Material(splatShader);
-                mat.SetColor("_Color", tint);
+                if (mat.HasProperty("_Color")) mat.SetColor("_Color", tint);
+                if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", tint);
+                
                 mat.SetFloat("_StartTime", Time.time);
                 mat.SetFloat("_Lifetime", m_SplatLifetime);
                 mat.SetFloat("_PeakSize", m_SplatPeakSize);
                 mat.SetFloat("_BlobSeed", UnityEngine.Random.value * 1000f);
+                
                 rend.material = mat;
-            }
-            else
-            {
-                var fallback = Shader.Find("Universal Render Pipeline/Unlit");
-                if (fallback != null)
-                {
-                    var mat = new Material(fallback) { color = tint };
-                    rend.material = mat;
-                }
             }
 
             var driver = go.AddComponent<SplatLifetime>();
             driver.Init(m_SplatLifetime, m_SplatPeakSize);
         }
-/* 
-        void CreateShadow(float diameter)
-        {
-            if (m_ShadowPrefab != null)
-            {
-                var shadowGo = Instantiate(m_ShadowPrefab, transform.position, Quaternion.Euler(90f, 0f, 0f));
-                shadowGo.transform.SetParent(transform.parent);
-                m_Shadow = shadowGo.transform;
-                m_Shadow.localScale = Vector3.one * diameter * 1.2f;
-            }
-            else
-            {
-                var shadowGo = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-                shadowGo.name = "BallShadow";
-
-                var col = shadowGo.GetComponent<Collider>();
-                if (col != null) Destroy(col);
-
-                shadowGo.transform.localScale = new Vector3(diameter * 1.2f, 0.005f, diameter * 1.2f);
-
-                var renderer = shadowGo.GetComponent<Renderer>();
-                if (renderer != null)
-                {
-                    var mat = new Material(Shader.Find("Universal Render Pipeline/Unlit"));
-                    mat.color = new Color(0f, 0f, 0f, 0.35f);
-                    mat.SetFloat("_Surface", 1);
-                    mat.SetFloat("_Blend", 0);
-                    mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-                    mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-                    mat.SetInt("_ZWrite", 0);
-                    mat.renderQueue = 3000;
-                    renderer.material = mat;
-                }
-
-                shadowGo.transform.SetParent(transform.parent);
-                m_Shadow = shadowGo.transform;
-            }
-        } */
-
-       // void UpdateShadow(Vector3 ballPos)
-       // {
-        //    if (m_Shadow == null) return;
-            // Once the ball has crossed the player plane the shadow has been
-            // hidden by the plane-crossing branch above; bail early so we
-            // don't re-show it via scale updates.
-        //    if (m_PassedPlayerPlane) return;
-
-         //   m_Shadow.position = new Vector3(ballPos.x, m_GroundY + 0.01f, ballPos.z);
-
-        //    float height = Mathf.Max(ballPos.y - m_GroundY, 0.1f);
-        //    float scaleFactor = Mathf.Clamp(1f / (height * 0.5f + 0.5f), 0.3f, 1.5f);
-        //    float baseDiam = m_Trial.ballDiameter > 0 ? m_Trial.ballDiameter : 0.175f;
-        //    m_Shadow.localScale = new Vector3(baseDiam * 1.2f * scaleFactor, 0.005f, baseDiam * 1.2f * scaleFactor);
-
-       //     m_Shadow.gameObject.SetActive(m_Active && !IsComplete);
-       // }
-
+        
         void SetVisible(bool visible)
         {
             var renderers = GetComponentsInChildren<Renderer>();
             foreach (var r in renderers) r.enabled = visible;
-            //if (m_Shadow != null) m_Shadow.gameObject.SetActive(visible);
         }
+
+        static bool IsFiniteVec(Vector3 v) =>
+            !(float.IsNaN(v.x) || float.IsInfinity(v.x) ||
+              float.IsNaN(v.y) || float.IsInfinity(v.y) ||
+              float.IsNaN(v.z) || float.IsInfinity(v.z));
 
         public void Despawn()
         {
@@ -515,7 +488,6 @@ namespace HitOrMiss
             IsComplete = true;
             if (m_LeftPanel  != null) m_LeftPanel.SetActive(false);
             if (m_RightPanel != null) m_RightPanel.SetActive(false);
-            //if (m_Shadow != null) Destroy(m_Shadow.gameObject);
             Destroy(gameObject);
         }
     }

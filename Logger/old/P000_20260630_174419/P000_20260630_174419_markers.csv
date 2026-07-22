@@ -1,7 +1,0 @@
-Time,EventCode,TrialId,Category,Expected,Received,Extra,TriggerValue
-12.222678,phase_intro,,,,,,51
-15.728160,phase_controller_practice,,,,,,32
-16.870845,phase_ball_demo,,,,,,33
-20.416127,block_triL_start,,,,,,61
-20.429829,trial_spawn,DEMO_T01,clear_hit,Hit,,1,1
-0.000000,session_end,,,,,,57

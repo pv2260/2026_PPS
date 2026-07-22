@@ -122,10 +122,13 @@ namespace HitOrMiss
         public event System.Action SessionStarted;
         public event System.Action SessionEnded;
 
-        // Protocol comes only from the SessionConfig. The asset is the sole
-        // authority and is never mutated at runtime, so there is no clone.
+        // Protocol comes from the SessionConfig. During a session the task
+        // runs a runtime CLONE of it (CreateSessionClone +
+        // ApplyTask2SessionOverrides), so clinician-panel overrides adjust
+        // this session without ever mutating the on-disk asset.
+        TrajectoryTaskAsset m_RuntimeProtocol;
         TrajectoryTaskAsset Protocol => m_SessionConfig != null ? m_SessionConfig.TaskAsset : null;
-        TrajectoryTaskAsset Asset => Protocol;
+        TrajectoryTaskAsset Asset => m_RuntimeProtocol != null ? m_RuntimeProtocol : Protocol;
 
         void Awake()
         {
@@ -307,12 +310,25 @@ namespace HitOrMiss
             if (string.IsNullOrEmpty(m_SessionMetadata.sessionDate))
                 m_SessionMetadata.sessionDate = System.DateTime.Now.ToString("yyyy-MM-dd");
 
-            // Protocol: the asset is the sole authority. Run it directly.
-            m_TaskManager.TaskAsset = protocol;
+            // Language: the panel's selection now actually drives the popup
+            // localization (previously recorded but never applied).
+            SetLanguage(
+                string.Equals(m_SessionMetadata.language, "french", System.StringComparison.OrdinalIgnoreCase)
+                    ? SupportedLanguage.French
+                    : SupportedLanguage.English);
+
+            // Protocol: clone the asset for this session and apply any
+            // clinician-panel overrides (blocks, break duration) to the
+            // CLONE. task2TrialsPerBlock arrives as 0 from the panel, which
+            // deliberately skips the legacy flat-split path so the settled
+            // per-category design in the asset always stands.
+            m_RuntimeProtocol = protocol.CreateSessionClone();
+            m_RuntimeProtocol.ApplyTask2SessionOverrides(m_SessionMetadata);
+            m_TaskManager.TaskAsset = m_RuntimeProtocol;
 
             // Record the protocol that will run into the metadata for setup.json.
-            // One-directional (asset -> record); never read back to drive the run.
-            m_SessionMetadata.PopulateFromTaskAsset(protocol);
+            // One-directional (clone -> record); never read back to drive the run.
+            m_SessionMetadata.PopulateFromTaskAsset(m_RuntimeProtocol);
 
             Debug.Log(
                 $"[HitOrMissAppController] Protocol from asset (sole authority): " +
@@ -916,6 +932,16 @@ namespace HitOrMiss
                 m_ClinicianPanel.ExitTaskMode();
 
             m_EegMarkerEmitter?.EndSession();
+
+            // Release this session's protocol clone; the manager goes back to
+            // pointing at the source asset so no destroyed reference lingers.
+            if (m_RuntimeProtocol != null)
+            {
+                if (m_TaskManager != null)
+                    m_TaskManager.TaskAsset = Protocol;
+                Destroy(m_RuntimeProtocol);
+                m_RuntimeProtocol = null;
+            }
 
             SetPhase(TaskPhase.Idle);
             m_SessionCoroutine = null;

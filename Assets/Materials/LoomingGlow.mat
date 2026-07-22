@@ -8,7 +8,7 @@ Material:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: LoomingGlow
-  m_Shader: {fileID: 4800000, guid: d311ece9bead8f14f832546afe09fd74, type: 3}
+  m_Shader: {fileID: 4800000, guid: a3c532be0c92be0409c920a7b4191583, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []

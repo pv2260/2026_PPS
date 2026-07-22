@@ -54,10 +54,12 @@ namespace HitOrMiss.Pps
         SessionMetadata m_SessionMetadata;
         bool m_SessionMetadataSet;
 
-        // Protocol comes only from the SessionConfig. The asset is the sole
-        // authority and is never mutated at runtime, so there is no clone.
+        // Protocol comes from the SessionConfig. During a session the task
+        // runs a runtime CLONE of it, so clinician-panel overrides can adjust
+        // this session without ever mutating the on-disk asset.
+        PpsTaskAsset m_RuntimeProtocol;
         PpsTaskAsset Protocol => m_SessionConfig != null ? m_SessionConfig.TaskAsset : null;
-        PpsTaskAsset Asset => Protocol;
+        PpsTaskAsset Asset => m_RuntimeProtocol != null ? m_RuntimeProtocol : Protocol;
 
         Coroutine m_SessionCoroutine;
         private bool m_Running;
@@ -92,7 +94,20 @@ namespace HitOrMiss.Pps
         public void RequestStop()
         {
             m_StopRequested = true;
-            Debug.Log("[PPSAppController] RequestStop() — task will end at the next checkpoint.");
+
+            // Abort the block that is currently running so the coroutine
+            // reaches its next StopWasRequested() checkpoint immediately,
+            // instead of only after all remaining trials in the block.
+            // Mirrors StopTaskFromParticipantPause, which already did this.
+            if (m_TaskManager != null)
+                m_TaskManager.RequestAbortCurrentRun();
+
+            // If the session is paused, the coroutine is blocked inside
+            // RunTrials and would never poll the stop flag. Resume so it can
+            // wind down. No-op when not paused.
+            ResumeSession();
+
+            Debug.Log("[PPSAppController] RequestStop() — aborting current run; task will end at the next checkpoint.");
         }
 
         /// <summary>
@@ -148,13 +163,18 @@ namespace HitOrMiss.Pps
                 Debug.Log("[PPSAppController] Built session metadata from PpsSessionConfig.");
             }
 
-            // Protocol: the asset is the sole authority. Run it directly, no clone.
+            // Protocol: clone the asset for this session and apply any
+            // clinician-panel overrides to the CLONE. The on-disk asset is
+            // never mutated; setup.json records what actually ran.
+            m_RuntimeProtocol = Protocol.CreateSessionClone();
+            m_RuntimeProtocol.ApplyTask1SessionOverrides(m_SessionMetadata);
+
             if (m_TaskManager != null)
-                m_TaskManager.TaskAsset = Protocol;
+                m_TaskManager.TaskAsset = m_RuntimeProtocol;
 
             // Record the protocol that will run into the metadata for setup.json.
-            // One-directional (asset -> record); never read back to drive the run.
-            m_SessionMetadata.PopulateFromPpsTaskAsset(Protocol);
+            // One-directional (clone -> record); never read back to drive the run.
+            m_SessionMetadata.PopulateFromPpsTaskAsset(m_RuntimeProtocol);
 
             Debug.Log("[PPSAppController] Protocol from asset (sole authority): " +
                       $"participant={m_SessionMetadata.participantId}, " +
@@ -345,6 +365,12 @@ namespace HitOrMiss.Pps
             if (m_ClinicianPanel != null)
                 m_ClinicianPanel.EnterTaskMode();
 
+            // Attention checks: the manager invokes this every N main-block
+            // trials (N from the asset, 0 = off); the panel itself lives in
+            // SessionFlowPanels (m_AttentionCheckPanel).
+            if (m_Ui != null)
+                m_TaskManager.AttentionCheckRoutine = () => m_Ui.ShowAttentionCheckAndWait();
+
             // Resolve controller input
             if (m_ControllerInputBehaviour != null)
             {
@@ -372,6 +398,16 @@ namespace HitOrMiss.Pps
             m_Running = false;
             m_SessionCoroutine = null;
             SessionEnded?.Invoke();
+
+            // Release this session's protocol clone; the manager goes back to
+            // pointing at the source asset so no destroyed reference lingers.
+            if (m_RuntimeProtocol != null)
+            {
+                if (m_TaskManager != null)
+                    m_TaskManager.TaskAsset = Protocol;
+                Destroy(m_RuntimeProtocol);
+                m_RuntimeProtocol = null;
+            }
         }
 
         private IEnumerator RunPreTaskPanels()
@@ -585,8 +621,15 @@ namespace HitOrMiss.Pps
             if (m_Ui != null)
             {
                 m_Ui.HideStandingCross();
-                yield return m_Ui.ShowEndAndWait("Task stopped.\n\nThank you.");
+                // Show the end message WITHOUT blocking session teardown on
+                // it. Blocking here delayed m_Running=false / SessionEnded by
+                // the full end-panel wait (~10 s), which made the clinician
+                // panel's End Session button feel unresponsive. Fire-and-
+                // forget keeps the participant-facing message on screen while
+                // the session state and the panel update immediately.
+                StartCoroutine(m_Ui.ShowEndAndWait("Task stopped.\n\nThank you."));
             }
+            yield break;
         }
     }
 }

@@ -3,12 +3,30 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>HitMiss — Clinician Console</title>
+  <title>Percep PD — Clinician Panel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <header>
-    <div class="brand">HitMiss <span class="muted">clinician console</span></div>
+    <div class="brand">
+      <img class="brand-logo" src="NR_Logo_Red.webp" alt="NeuroRestore" />
+      <div class="brand-text">
+        <span class="brand-title">Percep <span class="accent">PD</span></span>
+        <span class="brand-sub">clinician panel</span>
+      </div>
+    </div>
+
+    <div class="header-spacer"></div>
+
+    <!-- Which Unity scene is currently loaded on the headset -->
+    <span id="taskBadge" class="task-badge">
+      <span class="dot"></span>
+      <span id="taskBadgeLabel">No task loaded</span>
+    </span>
+
     <div class="status-block">
       <span id="connStatus" class="conn-pill conn-disconnected">disconnected</span>
       <span id="phasePill" class="phase-pill">idle</span>
@@ -25,15 +43,15 @@
 
   <div id="waitingBanner" class="waiting-banner" hidden>
     <span class="waiting-spinner"></span>
-    <span class="waiting-text">Waiting for headset. Make sure Unity is in Play mode on the same Wi-Fi.</span>
+    <span class="waiting-text">Waiting for the headset. Make sure Unity is in Play mode on the same Wi-Fi.</span>
   </div>
 
   <main>
 
     <!-- ============== New Session ============== -->
     <section id="newSession" class="tab-panel active">
-      <h2>Start New Session</h2>
-      <p class="muted">Fill in the participant + condition, then press Start. The headset will run the experience as soon as Start is acknowledged.</p>
+      <h2>Start new session</h2>
+      <p class="muted">Fill in the participant and condition, then press Start. The panel automatically detects which scene is loaded on the headset (PPS or Hit-or-Miss) and starts that task.</p>
 
       <form id="sessionForm" class="form">
         <fieldset>
@@ -57,7 +75,8 @@
               <input name="heightCm" type="number" min="0" max="260" step="0.5" value="170" />
             </label>
             <label>Shoulder width (cm)
-              <input name="shoulderWidthCm" type="number" min="20" max="80" step="0.5" value="42" />
+              <input name="shoulderWidthCm" type="number" min="20" max="80" step="0.5" value="42" required />
+              <small class="muted">Drives both tasks: light spacing (Task 1) and ball trajectory anchoring (Task 2).</small>
             </label>
             <label>Group
               <select name="subjectGroup">
@@ -121,66 +140,36 @@
           <legend>Task 1 — PPS / vibrotactile</legend>
           <div class="form-grid">
             <label>Number of blocks
-              <input name="task1NumberOfBlocks" type="number" min="1" value="4" />
+              <input name="task1NumberOfBlocks" type="number" min="1" value="3" />
             </label>
             <label>VT trials per block
-              <input name="task1VtTrialsPerBlock" type="number" min="0" value="28" />
+              <input name="task1VtTrialsPerBlock" type="number" min="0" value="70" />
             </label>
             <label>Visual-only trials per block
-              <input name="task1VisualOnlyTrialsPerBlock" type="number" min="0" value="6" />
+              <input name="task1VisualOnlyTrialsPerBlock" type="number" min="0" value="28" />
             </label>
             <label>Tactile-only trials per block
-              <input name="task1TactileOnlyTrialsPerBlock" type="number" min="0" value="6" />
-            </label>
-            <label>Trials per block = VT + V + T
-              <input name="task1TrialsPerBlock" type="number" min="1" value="40" readonly />
+              <input name="task1TactileOnlyTrialsPerBlock" type="number" min="0" value="56" />
             </label>
             <label>Break duration (s)
               <input name="task1BreakDurationSeconds" type="number" min="0" value="30" />
             </label>
-            <label>Narrow offset (cm)
-              <input name="task1NarrowOffsetCm" type="number" min="0" step="0.5" value="5" />
-            </label>
-            <label>Wide offset (cm)
-              <input name="task1WideOffsetCm" type="number" min="0" step="0.5" value="15" />
-            </label>
-            <label>Practice VT-only trials
-              <input name="task1PracticeVtOnlyTrials" type="number" min="0" value="2" />
-            </label>
-            <label>Practice VT+visual trials
-              <input name="task1PracticeVtVisualTrials" type="number" min="0" value="4" />
-            </label>
-            <label>Looming speeds
-              <input name="task1LoomingSpeeds" placeholder="slow,fast" value="slow,fast" />
-            </label>
           </div>
+          <p class="muted">Trials per block = VT + V + T = <b><span id="task1TrialTotal">154</span></b>. VT and tactile-only must be multiples of 14, visual-only a multiple of 2 (design cells); invalid values are rejected at start and the protocol default runs instead. 0 = use protocol default.</p>
+          <p class="muted">Fixed by the protocol asset (not adjustable per session): loom speeds/durations, distance stages D1–D7, ITI, response window, practice compositions, warm-up. Light spacing follows the shoulder width above.</p>
         </fieldset>
 
         <fieldset id="task2Fieldset">
           <legend>Task 2 — Hit-or-Miss</legend>
           <div class="form-grid">
             <label>Number of blocks
-              <input name="task2NumberOfBlocks" type="number" min="1" value="4" />
-            </label>
-            <label>Trials per block
-              <input name="task2TrialsPerBlock" type="number" min="1" value="40" />
+              <input name="task2NumberOfBlocks" type="number" min="1" value="3" />
             </label>
             <label>Break duration (s)
-              <input name="task2BreakDurationSeconds" type="number" min="0" value="30" />
-            </label>
-            <label>Hit offset (cm)
-              <input name="task2HitOffsetCm" type="number" step="0.5" value="0" />
-            </label>
-            <label>Near-miss offset (cm)
-              <input name="task2NearMissOffsetCm" type="number" step="0.5" value="5" />
-            </label>
-            <label>Miss offset (cm)
-              <input name="task2MissOffsetCm" type="number" step="0.5" value="15" />
-            </label>
-            <label>Ball speeds
-              <input name="task2BallSpeeds" placeholder="slow,fast" value="slow,fast" />
+              <input name="task2BreakDurationSeconds" type="number" min="0" value="60" />
             </label>
           </div>
+          <p class="muted">Fixed by the protocol asset (not adjustable per session): 72 trials/block (9 clear-hit / 24 near-hit / 24 near-miss / 9 clear-miss + 6 grey-zone), shoulder-edge-anchored offset bands scaled by the shoulder width above, ball speeds, and ITI.</p>
         </fieldset>
 
         <label class="full">Clinician notes
@@ -188,7 +177,7 @@
         </label>
 
         <div class="actions">
-          <button type="submit" class="primary">Start session</button>
+          <button type="submit" class="primary" id="startBtn">Start session</button>
           <span id="startError" class="error"></span>
         </div>
       </form>
@@ -248,7 +237,7 @@
   </main>
 
   <footer class="muted">
-    Server: <span id="serverUrl">…</span> · Protocol <span id="protoVer">…</span>
+    Server: <span id="serverUrl">…</span> · Protocol <span id="protoVer">…</span> · NeuroRestore · CHUV / EPFL
   </footer>
 
   <script src="app.js"></script>

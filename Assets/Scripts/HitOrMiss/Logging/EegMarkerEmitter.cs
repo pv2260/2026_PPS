@@ -113,9 +113,13 @@ namespace HitOrMiss
                 return;
             }
 
+            // Session root comes from SessionPaths — the SAME single source
+            // HitMissNetworkServer lists for the clinician panel's Sessions
+            // tab, so recorded sessions always show up there. In the editor
+            // this resolves to {project}/Logger; on a standalone build to
+            // persistentDataPath/Logs.
             SessionDirectory = Path.Combine(
-                Directory.GetCurrentDirectory(),
-                "Logger",
+                SessionPaths.Root,
                 $"{m_ParticipantId}_{m_SessionId}"
             );
 

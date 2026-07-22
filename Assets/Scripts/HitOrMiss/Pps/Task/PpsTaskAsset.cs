@@ -148,6 +148,12 @@ namespace HitOrMiss.Pps
                  "vibration lands at the same elapsed time as the matched VT trial.")]
         [SerializeField, Min(0.01f)] float m_WarmupDistanceMeters = 3.0f;
 
+        [Header("Attention checks")]
+        [Tooltip("During MAIN blocks, show the attention-check panel after every N completed trials " +
+                 "(0 = disabled). Practice runs never show checks; the check is skipped after the " +
+                 "final trial of a block. The panel itself lives in SessionFlowPanels.")]
+        [SerializeField, Min(0)] int m_AttentionCheckEveryNTrials = 20;
+
         [Header("Phase durations")]
         [SerializeField] float m_RestDurationSeconds = 30f;
 
@@ -272,6 +278,8 @@ namespace HitOrMiss.Pps
 
         public float RestDurationSeconds => m_RestDurationSeconds;
 
+        public int AttentionCheckEveryNTrials => m_AttentionCheckEveryNTrials;
+
         public string InstructionsKey => m_InstructionsKey;
         public string PracticeIntroKey => m_PracticeIntroKey;
         public string BlockIntroKey => m_BlockIntroKey;
@@ -279,6 +287,69 @@ namespace HitOrMiss.Pps
 
         public TrialOrder OrderingStrategy => m_OrderingStrategy;
         public int? RngSeed => m_RngSeed < 0 ? null : m_RngSeed;
+
+        // ------------------------------------------------------------------
+        // Clinician-panel overrides (CreateSessionClone lives further down,
+        // next to GenerateBlock — it predates this section)
+        // ------------------------------------------------------------------
+
+        /// <summary>
+        /// Mutates this asset (call only on a session clone) so values from
+        /// the clinician panel's task1_parameters drive the run. A field is
+        /// applied only when the metadata value is &gt; 0; 0 means "use the
+        /// asset value". Trial counts are additionally validated against the
+        /// design-cell divisibility that PpsTrialGenerator enforces
+        /// (VT: distances x speeds x widths; V: speeds x widths;
+        /// T: distances x speeds) — an indivisible panel value is rejected
+        /// with a console error and the asset value is kept, so a typo on the
+        /// panel can never crash the generator mid-session.
+        /// </summary>
+        public void ApplyTask1SessionOverrides(SessionMetadata md)
+        {
+            const int speeds = 2; // fast + slow, fixed by the protocol
+            int widths    = ActiveWidths.Length;
+            int distances = Mathf.Max(1, m_DistanceStageCount);
+
+            int vtCells = distances * speeds * widths;
+            int vCells  = speeds * widths;
+            int tCells  = distances * speeds;
+
+            if (md.task1NumberOfBlocks > 0)
+                m_BlockCount = md.task1NumberOfBlocks;
+
+            ApplyCount(ref m_VtTrialsPerBlock,          md.task1VtTrialsPerBlock,          vtCells, "VT");
+            ApplyCount(ref m_VisualOnlyTrialsPerBlock,  md.task1VisualOnlyTrialsPerBlock,  vCells,  "visual-only");
+            ApplyCount(ref m_TactileOnlyTrialsPerBlock, md.task1TactileOnlyTrialsPerBlock, tCells,  "tactile-only");
+
+            // Total is derived; keep it consistent with whatever was applied.
+            m_TrialsPerBlock = m_VtTrialsPerBlock + m_VisualOnlyTrialsPerBlock + m_TactileOnlyTrialsPerBlock;
+
+            if (md.task1BreakDurationSeconds > 0f)
+                m_RestDurationSeconds = md.task1BreakDurationSeconds;
+
+            Debug.Log(
+                $"[PpsTaskAsset] Runtime config: blocks={m_BlockCount}, " +
+                $"VT={m_VtTrialsPerBlock}, V={m_VisualOnlyTrialsPerBlock}, " +
+                $"T={m_TactileOnlyTrialsPerBlock}, total={m_TrialsPerBlock}, " +
+                $"rest={m_RestDurationSeconds}s");
+        }
+
+        static void ApplyCount(ref int field, int requested, int cells, string label)
+        {
+            if (requested <= 0) return; // 0 = use the asset value
+
+            if (cells > 0 && requested % cells != 0)
+            {
+                Debug.LogError(
+                    $"[PpsTaskAsset] Panel override REJECTED: {label} trials per block = {requested} " +
+                    $"is not divisible by the {cells} design cells. Keeping the asset value ({field}). " +
+                    $"Valid values are multiples of {cells}.");
+                return;
+            }
+
+            field = requested;
+        }
+
 
         // ------------------------------------------------------------------
         // Warm-up
@@ -431,20 +502,24 @@ namespace HitOrMiss.Pps
         }
 
         /// <summary>
-        /// Runtime-only clone. Kept as a utility. The PPS controller no longer
-        /// clones for overrides, because the asset is now the sole authority for
-        /// protocol and is never mutated at runtime.
+        /// Runtime-only clone. The PPS controller clones per session and
+        /// applies clinician-panel overrides to the clone via
+        /// <see cref="ApplyTask1SessionOverrides"/>; the on-disk asset is
+        /// never mutated.
         /// </summary>
         public PpsTaskAsset CreateSessionClone()
         {
-            return Instantiate(this);
+            var clone = Instantiate(this);
+            clone.name = name + " (Session Clone)";
+            return clone;
         }
 
-        // NOTE: ApplyTask1SessionOverrides has been removed. The asset is the sole
-        // authority for protocol (block count, per-modality trial counts, break,
-        // wide offset). Nothing in SessionMetadata overrides these anymore.
-        // SessionMetadata.task1_* fields are a write-once record for setup.json,
-        // populated FROM this asset via SessionMetadata.PopulateFromPpsTaskAsset.
+        // NOTE (history): ApplyTask1SessionOverrides was removed at one point
+        // to make the asset the sole protocol authority, then reinstated by
+        // explicit decision so the clinician panel can adjust blocks, trial
+        // counts, and break duration per session. Overrides are applied to a
+        // session CLONE only; setup.json records what actually ran via
+        // SessionMetadata.PopulateFromPpsTaskAsset(clone).
 
         /// <summary>
         /// Normalized progress for a stage: 0 at the farthest ACTIVE stage, 1 at D1.

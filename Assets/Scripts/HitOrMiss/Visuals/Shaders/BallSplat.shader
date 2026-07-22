@@ -8,6 +8,11 @@
 //   - detached droplets scattered around the main body at fixed angles
 //     and randomized distances/sizes per spawn (via _BlobSeed)
 //
+// STEREO NOTE (added): this shader now supports XR Single Pass Instanced
+// rendering. The UNITY_* macros below are required so the splat renders in
+// BOTH eyes; without them it appears in one eye only. Same fix pattern as
+// LoomingComet.shader.
+//
 // Alpha-blended so it reads as opaque paint over the scene rather than the
 // glowing additive blob the previous version was. The "look" target is a
 // 2D vector splatter graphic, not a 3D goo droplet.
@@ -77,6 +82,11 @@ Shader "PPS/BallSplat"
             #pragma fragment frag
             #pragma target   3.0
 
+            // STEREO: compile the instanced variants used by Single Pass
+            // Instanced XR rendering. Without this the shader has no
+            // stereo-capable variant at all.
+            #pragma multi_compile_instancing
+
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
             CBUFFER_START(UnityPerMaterial)
@@ -103,6 +113,9 @@ Shader "PPS/BallSplat"
             struct Attributes
             {
                 float4 positionOS : POSITION;
+                // STEREO: per-vertex instance ID; identifies which eye's
+                // instance this vertex belongs to.
+                UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
             struct Varyings
@@ -110,6 +123,9 @@ Shader "PPS/BallSplat"
                 float4 positionHCS : SV_POSITION;
                 float2 uv          : TEXCOORD0; // 0..1 across the quad
                 float  age01       : TEXCOORD1;
+                // STEREO: carries the render-target eye index so the
+                // fragment lands in the correct eye's texture slice.
+                UNITY_VERTEX_OUTPUT_STEREO
             };
 
             // Hash-based scalar noise from a 2D seed. Output 0..1.
@@ -123,6 +139,13 @@ Shader "PPS/BallSplat"
             Varyings vert(Attributes IN)
             {
                 Varyings OUT;
+
+                // STEREO: read this vertex's instance ID (which eye), then
+                // initialize the eye index output. Must come before any use
+                // of UNITY_MATRIX_V or the transform helpers below, because
+                // those resolve per-eye based on it.
+                UNITY_SETUP_INSTANCE_ID(IN);
+                UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(OUT);
 
                 float age   = max(0.0, _Time.y - _StartTime);
                 float age01 = saturate(age / max(_Lifetime, 1e-4));
@@ -152,6 +175,10 @@ Shader "PPS/BallSplat"
 
             half4 frag(Varyings IN) : SV_Target
             {
+                // STEREO: select the correct eye for any per-eye resources
+                // used in the fragment stage. Standard XR boilerplate.
+                UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(IN);
+
                 if (IN.age01 >= 1.0) discard;
 
                 // Center the UV around (0,0). r = distance from center,
