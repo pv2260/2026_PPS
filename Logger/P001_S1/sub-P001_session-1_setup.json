@@ -1,0 +1,45 @@
+﻿{
+  "subject": {
+    "subject_id": "P001",
+    "age_years": 23,
+    "dominant_hand": "right",
+    "height_cm": 163,
+    "shoulder_width_cm": 38,
+    "group": "healthy",
+    "has_DBS": false
+  },
+  "session": {
+    "session_number": 1,
+    "session_id": "S1",
+    "session_date": "2026-07-23",
+    "session_type": "healthy_s1",
+    "dbs_status": "na",
+    "clinician_initials": "PV",
+    "language": "english"
+  },
+  "equipment": {
+    "EEG": true,
+    "EMG": false,
+    "heart_rate_band": false,
+    "eye_tracking": false
+  },
+  "task2_parameters": {
+    "number_of_blocks": 3,
+    "trials_per_block": 78,
+    "clear_hit_trials_per_block": 9,
+    "near_hit_trials_per_block": 27,
+    "near_miss_trials_per_block": 27,
+    "clear_miss_trials_per_block": 9,
+    "grey_zone_trials_per_block": 6,
+    "break_duration_seconds": 30,
+    "ball_fast_speed_mps": 3.5,
+    "ball_slow_speed_mps": 1.5,
+    "hit_offset_cm": 0,
+    "near_miss_offset_cm": 5,
+    "miss_offset_cm": 15,
+    "ball_speeds": ["slow", "fast"]
+  },
+  "comments": {
+    "clinician_notes": ""
+  }
+}

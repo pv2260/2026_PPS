@@ -64,8 +64,8 @@ namespace HitOrMiss.Pps
                  "holding approach speed constant, instead of silently changing the speed.\n\n" +
                  "The warm-up is additional and runs at this same velocity, so it is NOT " +
                  "included here.\n\n" +
-                 "Defaults reproduce the original 1.5s / 4.0s over the default 2.00m travel.")]
-        [SerializeField] float m_FastSpeedMps = 1.3333333f;
+                 "Defaults reproduce the original 1.5s / 0.5  over the default 2.00m travel.")]
+        [SerializeField] float m_FastSpeedMps = 1.5f;
         [SerializeField] float m_SlowSpeedMps = 0.5f;
 
         [Header("Motion curve (shared by visual loom and tactile-only timing)")]
