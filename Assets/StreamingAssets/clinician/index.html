@@ -143,20 +143,31 @@
               <input name="task1NumberOfBlocks" type="number" min="1" value="3" />
             </label>
             <label>VT trials per block
-              <input name="task1VtTrialsPerBlock" type="number" min="0" value="70" />
+              <input name="task1VtTrialsPerBlock" type="number" min="0" step="14" value="70" />
+              <small class="muted">multiple of 14</small>
             </label>
             <label>Visual-only trials per block
-              <input name="task1VisualOnlyTrialsPerBlock" type="number" min="0" value="28" />
+              <input name="task1VisualOnlyTrialsPerBlock" type="number" min="0" step="2" value="28" />
+              <small class="muted">multiple of 2</small>
             </label>
             <label>Tactile-only trials per block
-              <input name="task1TactileOnlyTrialsPerBlock" type="number" min="0" value="56" />
+              <input name="task1TactileOnlyTrialsPerBlock" type="number" min="0" step="14" value="56" />
+              <small class="muted">multiple of 14</small>
             </label>
             <label>Break duration (s)
               <input name="task1BreakDurationSeconds" type="number" min="0" value="30" />
             </label>
+            <label>Fast loom speed (m/s)
+              <input name="task1FastSpeedMps" type="number" min="0" step="0.01" placeholder="1.33 (protocol)" />
+            </label>
+            <label>Slow loom speed (m/s)
+              <input name="task1SlowSpeedMps" type="number" min="0" step="0.01" placeholder="0.50 (protocol)" />
+            </label>
           </div>
-          <p class="muted">Trials per block = VT + V + T = <b><span id="task1TrialTotal">154</span></b>. VT and tactile-only must be multiples of 14, visual-only a multiple of 2 (design cells); invalid values are rejected at start and the protocol default runs instead. 0 = use protocol default.</p>
-          <p class="muted">Fixed by the protocol asset (not adjustable per session): loom speeds/durations, distance stages D1–D7, ITI, response window, practice compositions, warm-up. Light spacing follows the shoulder width above.</p>
+          <p class="muted">Trials per block = VT + V + T = <b><span id="task1TrialTotal">154</span></b>. <span id="task1CountWarn" class="count-warn" hidden></span></p>
+          <p class="muted">Counts must fill whole design cells (7 distances × 2 speeds × 1 width). 0 = use protocol default. Assumes the asset's width factor is off; if you enable it, VT becomes a multiple of 28 and visual-only a multiple of 4.</p>
+          <p class="muted">Scored loom only; the warm-up glide follows at the same velocity. Leave blank to run the protocol speed exactly — type a value only to slow a participant down.</p>
+          <p class="muted">Fixed by the protocol asset (not adjustable per session): distance stages D1–D7, ITI, response window, practice compositions, warm-up distance, motion curve. Light spacing follows the shoulder width above.</p>
         </fieldset>
 
         <fieldset id="task2Fieldset">
@@ -165,11 +176,33 @@
             <label>Number of blocks
               <input name="task2NumberOfBlocks" type="number" min="1" value="3" />
             </label>
+            <label>Clear-hit trials per block
+              <input name="task2ClearHitTrialsPerBlock" type="number" min="0" value="9" />
+            </label>
+            <label>Near-hit trials per block
+              <input name="task2NearHitTrialsPerBlock" type="number" min="0" value="24" />
+            </label>
+            <label>Near-miss trials per block
+              <input name="task2NearMissTrialsPerBlock" type="number" min="0" value="24" />
+            </label>
+            <label>Clear-miss trials per block
+              <input name="task2ClearMissTrialsPerBlock" type="number" min="0" value="9" />
+            </label>
+            <label>Grey-zone trials per block
+              <input name="task2GreyZoneTrialsPerBlock" type="number" min="0" value="6" />
+            </label>
             <label>Break duration (s)
               <input name="task2BreakDurationSeconds" type="number" min="0" value="60" />
             </label>
+            <label>Fast ball speed (m/s)
+              <input name="task2FastSpeed" type="number" min="0" step="0.1" placeholder="3.5 (protocol)" />
+            </label>
+            <label>Slow ball speed (m/s)
+              <input name="task2SlowSpeed" type="number" min="0" step="0.1" placeholder="1.5 (protocol)" />
+            </label>
           </div>
-          <p class="muted">Fixed by the protocol asset (not adjustable per session): 72 trials/block (9 clear-hit / 24 near-hit / 24 near-miss / 9 clear-miss + 6 grey-zone), shoulder-edge-anchored offset bands scaled by the shoulder width above, ball speeds, and ITI.</p>
+          <p class="muted">Trials per block = CH + NH + NM + CM + grey = <b><span id="task2TrialTotal">72</span></b>. No divisibility constraint: each category is drawn independently. 0 = use protocol default. Leave the speeds blank to run the protocol exactly.</p>
+          <p class="muted">Fixed by the protocol asset (not adjustable per session): shoulder-edge-anchored offset bands scaled by the shoulder width above, grey-zone half-width, and ITI.</p>
         </fieldset>
 
         <label class="full">Clinician notes

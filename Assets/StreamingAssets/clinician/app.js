@@ -57,40 +57,126 @@
   $('input[name=sessionDate]').value = today;
 
   // ---- Task 1 trial-count total ----
-  // Trials per block is computed from the three explicit PPS trial counts:
-  // VT + visual-only + tactile-only. The total field is read-only in the form.
-  bindTask1TrialCountTotal();
+  // Live "trials per block" totals, plus the Task 1 design-cell check.
+  //
+  // Task 1 counts are REJECTED by PpsTaskAsset.ApplyCount unless each is
+  // divisible by its design cells, and a rejected value silently runs the asset
+  // default instead. So the panel enforces it here rather than letting the
+  // clinician type a number that will be quietly discarded.
+  //
+  // Cells assume the asset's width factor is OFF (ActiveWidths = 1):
+  //   VT = distances(7) x speeds(2) x widths(1) = 14
+  //   V  =               speeds(2) x widths(1) =  2
+  //   T  = distances(7) x speeds(2)            = 14   (T never crosses width)
+  // Defaults match a 7-distance asset with the width factor off. They are
+  // OVERWRITTEN from server status (task1*DesignCells) as soon as the headset
+  // connects, so lowering DistanceStageCount for a short test run immediately
+  // relaxes the panel to match.
+  const TASK1_CELLS = { task1VtTrialsPerBlock: 14, task1VisualOnlyTrialsPerBlock: 2, task1TactileOnlyTrialsPerBlock: 14 };
 
-  function bindTask1TrialCountTotal() {
+  // Applies live cell sizes from the headset and refreshes the inputs' step
+  // attributes so the browser's own validation tracks the real asset.
+  function applyDesignCells(s) {
+    if (!s) return;
+    const map = {
+      task1VtTrialsPerBlock: s.task1VtDesignCells,
+      task1VisualOnlyTrialsPerBlock: s.task1VisualOnlyDesignCells,
+      task1TactileOnlyTrialsPerBlock: s.task1TactileOnlyDesignCells,
+    };
+    let changed = false;
+    Object.keys(map).forEach((name) => {
+      const cells = map[name];
+      if (!cells || cells < 1 || cells === TASK1_CELLS[name]) return;
+      TASK1_CELLS[name] = cells;
+      changed = true;
+    });
+    if (!changed) return;
+
+    const form = $('#sessionForm');
+    Object.keys(TASK1_CELLS).forEach((name) => {
+      const el = form?.querySelector(`[name="${name}"]`);
+      if (!el) return;
+      el.step = String(TASK1_CELLS[name]);
+      const hint = el.parentElement?.querySelector('small');
+      if (hint) hint.textContent = `multiple of ${TASK1_CELLS[name]}`;
+    });
+    renderTask1Warning();
+  }
+
+  bindTotals();
+
+  function bindTotals() {
     const form = $('#sessionForm');
     if (!form) return;
 
-    const vt = form.querySelector('[name="task1VtTrialsPerBlock"]');
-    const v  = form.querySelector('[name="task1VisualOnlyTrialsPerBlock"]');
-    const t  = form.querySelector('[name="task1TactileOnlyTrialsPerBlock"]');
-    // Live total now lives in a caption span, not a readonly input — only
-    // genuinely modifiable fields remain as inputs.
-    const total = $('#task1TrialTotal');
-
-    if (!vt || !v || !t || !total) return;
-
     const toInt = (el) => {
-      const value = parseInt(el.value, 10);
-      return isNaN(value) ? 0 : Math.max(0, value);
+      const v = parseInt(el.value, 10);
+      return isNaN(v) ? 0 : Math.max(0, v);
+    };
+    const bind = (names, outId, after) => {
+      const els = names.map(n => form.querySelector(`[name="${n}"]`));
+      const out = $(outId);
+      if (!out || els.some(e => !e)) return;
+      const update = () => {
+        out.textContent = els.reduce((s, e) => s + toInt(e), 0);
+        if (after) after(els);
+      };
+      els.forEach(e => e.addEventListener('input', update));
+      update();
     };
 
-    const update = () => {
-      total.textContent = toInt(vt) + toInt(v) + toInt(t);
-    };
+    bind(Object.keys(TASK1_CELLS), '#task1TrialTotal', () => renderTask1Warning());
+    bind(['task2ClearHitTrialsPerBlock', 'task2NearHitTrialsPerBlock', 'task2NearMissTrialsPerBlock',
+          'task2ClearMissTrialsPerBlock', 'task2GreyZoneTrialsPerBlock'], '#task2TrialTotal');
+  }
 
-    [vt, v, t].forEach(el => el.addEventListener('input', update));
-    update();
+  // Returns [] when every Task 1 count is usable, else a list of problems.
+  function task1CountErrors() {
+    const form = $('#sessionForm');
+    if (!form) return [];
+    const labels = {
+      task1VtTrialsPerBlock: 'VT',
+      task1VisualOnlyTrialsPerBlock: 'visual-only',
+      task1TactileOnlyTrialsPerBlock: 'tactile-only',
+    };
+    const out = [];
+    Object.keys(TASK1_CELLS).forEach((name) => {
+      const el = form.querySelector(`[name="${name}"]`);
+      if (!el) return;
+      const v = parseInt(el.value, 10);
+      if (isNaN(v) || v === 0) return; // 0 = use protocol default, always valid
+      const cells = TASK1_CELLS[name];
+      if (v % cells !== 0) {
+        const lo = Math.max(cells, Math.floor(v / cells) * cells);
+        out.push(`${labels[name]} ${v} is not a multiple of ${cells} (nearest: ${lo} or ${lo + cells})`);
+      }
+    });
+    return out;
+  }
+
+  function renderTask1Warning() {
+    const warn = $('#task1CountWarn');
+    if (!warn) return;
+    const errs = task1CountErrors();
+    warn.hidden = errs.length === 0;
+    warn.textContent = errs.length ? `Will be rejected — ${errs.join('; ')}.` : '';
   }
 
   // ---- Start session ----
   $('#sessionForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     $('#startError').textContent = '';
+
+    // Task 1 counts that fail the design-cell check are discarded by Unity and
+    // the asset default runs instead. Refuse to start rather than run a
+    // protocol the clinician did not choose.
+    if (state.currentTaskKind !== 'Task2HitOrMiss') {
+      const errs = task1CountErrors();
+      if (errs.length) {
+        $('#startError').textContent = `Fix the Task 1 trial counts first — ${errs.join('; ')}.`;
+        return;
+      }
+    }
 
     const fd = new FormData(e.target);
     const ck = (name) => e.target.querySelector(`[name="${name}"]`)?.checked || false;
@@ -141,6 +227,15 @@
         int('task1VisualOnlyTrialsPerBlock', 28) +
         int('task1TactileOnlyTrialsPerBlock', 56),
       task1BreakDurationSeconds:  num('task1BreakDurationSeconds', 30),
+      // Loom velocities in m/s. The PPS asset now stores speed natively, so the
+      // value is used as typed with no conversion. Blank -> 0 -> keep the asset
+      // value, which is how a control run gets the exact protocol speed.
+      task1FastSpeedMps:          num('task1FastSpeedMps', 0),
+      task1SlowSpeedMps:          num('task1SlowSpeedMps', 0),
+      // Crosshair height is no longer a panel field: the anchor is derived from
+      // the headset, so eye level adapts per participant automatically. Sent as
+      // 0 so the asset value always wins.
+      task1CrosshairHeightM:      0,
       // Narrow/wide offsets removed from the form — light width is derived
       // from shoulderWidthCm. Left at 0 in the record; setup.json values are
       // overwritten from the task asset by the controller anyway.
@@ -154,11 +249,21 @@
 
       // Task 2 parameters
       task2NumberOfBlocks:        int('task2NumberOfBlocks', 3),
-      // IMPORTANT: 0, not the displayed 72. A non-zero value here feeds the
-      // legacy ApplyTask2SessionOverrides path that splits a flat total
-      // across categories, which would fight the settled 9/24/24/9 + 6 grey
-      // per-category design in the protocol asset. 0 = asset decides.
-      task2TrialsPerBlock:        0,
+      // Per-category counts. Requires the per-category branch in
+      // ApplyTask2SessionOverrides (see speed-overrides-csharp.md); the legacy
+      // flat-total split must be removed or it will fight these.
+      task2ClearHitTrialsPerBlock:  int('task2ClearHitTrialsPerBlock', 0),
+      task2NearHitTrialsPerBlock:   int('task2NearHitTrialsPerBlock', 0),
+      task2NearMissTrialsPerBlock:  int('task2NearMissTrialsPerBlock', 0),
+      task2ClearMissTrialsPerBlock: int('task2ClearMissTrialsPerBlock', 0),
+      task2GreyZoneTrialsPerBlock:  int('task2GreyZoneTrialsPerBlock', 0),
+      // Sum, recorded only. The asset derives the real total from the counts.
+      task2TrialsPerBlock:
+        int('task2ClearHitTrialsPerBlock', 0) +
+        int('task2NearHitTrialsPerBlock', 0) +
+        int('task2NearMissTrialsPerBlock', 0) +
+        int('task2ClearMissTrialsPerBlock', 0) +
+        int('task2GreyZoneTrialsPerBlock', 0),
       task2BreakDurationSeconds:  num('task2BreakDurationSeconds', 60),
       // Hit / near-miss / miss offsets removed from the form — categories are
       // shoulder-edge-anchored bands in the protocol asset, scaled by
@@ -166,7 +271,10 @@
       task2HitOffsetCm:           0,
       task2NearMissOffsetCm:      0,
       task2MissOffsetCm:          0,
-      task2BallSpeeds:            ['slow', 'fast'], // protocol constant, recorded only
+      task2BallSpeeds:            ['slow', 'fast'], // label constant, recorded only
+      // Ball velocities in m/s. 0 = keep the asset value.
+      task2FastSpeed:             num('task2FastSpeed', 0),
+      task2SlowSpeed:             num('task2SlowSpeed', 0),
 
       // Free-form
       clinicianNotes: fd.get('clinicianNotes') || '',
@@ -303,6 +411,7 @@
     const rec = $('#recPill');
     if (rec) rec.hidden = !s.isRecording;
 
+    applyDesignCells(s);
     applyTaskKind(s.taskKind);
   }
 

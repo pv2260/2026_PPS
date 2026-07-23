@@ -53,6 +53,12 @@ namespace HitOrMiss.Network
         // The SPA uses this to flip a "REC" pill so the clinician knows
         // when data is actually hitting disk.
         public bool isRecording;
+        // Task 1 design-cell sizes, published so the clinician panel can show the
+        // valid trial-count multiples for the CURRENTLY LOADED asset instead of
+        // assuming the 7-distance / width-factor-off defaults. 0 in Task 2 mode.
+        public int task1VtDesignCells;
+        public int task1VisualOnlyDesignCells;
+        public int task1TactileOnlyDesignCells;
         // Which task this Unity instance is hosting. Lets the clinician SPA
         // hide the irrelevant task's fields/controls without having to infer
         // it from the phase string. Values: "Task1Pps", "Task2HitOrMiss".

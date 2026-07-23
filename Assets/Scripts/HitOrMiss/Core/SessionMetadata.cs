@@ -58,6 +58,13 @@ namespace HitOrMiss
         public int task1VisualOnlyTrialsPerBlock;  // Loom only, no vibration
         public int task1TactileOnlyTrialsPerBlock; // Vibration only, no loom
         public float task1BreakDurationSeconds;
+        // Loom velocities in m/s. PpsTaskAsset stores speed natively, so these
+        // are applied as typed. 0 = use the asset value.
+        public float task1FastSpeedMps;
+        public float task1SlowSpeedMps;
+        // Crosshair height above the body anchor, in meters — the participant's
+        // eye level. 0 = use the asset value.
+        public float task1CrosshairHeightM;
         public float task1NarrowOffsetCm;
         public float task1WideOffsetCm;
         public string[] task1LoomingSpeeds;       // {"slow","medium","fast"} subset
@@ -66,8 +73,16 @@ namespace HitOrMiss
 
         // Task config snapshot — Task 2 (Hit-or-Miss)
         public int task2NumberOfBlocks;
-        public int task2TrialsPerBlock;
+        public int task2TrialsPerBlock;            // Derived: the five category counts
+        public int task2ClearHitTrialsPerBlock;
+        public int task2NearHitTrialsPerBlock;
+        public int task2NearMissTrialsPerBlock;
+        public int task2ClearMissTrialsPerBlock;
+        public int task2GreyZoneTrialsPerBlock;
         public float task2BreakDurationSeconds;
+        // Ball velocities in m/s. 0 = use the asset value.
+        public float task2FastSpeed;
+        public float task2SlowSpeed;
         public float task2HitOffsetCm;
         public float task2NearMissOffsetCm;
         public float task2MissOffsetCm;
@@ -108,6 +123,11 @@ namespace HitOrMiss
                 task1VisualOnlyTrialsPerBlock = 6,
                 task1TactileOnlyTrialsPerBlock = 6,
                 task1BreakDurationSeconds = 30f,
+                // 0 = defer to the task asset. The panel leaves these blank for a
+                // protocol run and only fills them to slow a participant down.
+                task1FastSpeedMps = 0f,
+                task1SlowSpeedMps = 0f,
+                task1CrosshairHeightM = 0f,
                 task1NarrowOffsetCm = 5f,
                 task1WideOffsetCm = 15f,
                 task1LoomingSpeeds = new[] { "slow", "fast" },
@@ -116,7 +136,14 @@ namespace HitOrMiss
 
                 task2NumberOfBlocks = 4,
                 task2TrialsPerBlock = 40,
+                task2ClearHitTrialsPerBlock = 0,
+                task2NearHitTrialsPerBlock = 0,
+                task2NearMissTrialsPerBlock = 0,
+                task2ClearMissTrialsPerBlock = 0,
+                task2GreyZoneTrialsPerBlock = 0,
                 task2BreakDurationSeconds = 30f,
+                task2FastSpeed = 0f,
+                task2SlowSpeed = 0f,
                 task2HitOffsetCm = 0f,
                 task2NearMissOffsetCm = 5f,
                 task2MissOffsetCm = 15f,
@@ -136,7 +163,15 @@ namespace HitOrMiss
             if (asset == null) return;
             task2NumberOfBlocks = asset.BlockCount;
             task2TrialsPerBlock = asset.TrialsPerBlock;
+            task2ClearHitTrialsPerBlock = asset.ClearHitTrialsPerBlock;
+            task2NearHitTrialsPerBlock = asset.NearHitTrialsPerBlock;
+            task2NearMissTrialsPerBlock = asset.NearMissTrialsPerBlock;
+            task2ClearMissTrialsPerBlock = asset.ClearMissTrialsPerBlock;
+            task2GreyZoneTrialsPerBlock = asset.GreyZoneTrialsPerBlock;
             task2BreakDurationSeconds = asset.BreakDurationSeconds;
+            // Record the speeds that actually ran, not the panel request.
+            task2FastSpeed = asset.FastSpeed;
+            task2SlowSpeed = asset.SlowSpeed;
             // Offsets from generator are intrinsically per-category;
             // only the rough boundaries are captured here for analysts.
             task2NearMissOffsetCm = 5f;
@@ -159,6 +194,10 @@ namespace HitOrMiss
             task1VisualOnlyTrialsPerBlock = asset.VisualOnlyTrialsPerBlock;
             task1TactileOnlyTrialsPerBlock = asset.TactileOnlyTrialsPerBlock;
             task1BreakDurationSeconds = asset.RestDurationSeconds;
+            // Record what actually ran. Speed is the asset's native unit now.
+            task1FastSpeedMps = asset.FastSpeedMps;
+            task1SlowSpeedMps = asset.SlowSpeedMps;
+            task1CrosshairHeightM = asset.CrosshairHeight;
             // Narrow = shoulder width itself (0 cm offset from shoulder).
             // Wide   = shoulder width + WideOffsetMeters (cm).
             task1NarrowOffsetCm = 0f;
@@ -226,14 +265,18 @@ namespace HitOrMiss
                 return parts.ToString();
             }
             string B(bool v) => v ? "true" : "false";
+            // Floats MUST be written with the invariant culture. String
+            // interpolation uses the current culture, which on a French or German
+            // Swiss machine emits "1,5" and silently produces invalid JSON.
+            string F(float v) => v.ToString(System.Globalization.CultureInfo.InvariantCulture);
             var sb = new System.Text.StringBuilder();
             sb.AppendLine("{");
             sb.AppendLine("  \"subject\": {");
             sb.AppendLine($"    \"subject_id\": \"{Esc(participantId)}\",");
             sb.AppendLine($"    \"age_years\": {ageYears},");
             sb.AppendLine($"    \"dominant_hand\": \"{dominantHand.ToString().ToLowerInvariant()}\",");
-            sb.AppendLine($"    \"height_cm\": {heightCm},");
-            sb.AppendLine($"    \"shoulder_width_cm\": {shoulderWidthCm},");
+            sb.AppendLine($"    \"height_cm\": {F(heightCm)},");
+            sb.AppendLine($"    \"shoulder_width_cm\": {F(shoulderWidthCm)},");
             sb.AppendLine($"    \"group\": \"{Esc(subjectGroup)}\",");
             sb.AppendLine($"    \"has_DBS\": {B(hasDbs)}");
             sb.AppendLine("  },");
@@ -262,9 +305,12 @@ namespace HitOrMiss
                 sb.AppendLine($"    \"vt_trials_per_block\": {task1VtTrialsPerBlock},");
                 sb.AppendLine($"    \"visual_only_trials_per_block\": {task1VisualOnlyTrialsPerBlock},");
                 sb.AppendLine($"    \"tactile_only_trials_per_block\": {task1TactileOnlyTrialsPerBlock},");
-                sb.AppendLine($"    \"break_duration_seconds\": {task1BreakDurationSeconds},");
-                sb.AppendLine($"    \"narrow_offset_cm\": {task1NarrowOffsetCm},");
-                sb.AppendLine($"    \"wide_offset_cm\": {task1WideOffsetCm},");
+                sb.AppendLine($"    \"break_duration_seconds\": {F(task1BreakDurationSeconds)},");
+                sb.AppendLine($"    \"loom_fast_speed_mps\": {F(task1FastSpeedMps)},");
+                sb.AppendLine($"    \"loom_slow_speed_mps\": {F(task1SlowSpeedMps)},");
+                sb.AppendLine($"    \"crosshair_height_m\": {F(task1CrosshairHeightM)},");
+                sb.AppendLine($"    \"narrow_offset_cm\": {F(task1NarrowOffsetCm)},");
+                sb.AppendLine($"    \"wide_offset_cm\": {F(task1WideOffsetCm)},");
                 sb.AppendLine($"    \"looming_speeds\": {ArrJson(task1LoomingSpeeds)},");
                 sb.AppendLine($"    \"practice_vt_only_trials\": {task1PracticeVtOnlyTrials},");
                 sb.AppendLine($"    \"practice_vt_visual_trials\": {task1PracticeVtVisualTrials}");
@@ -275,10 +321,17 @@ namespace HitOrMiss
                 sb.AppendLine("  \"task2_parameters\": {");
                 sb.AppendLine($"    \"number_of_blocks\": {task2NumberOfBlocks},");
                 sb.AppendLine($"    \"trials_per_block\": {task2TrialsPerBlock},");
-                sb.AppendLine($"    \"break_duration_seconds\": {task2BreakDurationSeconds},");
-                sb.AppendLine($"    \"hit_offset_cm\": {task2HitOffsetCm},");
-                sb.AppendLine($"    \"near_miss_offset_cm\": {task2NearMissOffsetCm},");
-                sb.AppendLine($"    \"miss_offset_cm\": {task2MissOffsetCm},");
+                sb.AppendLine($"    \"clear_hit_trials_per_block\": {task2ClearHitTrialsPerBlock},");
+                sb.AppendLine($"    \"near_hit_trials_per_block\": {task2NearHitTrialsPerBlock},");
+                sb.AppendLine($"    \"near_miss_trials_per_block\": {task2NearMissTrialsPerBlock},");
+                sb.AppendLine($"    \"clear_miss_trials_per_block\": {task2ClearMissTrialsPerBlock},");
+                sb.AppendLine($"    \"grey_zone_trials_per_block\": {task2GreyZoneTrialsPerBlock},");
+                sb.AppendLine($"    \"break_duration_seconds\": {F(task2BreakDurationSeconds)},");
+                sb.AppendLine($"    \"ball_fast_speed_mps\": {F(task2FastSpeed)},");
+                sb.AppendLine($"    \"ball_slow_speed_mps\": {F(task2SlowSpeed)},");
+                sb.AppendLine($"    \"hit_offset_cm\": {F(task2HitOffsetCm)},");
+                sb.AppendLine($"    \"near_miss_offset_cm\": {F(task2NearMissOffsetCm)},");
+                sb.AppendLine($"    \"miss_offset_cm\": {F(task2MissOffsetCm)},");
                 sb.AppendLine($"    \"ball_speeds\": {ArrJson(task2BallSpeeds)}");
                 sb.AppendLine("  },");
             }

@@ -3,23 +3,43 @@ using UnityEngine;
 namespace HitOrMiss.Pps
 {
     /// <summary>
-    /// Positions a pre-placed crosshair according to the PpsTaskAsset, and
-    /// exposes simple Show/Hide methods so the panel sequence can control
-    /// when the fixation cross is visible.
+    /// Positions the fixation crosshair from the PpsTaskAsset, and exposes
+    /// Show/Hide so the panel sequence controls when it is visible.
+    ///
+    /// IMPORTANT: the crosshair must be parented to the SAME anchor as the
+    /// looming lights (ChestAnchor). localPosition is relative to the parent, so
+    /// parenting it to a rig-level object instead leaves it fixed in the room:
+    /// wrong height for every participant, and it neither moves nor turns with
+    /// them. This component warns if that wiring looks wrong.
+    ///
+    /// With the anchor at shoulder height, CrosshairHeight is the eye-to-shoulder
+    /// drop — i.e. it puts the cross back at eye level.
     /// </summary>
     public class CrosshairController : MonoBehaviour
     {
         [Header("References")]
         [SerializeField] PpsTaskAsset m_Asset;
 
-        [Tooltip("The crosshair GameObject already placed in the scene " +
-                 "(e.g. ARObjects_Task1 → CrosshairPrefab).")]
+        [Tooltip("The crosshair GameObject. It MUST be a child of the body anchor " +
+                 "(ChestAnchor), not of a rig-level object, or it will not follow the participant.")]
         [SerializeField] GameObject m_Crosshair;
+
+        [Tooltip("The body anchor the crosshair should hang from. Used only to verify the " +
+                 "parenting is correct; leave empty to skip the check.")]
+        [SerializeField] Transform m_ExpectedAnchor;
+
+        [Header("Visibility")]
+        [Tooltip("Hide the crosshair on Awake and let the panel sequence show it. " +
+                 "The previous version called Show() here despite intending to hide.")]
+        [SerializeField] bool m_StartHidden = true;
 
         void Awake()
         {
+            VerifyParenting();
             ApplyPosition();
-            Show(); // start hidden; PositioningPanel turns it on
+
+            if (m_StartHidden) Hide();
+            else Show();
         }
 
         public void Show()
@@ -35,23 +55,44 @@ namespace HitOrMiss.Pps
                 m_Crosshair.SetActive(false);
         }
 
+        void VerifyParenting()
+        {
+            if (m_Crosshair == null || m_ExpectedAnchor == null) return;
+
+            Transform parent = m_Crosshair.transform.parent;
+            bool underAnchor = parent != null && parent.IsChildOf(m_ExpectedAnchor);
+
+            if (!underAnchor)
+            {
+                Debug.LogError(
+                    "[Crosshair] WRONG PARENT: '" + m_Crosshair.name + "' is under '" +
+                    (parent != null ? parent.name : "nothing") +
+                    "' instead of '" + m_ExpectedAnchor.name + "'.\n" +
+                    "Its height, position, and facing will not follow the participant. " +
+                    "Reparent it under the anchor and zero its local transform.",
+                    this
+                );
+            }
+        }
+
         void ApplyPosition()
         {
             if (m_Asset == null || m_Crosshair == null) return;
-            Debug.Log($"[Crosshair] Placing at local ({0}, {m_Asset.CrosshairHeight}, {m_Asset.CrosshairDistance})");
 
-            // Position relative to whatever the crosshair's parent is
-            // (ARObjects_Task1, in your case). Use local-space so it tracks
-            // the parent if you ever move the rig.
-            m_Crosshair.transform.localPosition = new Vector3(
-                0f,
-                m_Asset.CrosshairHeight,
-                m_Asset.CrosshairDistance
-            );
+            Vector3 local = new Vector3(0f, m_Asset.CrosshairHeight, m_Asset.CrosshairDistance);
+
+            m_Crosshair.transform.localPosition = local;
             m_Crosshair.transform.localRotation = Quaternion.identity;
+
+            Debug.Log(
+                "[Crosshair] Placed at local " + local.ToString("F3") +
+                " under '" + (m_Crosshair.transform.parent != null
+                    ? m_Crosshair.transform.parent.name : "no parent") +
+                "'. World Y = " + m_Crosshair.transform.position.y.ToString("F3") + " m.",
+                this
+            );
         }
 
-        // Re-apply in editor when the asset changes
         void OnValidate()
         {
             if (Application.isPlaying) return;

@@ -56,10 +56,17 @@ namespace HitOrMiss.Pps
         [SerializeField] PpsWidth m_DefaultWidth = PpsWidth.Narrow;
 
         [Header("Loom timing")]
-        [Tooltip("Seconds for the SCORED loom only. The warm-up is additional and is derived from " +
-                 "WarmupDistanceMeters at the same velocity, so it is NOT included here. ")]
-        [SerializeField] float m_FastDurationSeconds = 1.5f;
-        [SerializeField] float m_SlowDurationSeconds = 4.0f;
+        [Tooltip("Velocity of the SCORED loom in m/s. This is the asset's NATIVE unit: trial " +
+                 "duration is derived from it and the scored travel (LoomStartDistance - " +
+                 "LoomEndDistance).\n\n" +
+                 "Speed is the primary construct because it is what the design manipulates. " +
+                 "Storing it directly means changing the distances rescales the timing while " +
+                 "holding approach speed constant, instead of silently changing the speed.\n\n" +
+                 "The warm-up is additional and runs at this same velocity, so it is NOT " +
+                 "included here.\n\n" +
+                 "Defaults reproduce the original 1.5s / 4.0s over the default 2.00m travel.")]
+        [SerializeField] float m_FastSpeedMps = 1.3333333f;
+        [SerializeField] float m_SlowSpeedMps = 0.5f;
 
         [Header("Motion curve (shared by visual loom and tactile-only timing)")]
         [Tooltip("Normalized loom progress t in [0,1] -> curved progress.\n\n" +
@@ -104,10 +111,16 @@ namespace HitOrMiss.Pps
         [Header("Spatial layout (all values in METERS, from the body anchor)")]
 
         [Tooltip("Distance forward from the body anchor to the fixation crosshair (meters).")]
-        [SerializeField, Min(0.01f)] float m_CrosshairDistance = 6.0f;
+        [SerializeField, Min(0.01f)] float m_CrosshairDistance = 5.0f;
 
-        [Tooltip("Vertical offset of the crosshair above the body anchor (meters). Typically eye level.")]
-        [SerializeField, Min(0f)] float m_CrosshairHeight = 0.9f;
+        [Tooltip("Height of the fixation crosshair ABOVE THE BODY ANCHOR, in meters.\n\n" +
+                 "The anchor sits at SHOULDER height (ChestAnchorCalibrator places it one " +
+                 "eye-to-shoulder drop below the headset), so this value should equal that " +
+                 "drop to put the cross at EYE level. Default 0.25 matches the calibrator's " +
+                 "default.\n\n" +
+                 "The crosshair GameObject must be parented to the anchor, or this is measured " +
+                 "from the wrong origin and the cross will not follow the participant.")]
+        [SerializeField, Min(0f)] float m_CrosshairHeight = 0f;
 
         [Tooltip("Fallback shoulder width in meters. Used as the narrow LED separation when no " +
                  "participant-specific value is provided.")]
@@ -117,8 +130,13 @@ namespace HitOrMiss.Pps
                  "when UseWidthFactor is on, or when DefaultWidth is Wide.")]
         [SerializeField, Min(0f)] float m_WideOffsetMeters = 0.30f;
 
-        [Tooltip("Vertical offset of the side LEDs relative to the body anchor.")]
-        [SerializeField] float m_LedHeight = 0.9f;
+        [Tooltip("Height of the looming LEDs ABOVE THE BODY ANCHOR, in meters.\n\n" +
+                 "The anchor sits at SHOULDER height, so 0 puts the lights exactly at shoulder " +
+                 "level — which is what the protocol wants. Use a non-zero value only to " +
+                 "deliberately raise or lower them relative to the shoulders.\n\n" +
+                 "If the lights appear at floor height, the anchor did not calibrate: check the " +
+                 "Console for the ANCHOR CALIBRATION COMPLETE block.")]
+        [SerializeField] float m_LedHeight = 0.25f;
 
         [Header("Distance stages")]
 
@@ -245,8 +263,44 @@ namespace HitOrMiss.Pps
         public int VisualOnlyTrialsPerBlock => m_VisualOnlyTrialsPerBlock;
         public int TactileOnlyTrialsPerBlock => m_TactileOnlyTrialsPerBlock;
 
-        public float FastDurationSeconds => m_FastDurationSeconds;
-        public float SlowDurationSeconds => m_SlowDurationSeconds;
+        // ------------------------------------------------------------------
+        // Design cells
+        //
+        // A block must contain a whole number of repetitions of every cell, or
+        // PpsTrialGenerator throws. These are published so the clinician panel
+        // can show the valid multiples for THIS asset instead of assuming the
+        // 7-distance / width-factor-off defaults.
+        // ------------------------------------------------------------------
+
+        /// <summary>Speed levels in the design. Fixed at fast + slow.</summary>
+        public const int SpeedLevels = 2;
+
+        /// <summary>VT cells: distances x speeds x widths.</summary>
+        public int VtDesignCells => Mathf.Max(1, m_DistanceStageCount) * SpeedLevels * ActiveWidths.Length;
+
+        /// <summary>Visual-only cells: speeds x widths (no distance factor).</summary>
+        public int VisualOnlyDesignCells => SpeedLevels * ActiveWidths.Length;
+
+        /// <summary>Tactile-only cells: distances x speeds. T never crosses width.</summary>
+        public int TactileOnlyDesignCells => Mathf.Max(1, m_DistanceStageCount) * SpeedLevels;
+
+        /// <summary>Smallest fully balanced block: one repetition of every cell.</summary>
+        public int MinimumBalancedTrialsPerBlock =>
+            VtDesignCells + VisualOnlyDesignCells + TactileOnlyDesignCells;
+
+        public float FastSpeedMps => m_FastSpeedMps;
+        public float SlowSpeedMps => m_SlowSpeedMps;
+
+        /// <summary>
+        /// Scored loom travel in meters — the span the D7..D1 stages cover.
+        /// Every duration in this asset is derived from this and a speed.
+        /// </summary>
+        public float ScoredTravelMeters => Mathf.Max(0f, m_LoomStartDistance - m_LoomEndDistance);
+
+        // Durations are DERIVED from speed now. These remain as properties so
+        // existing callers (trial generator, logger, controller) are unchanged.
+        public float FastDurationSeconds => DurationFor(PpsSpeed.Fast);
+        public float SlowDurationSeconds => DurationFor(PpsSpeed.Slow);
 
         public float ItiMinSeconds => m_ItiMinSeconds;
         public float ItiMaxSeconds => Mathf.Max(m_ItiMaxSeconds, m_ItiMinSeconds);
@@ -306,13 +360,11 @@ namespace HitOrMiss.Pps
         /// </summary>
         public void ApplyTask1SessionOverrides(SessionMetadata md)
         {
-            const int speeds = 2; // fast + slow, fixed by the protocol
-            int widths    = ActiveWidths.Length;
-            int distances = Mathf.Max(1, m_DistanceStageCount);
-
-            int vtCells = distances * speeds * widths;
-            int vCells  = speeds * widths;
-            int tCells  = distances * speeds;
+            // Cell sizes come from the published properties so the panel, the
+            // generator, and this check can never disagree.
+            int vtCells = VtDesignCells;
+            int vCells  = VisualOnlyDesignCells;
+            int tCells  = TactileOnlyDesignCells;
 
             if (md.task1NumberOfBlocks > 0)
                 m_BlockCount = md.task1NumberOfBlocks;
@@ -327,11 +379,27 @@ namespace HitOrMiss.Pps
             if (md.task1BreakDurationSeconds > 0f)
                 m_RestDurationSeconds = md.task1BreakDurationSeconds;
 
+            // Loom speeds, in the asset's own native unit — no conversion, so the
+            // panel value is stored exactly as typed. 0 = keep the asset value.
+            if (md.task1FastSpeedMps > 0f) m_FastSpeedMps = md.task1FastSpeedMps;
+            if (md.task1SlowSpeedMps > 0f) m_SlowSpeedMps = md.task1SlowSpeedMps;
+
+            // Crosshair height above the body anchor — the participant's eye level,
+            // which varies by subject. 0 = keep the asset value.
+            // NOTE: this moves the fixation target only. LedHeight is a separate
+            // field (also 0.9 by default); if the side LEDs should track eye level
+            // too, set m_LedHeight here as well.
+            if (md.task1CrosshairHeightM > 0f)
+                m_CrosshairHeight = md.task1CrosshairHeightM;
+
             Debug.Log(
                 $"[PpsTaskAsset] Runtime config: blocks={m_BlockCount}, " +
                 $"VT={m_VtTrialsPerBlock}, V={m_VisualOnlyTrialsPerBlock}, " +
                 $"T={m_TactileOnlyTrialsPerBlock}, total={m_TrialsPerBlock}, " +
-                $"rest={m_RestDurationSeconds}s");
+                $"rest={m_RestDurationSeconds}s, " +
+                $"loomFast={m_FastSpeedMps:F3}m/s ({FastDurationSeconds:F3}s), " +
+                $"loomSlow={m_SlowSpeedMps:F3}m/s ({SlowDurationSeconds:F3}s), " +
+                $"crosshairHeight={m_CrosshairHeight:F3}m");
         }
 
         static void ApplyCount(ref int field, int requested, int cells, string label)
@@ -378,9 +446,10 @@ namespace HitOrMiss.Pps
         {
             if (!WarmupActive) return 0f;
 
-            float scoredTravel = m_LoomStartDistance - m_LoomEndDistance;
-            float velocity     = scoredTravel / Mathf.Max(0.0001f, DurationFor(speed));
-            float extra        = m_WarmupDistanceMeters - m_LoomStartDistance;
+            // Velocity is stored directly now, so the glide matches the scored loom
+            // exactly instead of being reconstructed from a duration.
+            float velocity = SpeedFor(speed);
+            float extra    = m_WarmupDistanceMeters - m_LoomStartDistance;
 
             return velocity > 0f ? extra / velocity : 0f;
         }
@@ -473,9 +542,18 @@ namespace HitOrMiss.Pps
         public float DistanceD2 => DistanceForStage(DistanceStage.D2);
         public float DistanceD1 => DistanceForStage(DistanceStage.D1);
 
+        /// <summary>Loom velocity in m/s for the given speed condition. Native value.</summary>
+        public float SpeedFor(PpsSpeed speed)
+        {
+            return speed == PpsSpeed.Fast ? m_FastSpeedMps : m_SlowSpeedMps;
+        }
+
+        /// <summary>
+        /// Seconds for the SCORED loom at the given speed. Derived: travel / velocity.
+        /// </summary>
         public float DurationFor(PpsSpeed speed)
         {
-            return speed == PpsSpeed.Fast ? m_FastDurationSeconds : m_SlowDurationSeconds;
+            return ScoredTravelMeters / Mathf.Max(0.0001f, SpeedFor(speed));
         }
 
         public float SeparationFor(PpsWidth width)
@@ -612,8 +690,8 @@ namespace HitOrMiss.Pps
                 m_TrialsPerBlock = 1;
             }
 
-            if (m_FastDurationSeconds <= 0f) m_FastDurationSeconds = 0.1f;
-            if (m_SlowDurationSeconds <= 0f) m_SlowDurationSeconds = 0.1f;
+            if (m_FastSpeedMps <= 0f) m_FastSpeedMps = 0.1f;
+            if (m_SlowSpeedMps <= 0f) m_SlowSpeedMps = 0.1f;
 
             if (m_LoomStartDistance <= 0f) m_LoomStartDistance = 0.01f;
             if (m_LoomEndDistance <= 0f) m_LoomEndDistance = 0.01f;

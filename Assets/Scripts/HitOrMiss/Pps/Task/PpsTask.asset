@@ -14,14 +14,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::HitOrMiss.Pps.PpsTaskAsset
   m_TaskName: PPS Looming Task
   m_BlockCount: 3
-  m_TrialsPerBlock: 196
+  m_TrialsPerBlock: 154
   m_VtTrialsPerBlock: 70
-  m_VisualOnlyTrialsPerBlock: 70
+  m_VisualOnlyTrialsPerBlock: 28
   m_TactileOnlyTrialsPerBlock: 56
   m_UseWidthFactor: 0
   m_DefaultWidth: 1
-  m_FastDurationSeconds: 1.5
-  m_SlowDurationSeconds: 4
+  m_FastSpeedMps: 1.3333333
+  m_SlowSpeedMps: 0.5
   m_MotionCurve:
     serializedVersion: 2
     m_Curve:
@@ -52,15 +52,16 @@ MonoBehaviour:
   m_AdvanceGateDelaySeconds: 0.3
   m_AdvanceGateTimeoutSeconds: 15
   m_GateEveryTrial: 0
-  m_CrosshairDistance: 6
-  m_CrosshairHeight: 1.4
+  m_CrosshairDistance: 5
+  m_CrosshairHeight: 0
   m_DefaultShoulderWidthMeters: 0.4
   m_WideOffsetMeters: 0.3
-  m_LedHeight: 0
-  m_LoomStartDistance: 3.5
-  m_LoomEndDistance: 0.15
+  m_LedHeight: 0.25
+  m_LoomStartDistance: 2.25
+  m_LoomEndDistance: 0.25
   m_DistanceStageCount: 7
-  m_WarmupDistanceMeters: 3.75
+  m_WarmupDistanceMeters: 3
+  m_AttentionCheckEveryNTrials: 20
   m_RestDurationSeconds: 30
   m_InstructionsKey: pps.instructions
   m_PracticeIntroKey: pps.practice_intro
