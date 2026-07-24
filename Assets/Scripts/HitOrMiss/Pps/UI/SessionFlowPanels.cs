@@ -49,6 +49,10 @@ namespace HitOrMiss.Pps
         private int m_TokenTotalBlocks;
         private float m_TokenBreakSeconds;
 
+        // Within-block trial progress, shown on the attention check panel.
+        private int m_TokenTrialsDone;
+        private int m_TokenTrialsInBlock;
+
         public void SetTokens(int blocksCount, int currentBlock, int totalBlocks, float breakSeconds)
         {
             m_TokenBlocksCount  = blocksCount;
@@ -77,7 +81,9 @@ namespace HitOrMiss.Pps
                     .Replace("{blocksCount}",  m_TokenBlocksCount.ToString())
                     .Replace("{currentBlock}", m_TokenCurrentBlock.ToString())
                     .Replace("{totalBlocks}",  m_TokenTotalBlocks.ToString())
-                    .Replace("{breakTime}",    breakTimeStr);
+                    .Replace("{breakTime}",    breakTimeStr)
+                    .Replace("{trialInBlock}",  m_TokenTrialsDone.ToString())
+                    .Replace("{trialsInBlock}", m_TokenTrialsInBlock.ToString());
             }
         }
 
@@ -299,7 +305,26 @@ namespace HitOrMiss.Pps
 
         public IEnumerator ShowAttentionCheckAndWait()
         {
-            Debug.Log("[UI FLOW] Showing attention check.");
+            yield return ShowAttentionCheckAndWait(m_TokenTrialsDone, m_TokenTrialsInBlock);
+        }
+
+        /// <summary>
+        /// Attention check with within-block progress. The counts feed the
+        /// {trialInBlock} and {trialsInBlock} tokens, so the panel copy is
+        /// authored in the Inspector like any other localized string, e.g.
+        /// "All good? You are on {trialInBlock}/{trialsInBlock}".
+        ///
+        /// ShowAndWait calls RefreshLanguage after activating the panel, which
+        /// re-resolves the tokens, so the numbers are current every time the
+        /// check fires.
+        /// </summary>
+        public IEnumerator ShowAttentionCheckAndWait(int trialsDoneInBlock, int totalTrialsInBlock)
+        {
+            m_TokenTrialsDone    = trialsDoneInBlock;
+            m_TokenTrialsInBlock = totalTrialsInBlock;
+
+            Debug.Log("[UI FLOW] Showing attention check (" +
+                      trialsDoneInBlock + "/" + totalTrialsInBlock + ").");
 
             ClearBackRequest();
 

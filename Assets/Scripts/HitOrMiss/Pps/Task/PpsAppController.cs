@@ -369,7 +369,10 @@ namespace HitOrMiss.Pps
             // trials (N from the asset, 0 = off); the panel itself lives in
             // SessionFlowPanels (m_AttentionCheckPanel).
             if (m_Ui != null)
-                m_TaskManager.AttentionCheckRoutine = () => m_Ui.ShowAttentionCheckAndWait();
+                m_TaskManager.AttentionCheckRoutine = () =>
+                    m_Ui.ShowAttentionCheckAndWait(
+                        m_TaskManager.TrialsCompletedInBlock,
+                        m_TaskManager.TotalTrialsInBlock);
 
             // Resolve controller input
             if (m_ControllerInputBehaviour != null)

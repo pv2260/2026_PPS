@@ -254,6 +254,8 @@ namespace HitOrMiss
                     judgements  = m_Task2Judgements.ToArray(),
                 }, true);
 
+            json = StripInactiveTaskMetadata(json, m_TaskKind);
+
             File.WriteAllText(m_FinalJsonPath, json, Encoding.UTF8);
 
             m_SessionOpen = false;
@@ -324,6 +326,107 @@ namespace HitOrMiss
                 m_Metadata.sessionId = m_SessionId;
             if (string.IsNullOrEmpty(m_Metadata.sessionDate))
                 m_Metadata.sessionDate = DateTime.Now.ToString("yyyy-MM-dd");
+        }
+
+        /// <summary>
+        /// Removes the inactive task's metadata keys from a serialized session
+        /// log.
+        ///
+        /// JsonUtility emits every field of SessionMetadata regardless of value,
+        /// so a Task 1 session file would otherwise carry a full block of Task 2
+        /// settings that were never used, written as zeros. In the archive those
+        /// zeros are indistinguishable from values that were deliberately set,
+        /// so the keys are dropped instead.
+        ///
+        /// Operates on the "metadata" object only. Trial rows are untouched.
+        /// </summary>
+        static string StripInactiveTaskMetadata(string json, TaskKind taskKind)
+        {
+            string prefix = taskKind == TaskKind.Task1Pps ? "\"task2" : "\"task1";
+
+            string[] lines = json.Split('\n');
+
+            int metaIndex = -1;
+            for (int i = 0; i < lines.Length; i++)
+            {
+                string t = lines[i].Trim();
+                if (t.StartsWith("\"metadata\"") && t.EndsWith("{"))
+                {
+                    metaIndex = i;
+                    break;
+                }
+            }
+
+            // No metadata block found: leave the document exactly as it was.
+            if (metaIndex < 0) return json;
+
+            int metaIndent  = IndentWidth(lines[metaIndex]);
+            int childIndent = metaIndent + 4;
+
+            var kept = new List<string>();
+            for (int i = 0; i <= metaIndex; i++)
+                kept.Add(lines[i]);
+
+            int cursor = metaIndex + 1;
+
+            while (cursor < lines.Length)
+            {
+                string line    = lines[cursor];
+                string trimmed = line.Trim();
+                int    indent  = IndentWidth(line);
+
+                // Closing brace of the metadata object: done.
+                if (indent == metaIndent && trimmed.StartsWith("}"))
+                    break;
+
+                if (indent == childIndent && trimmed.StartsWith(prefix))
+                {
+                    // Array or nested object: skip through its closing bracket.
+                    if (trimmed.EndsWith("[") || trimmed.EndsWith("{"))
+                    {
+                        string closer = trimmed.EndsWith("[") ? "]" : "}";
+                        cursor++;
+
+                        while (cursor < lines.Length)
+                        {
+                            if (IndentWidth(lines[cursor]) == childIndent &&
+                                lines[cursor].Trim().StartsWith(closer))
+                                break;
+
+                            cursor++;
+                        }
+                    }
+
+                    cursor++;
+                    continue;
+                }
+
+                kept.Add(line);
+                cursor++;
+            }
+
+            // The removed keys may have been the last entries in the object,
+            // which would leave a dangling comma on the entry before them.
+            if (kept.Count > 0)
+            {
+                int    last    = kept.Count - 1;
+                string trimEnd = kept[last].TrimEnd();
+
+                if (trimEnd.EndsWith(","))
+                    kept[last] = trimEnd.Substring(0, trimEnd.Length - 1);
+            }
+
+            for (int i = cursor; i < lines.Length; i++)
+                kept.Add(lines[i]);
+
+            return string.Join("\n", kept);
+        }
+
+        static int IndentWidth(string line)
+        {
+            int i = 0;
+            while (i < line.Length && line[i] == ' ') i++;
+            return i;
         }
 
         void WriteMetadataJson()

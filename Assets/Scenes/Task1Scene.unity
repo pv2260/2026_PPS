@@ -6189,7 +6189,7 @@ Transform:
   m_GameObject: {fileID: 337559547}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.25, z: 0.5833334}
+  m_LocalPosition: {x: 0, y: -0.1, z: 0.5833334}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -7400,7 +7400,7 @@ Transform:
   m_GameObject: {fileID: 415176896}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.25, z: 1.5833333}
+  m_LocalPosition: {x: 0, y: -0.1, z: 1.5833333}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -12642,7 +12642,7 @@ Transform:
   m_GameObject: {fileID: 712710162}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.25, z: 1.25}
+  m_LocalPosition: {x: 0, y: -0.1, z: 1.25}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -19199,6 +19199,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1086280597}
   - component: {fileID: 1086280596}
+  - component: {fileID: 1086280598}
   m_Layer: 2
   m_Name: DistanceLayout
   m_TagString: Untagged
@@ -19252,6 +19253,35 @@ Transform:
   - {fileID: 1517097855}
   m_Father: {fileID: 1976196461}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1086280598
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1086280595}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ac33923e2572dd14584c523d9ec7daa6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::HitOrMiss.Pps.DistanceMarkerLabels
+  m_Layout: {fileID: 1086280596}
+  m_PlaceAtFloorLevel: 1
+  m_FloorReference: {fileID: 3001774293689589083}
+  m_HeightOffset: 0.01
+  m_RulerLengthMeters: 0
+  m_LineWidth: 0.004
+  m_ShowMeterTicks: 1
+  m_MeterColor: {r: 1, g: 1, b: 1, a: 1}
+  m_MeterTickSize: 0.05
+  m_ShowStageTicks: 1
+  m_StageColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  m_StageTickSize: 0.1
+  m_ShowReferenceDistance: 1
+  m_ReferencePoint: {fileID: 939463899}
+  m_CharacterSize: 0.02
+  m_LabelSideOffset: 0.03
+  m_BillboardToCamera: 1
 --- !u!1 &1097870506
 GameObject:
   m_ObjectHideFlags: 0
@@ -19277,7 +19307,7 @@ Transform:
   m_GameObject: {fileID: 1097870506}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.25, z: 2.25}
+  m_LocalPosition: {x: 0, y: -0.1, z: 2.25}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -20489,7 +20519,7 @@ Transform:
   m_GameObject: {fileID: 1165992207}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.25, z: 0.9166666}
+  m_LocalPosition: {x: 0, y: -0.1, z: 0.9166666}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -26651,7 +26681,7 @@ Transform:
   m_GameObject: {fileID: 1517097854}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.25, z: 0.25}
+  m_LocalPosition: {x: 0, y: -0.1, z: 0.25}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -28889,8 +28919,8 @@ MonoBehaviour:
     english: Back
     french: Retour
   - textTarget: {fileID: 283596564}
-    english: All good?
-    french: Tout va bien?
+    english: All good? You are on {trialInBlock}/{trialsInBlock}
+    french: 'Tout va bien? Vous etes dans le  '
   - textTarget: {fileID: 1364997379}
     english: Yes, Continue!
     french: Oui, on continue!
@@ -34991,7 +35021,7 @@ Transform:
   m_GameObject: {fileID: 2042596683}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.25, z: 1.9166666}
+  m_LocalPosition: {x: 0, y: -0.1, z: 1.9166666}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

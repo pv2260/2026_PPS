@@ -624,7 +624,15 @@ namespace HitOrMiss.Pps
             // alarm, which is exactly what it should be.
             // -----------------------------------------------------------------
             while (m_CaptureResponses && !double.IsNaN(m_VibrationFiredTime))
+            {
+                // Abort checkpoint. Without this the trial holds the response
+                // window open to the end even after End Session is pressed,
+                // which is the bulk of the stop latency the clinician sees.
+                if (m_AbortCurrentRunRequested)
+                    break;
+
                 yield return null;
+            }
 
             m_CaptureResponses = false;
 
