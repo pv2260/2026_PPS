@@ -7,11 +7,17 @@ namespace HitOrMiss.Pps
     /// Builds the per-block trial list from a <see cref="PpsTaskAsset"/>.
     ///
     /// The design is fully crossed and count-driven. Repetitions are DERIVED by
-    /// dividing the per-type trial count by the number of cells, and generation
-    /// THROWS if the division is not exact. That is deliberate: an unbalanced
-    /// design is far more damaging than a failed build, and the old generator
-    /// hard-coded its repetition counts, so changing a trial count in the
-    /// Inspector silently produced either an exception or a lopsided block.
+    /// dividing the per-type trial count by the number of cells. Division no
+    /// longer has to be exact: the remainder is spread over distinct cells so no
+    /// cell is ever more than ONE trial ahead of another, and which cells get the
+    /// surplus ROTATES with the block index so the imbalance cancels across the
+    /// session rather than sitting on the same cells every block.
+    ///
+    /// This replaces the old throw-on-indivisible behaviour. Throwing protected
+    /// against a silently lopsided block, but it also made proportion-driven
+    /// designs (for example a fixed 30 percent catch rate) impossible to express.
+    /// A bounded, rotating imbalance of at most one trial per cell per block is a
+    /// smaller cost than forcing the counts onto a multiple of the cell count.
     ///
     /// CELLS
     ///   VT: distances x speeds x widths
@@ -47,6 +53,10 @@ namespace HitOrMiss.Pps
                 ? new System.Random(asset.RngSeed.Value + blockIndex)
                 : new System.Random();
 
+            // Rotation index for the remainder allocation. Practice blocks pass -1;
+            // clamp so the offset arithmetic stays non-negative.
+            int rotation = UnityEngine.Mathf.Max(0, blockIndex);
+
             // The stages actually sampled, farthest first. With DistanceStageCount = N
             // this is the N nearest labels: 7 -> D7..D1, 6 -> D6..D1.
             DistanceStage[] stages = asset.ActiveStages;
@@ -64,15 +74,18 @@ namespace HitOrMiss.Pps
             // 1. VISUOTACTILE
             // ------------------------------------------------------------
 
-            int vtCells = stages.Length * Speeds.Length * widths.Length;
-            int vtReps  = DeriveReps(asset.VtTrialsPerBlock, vtCells, "VT",
-                                     $"{stages.Length} distances x {Speeds.Length} speeds x {widths.Length} width(s)");
+            var vtCellList = new List<(DistanceStage stage, PpsSpeed speed, PpsWidth width)>();
+            foreach (var stage in stages)
+                foreach (var speed in Speeds)
+                    foreach (var width in widths)
+                        vtCellList.Add((stage, speed, width));
 
-            for (int rep = 0; rep < vtReps; rep++)
-                foreach (var stage in stages)
-                    foreach (var speed in Speeds)
-                        foreach (var width in widths)
-                            trials.Add(PpsTrialDefinition.CreateBoth(blockIndex, speed, width, stage));
+            int[] vtCounts = AllocateCounts(asset.VtTrialsPerBlock, vtCellList.Count, rotation, "VT");
+
+            for (int c = 0; c < vtCellList.Count; c++)
+                for (int rep = 0; rep < vtCounts[c]; rep++)
+                    trials.Add(PpsTrialDefinition.CreateBoth(
+                        blockIndex, vtCellList[c].speed, vtCellList[c].width, vtCellList[c].stage));
 
             // ------------------------------------------------------------
             // 2. TACTILE-ONLY (baseline)
@@ -82,14 +95,17 @@ namespace HitOrMiss.Pps
             // at the same point on the temporal hazard curve as the VT trial it will be
             // subtracted from. Width is NOT crossed: nothing is rendered.
 
-            int tCells = stages.Length * Speeds.Length;
-            int tReps  = DeriveReps(asset.TactileOnlyTrialsPerBlock, tCells, "T",
-                                    $"{stages.Length} distances x {Speeds.Length} speeds (width not crossed)");
+            var tCellList = new List<(DistanceStage stage, PpsSpeed speed)>();
+            foreach (var stage in stages)
+                foreach (var speed in Speeds)
+                    tCellList.Add((stage, speed));
 
-            for (int rep = 0; rep < tReps; rep++)
-                foreach (var stage in stages)
-                    foreach (var speed in Speeds)
-                        trials.Add(PpsTrialDefinition.CreateTactileOnly(blockIndex, speed, tactileWidth, stage));
+            int[] tCounts = AllocateCounts(asset.TactileOnlyTrialsPerBlock, tCellList.Count, rotation, "T");
+
+            for (int c = 0; c < tCellList.Count; c++)
+                for (int rep = 0; rep < tCounts[c]; rep++)
+                    trials.Add(PpsTrialDefinition.CreateTactileOnly(
+                        blockIndex, tCellList[c].speed, tactileWidth, tCellList[c].stage));
 
             // ------------------------------------------------------------
             // 3. VISUAL-ONLY (catch)
@@ -98,18 +114,23 @@ namespace HitOrMiss.Pps
             // press is a false alarm. These are what stop the participant learning that
             // "LEDs approaching" means "press soon" (Kandula et al. 2017).
 
-            int vCells = Speeds.Length * widths.Length;
-            int vReps  = DeriveReps(asset.VisualOnlyTrialsPerBlock, vCells, "V",
-                                    $"{Speeds.Length} speeds x {widths.Length} width(s)");
+            var vCellList = new List<(PpsSpeed speed, PpsWidth width)>();
+            foreach (var speed in Speeds)
+                foreach (var width in widths)
+                    vCellList.Add((speed, width));
 
-            for (int rep = 0; rep < vReps; rep++)
-                foreach (var speed in Speeds)
-                    foreach (var width in widths)
-                        trials.Add(PpsTrialDefinition.CreateVisualOnly(blockIndex, speed, width));
+            int[] vCounts = AllocateCounts(asset.VisualOnlyTrialsPerBlock, vCellList.Count, rotation, "V");
+
+            for (int c = 0; c < vCellList.Count; c++)
+                for (int rep = 0; rep < vCounts[c]; rep++)
+                    trials.Add(PpsTrialDefinition.CreateVisualOnly(
+                        blockIndex, vCellList[c].speed, vCellList[c].width));
 
             // ------------------------------------------------------------
             // 4. SAFETY CHECK
             // ------------------------------------------------------------
+            // Totals are exact by construction now, so this only catches a coding
+            // error in the allocation, never an Inspector value.
 
             int expectedTotal =
                 asset.VtTrialsPerBlock +
@@ -136,9 +157,9 @@ namespace HitOrMiss.Pps
 
             UnityEngine.Debug.Log(
                 $"[PpsTrialGenerator] block {blockIndex + 1}: {trials.Count} trials | " +
-                $"VT {asset.VtTrialsPerBlock} ({vtReps} reps x {vtCells} cells) | " +
-                $"T {asset.TactileOnlyTrialsPerBlock} ({tReps} reps x {tCells} cells) | " +
-                $"V {asset.VisualOnlyTrialsPerBlock} ({vReps} reps x {vCells} cells) | " +
+                $"VT {asset.VtTrialsPerBlock} ({DescribeAllocation(asset.VtTrialsPerBlock, vtCellList.Count)}) | " +
+                $"T {asset.TactileOnlyTrialsPerBlock} ({DescribeAllocation(asset.TactileOnlyTrialsPerBlock, tCellList.Count)}) | " +
+                $"V {asset.VisualOnlyTrialsPerBlock} ({DescribeAllocation(asset.VisualOnlyTrialsPerBlock, vCellList.Count)}) | " +
                 $"width factor {(asset.UseWidthFactor ? "ON" : $"OFF, all {asset.DefaultWidth}")} | " +
                 $"catch rate {100f * asset.VisualOnlyTrialsPerBlock / trials.Count:F1}%"
             );
@@ -152,26 +173,65 @@ namespace HitOrMiss.Pps
         }
 
         /// <summary>
-        /// Repetitions per cell, derived from the total. Throws rather than rounding,
-        /// because a non-integer here means the block would be unbalanced across cells
-        /// and no analysis downstream would notice.
+        /// Trials per cell for one trial type.
+        ///
+        /// Every cell gets floor(total / cells). The remaining trials are handed out
+        /// one each to distinct consecutive cells, starting at an offset that ADVANCES
+        /// with the block index. Two consequences that matter:
+        ///
+        ///   1. Within a block the largest gap between any two cells is one trial.
+        ///   2. Across blocks the surplus walks around the cell list, so a cell that
+        ///      was over-sampled in block 1 is under-sampled later. With V = 29 over
+        ///      2 cells the session comes out exactly even at 4 blocks; with VT = 53
+        ///      over 14 cells every cell ends the session within one trial of every
+        ///      other.
+        ///
+        /// Cell ORDER here is the canonical nested-loop order, not shuffled. The trial
+        /// list itself is shuffled afterwards, so presentation order is unaffected.
         /// </summary>
-        static int DeriveReps(int totalTrials, int cellCount, string label, string cellDescription)
+        static int[] AllocateCounts(int totalTrials, int cellCount, int rotation, string label)
         {
             if (cellCount <= 0)
                 throw new InvalidOperationException($"PPS {label}: cell count is {cellCount}.");
 
-            if (totalTrials % cellCount != 0)
+            var counts = new int[cellCount];
+
+            int baseReps  = totalTrials / cellCount;
+            int remainder = totalTrials - baseReps * cellCount;
+
+            for (int i = 0; i < cellCount; i++)
+                counts[i] = baseReps;
+
+            if (remainder > 0)
             {
-                throw new InvalidOperationException(
-                    $"PPS {label} trials per block ({totalTrials}) do not divide evenly by " +
-                    $"{cellDescription} = {cellCount} cells. The design would be unbalanced. " +
-                    $"Set the count to a multiple of {cellCount} " +
-                    $"(nearest: {cellCount * UnityEngine.Mathf.Max(1, UnityEngine.Mathf.RoundToInt(totalTrials / (float)cellCount))})."
+                int offset = (rotation * remainder) % cellCount;
+
+                for (int k = 0; k < remainder; k++)
+                    counts[(offset + k) % cellCount]++;
+            }
+
+            if (baseReps == 0 && totalTrials > 0)
+            {
+                UnityEngine.Debug.LogWarning(
+                    $"[PpsTrialGenerator] {label}: {totalTrials} trials for {cellCount} cells means " +
+                    $"{cellCount - totalTrials} cell(s) are EMPTY this block. Each cell is sampled " +
+                    $"roughly once every {(float)cellCount / UnityEngine.Mathf.Max(1, totalTrials):F1} blocks."
                 );
             }
 
-            return totalTrials / cellCount;
+            return counts;
+        }
+
+        static string DescribeAllocation(int totalTrials, int cellCount)
+        {
+            if (cellCount <= 0) return "0 cells";
+
+            int baseReps  = totalTrials / cellCount;
+            int remainder = totalTrials - baseReps * cellCount;
+
+            return remainder == 0
+                ? $"{baseReps} reps x {cellCount} cells"
+                : $"{cellCount} cells: {cellCount - remainder} x {baseReps}, {remainder} x {baseReps + 1}";
         }
 
         /// <summary>

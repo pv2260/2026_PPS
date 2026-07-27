@@ -70,8 +70,22 @@ namespace HitOrMiss
 
         StreamWriter m_CsvWriter;
         string m_LogPath;
+
+        // Task slug the marker log is currently bound to. Empty until a task
+        // claims the log via BindTaskScope. See that method for why this exists.
+        string m_TaskSlug = "";
+
         ArduinoTrigger m_Arduino;
         bool m_SessionOpen;
+
+        /// <summary>Absolute path of the marker CSV currently being written.</summary>
+        public string MarkerLogPath => m_LogPath;
+
+        /// <summary>Task slug the marker log is bound to, or empty if unbound.</summary>
+        public string TaskSlug => m_TaskSlug;
+
+        const string k_MarkerHeader =
+            "Time,EventCode,TrialId,Category,Expected,Received,Extra,TriggerValue";
 
         public struct EegMarker
         {
@@ -124,10 +138,15 @@ namespace HitOrMiss
             );
 
             Directory.CreateDirectory(SessionDirectory);
+
+            // Unbound path. Markers emitted before a task claims the log (identity
+            // setup, trigger tests, panel actions) land here; BindTaskScope moves
+            // them into the task file as soon as a task starts.
+            m_TaskSlug = "";
             m_LogPath = Path.Combine(SessionDirectory, $"{m_ParticipantId}_{m_SessionId}_markers.csv");
 
             m_CsvWriter = new StreamWriter(m_LogPath, append: false);
-            m_CsvWriter.WriteLine("Time,EventCode,TrialId,Category,Expected,Received,Extra,TriggerValue");
+            m_CsvWriter.WriteLine(k_MarkerHeader);
             m_CsvWriter.Flush();
 
             m_SessionOpen = true;
@@ -149,6 +168,102 @@ namespace HitOrMiss
         public void BeginSession(string ignoredSessionId)
         {
             BeginSession();
+        }
+
+        /// <summary>
+        /// Points the marker log at a TASK-SPECIFIC file:
+        /// <c>{participant}_{session}_{taskSlug}_markers.csv</c>.
+        ///
+        /// Called by TaskLogger.BeginSession. Without it both tasks share one
+        /// emitter session and one markers.csv, so running Task 2 after Task 1
+        /// in the same session folder truncated Task 1's marker stream and the
+        /// EEG triggers for the first task were gone.
+        ///
+        /// Behaviour:
+        ///   - First bind in a session: the unbound file is MOVED to the task
+        ///     name, so pre-task markers are preserved rather than orphaned.
+        ///   - Second bind with a different slug: the current file is closed and
+        ///     a separate file is opened for the new task. Nothing is truncated.
+        ///   - Re-bind with the same slug (e.g. a second run of the same task in
+        ///     one session): the existing file is APPENDED to, never overwritten.
+        /// </summary>
+        public void BindTaskScope(string taskSlug)
+        {
+            if (!m_SessionOpen)
+            {
+                Debug.LogWarning("[EegMarkerEmitter] BindTaskScope ignored: no session is open.");
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(taskSlug))
+            {
+                Debug.LogWarning("[EegMarkerEmitter] BindTaskScope ignored: empty task slug.");
+                return;
+            }
+
+            string slug = taskSlug.Trim().Replace(" ", "_");
+
+            if (slug == m_TaskSlug)
+                return; // already writing this task's file
+
+            string previousPath = m_LogPath;
+            bool wasUnbound = string.IsNullOrEmpty(m_TaskSlug);
+
+            string newPath = Path.Combine(
+                SessionDirectory,
+                $"{m_ParticipantId}_{m_SessionId}_{slug}_markers.csv");
+
+            m_CsvWriter?.Flush();
+            m_CsvWriter?.Close();
+            m_CsvWriter = null;
+
+            try
+            {
+                // Carry the pre-task markers across so nothing is lost. Only done on
+                // the FIRST bind: on a task switch the previous file belongs to the
+                // previous task and must be left exactly as it is.
+                if (wasUnbound && File.Exists(previousPath))
+                {
+                    if (!File.Exists(newPath))
+                    {
+                        File.Move(previousPath, newPath);
+                    }
+                    else
+                    {
+                        // Target already exists (same task run twice). Append the
+                        // pre-task rows, skipping the duplicate header line.
+                        string[] carried = File.ReadAllLines(previousPath);
+
+                        using (var merge = new StreamWriter(newPath, append: true))
+                        {
+                            for (int i = 1; i < carried.Length; i++)
+                                merge.WriteLine(carried[i]);
+                        }
+
+                        File.Delete(previousPath);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.LogWarning(
+                    $"[EegMarkerEmitter] Could not carry pre-task markers into '{newPath}': {e.Message}. " +
+                    $"They remain in '{previousPath}'.");
+            }
+
+            bool needsHeader = !File.Exists(newPath) || new FileInfo(newPath).Length == 0;
+
+            m_CsvWriter = new StreamWriter(newPath, append: true);
+
+            if (needsHeader)
+                m_CsvWriter.WriteLine(k_MarkerHeader);
+
+            m_CsvWriter.Flush();
+
+            m_LogPath  = newPath;
+            m_TaskSlug = slug;
+
+            Debug.Log($"[EegMarkerEmitter] Marker log bound to task '{slug}': {m_LogPath}");
         }
 
         public void Emit(

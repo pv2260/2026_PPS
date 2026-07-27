@@ -18,28 +18,28 @@ namespace HitOrMiss.Pps
 
         [Header("Protocol")]
         [Tooltip("Number of experimental blocks")]
-        [SerializeField] int m_BlockCount = 3;
+        [SerializeField] int m_BlockCount = 4;
 
 
         [Tooltip("Total trials per block. Derived: forced to VT + V + T.")]
-        [SerializeField] int m_TrialsPerBlock = 154;
+        [SerializeField] int m_TrialsPerBlock = 96;
 
         [Header("Trial counts per block")]
 
-        [Tooltip("Visuotactile trials per block. Must divide evenly by " +
-                 "(distances x speeds x active widths) or PpsTrialGenerator will throw. " +
-                 "Default 70 = 5 reps x 7 distances x 2 speeds, width factor OFF.")]
-        [SerializeField, Min(0)] int m_VtTrialsPerBlock = 70;
+        [Tooltip("Visuotactile trials per block. Cells = distances x speeds x widths. " +
+                 "The count does NOT have to be a multiple of the cell count: any remainder " +
+                 "is spread one-per-cell and the surplus rotates by block, so the per-cell " +
+                 "totals stay within one trial of each other over the session.")]
+        [SerializeField, Min(0)] int m_VtTrialsPerBlock = 53;
 
-        [Tooltip("Visual-only (catch) trials per block. Must divide evenly by " +
-                 "(speeds x active widths). Default 28 = 14 reps x 2 speeds, width factor OFF.")]
-        [SerializeField, Min(0)] int m_VisualOnlyTrialsPerBlock = 28;
+        [Tooltip("Visual-only (catch) trials per block. Cells = speeds x widths (no distance " +
+                 "factor, because no vibration fires). Remainders are allowed.")]
+        [SerializeField, Min(0)] int m_VisualOnlyTrialsPerBlock = 29;
 
-        [Tooltip("Tactile-only (baseline) trials per block. Must divide evenly by " +
-                 "(distances x speeds). T trials NEVER cross width: nothing is rendered, so " +
-                 "width is meaningless and crossing it would only halve the trials per timing " +
-                 "cell. Default 56 = 4 reps x 7 distances x 2 speeds.")]
-        [SerializeField, Min(0)] int m_TactileOnlyTrialsPerBlock = 56;
+        [Tooltip("Tactile-only (baseline) trials per block. Cells = distances x speeds; width " +
+                 "is not crossed because nothing is rendered. Remainders are allowed, but a " +
+                 "count below the cell count leaves whole cells empty in a block.")]
+        [SerializeField, Min(0)] int m_TactileOnlyTrialsPerBlock = 14;
 
         [Header("Width factor")]
         [Tooltip("Width (narrow vs wide LED separation) changes the lateral extent of the looming " +
@@ -56,15 +56,7 @@ namespace HitOrMiss.Pps
         [SerializeField] PpsWidth m_DefaultWidth = PpsWidth.Narrow;
 
         [Header("Loom timing")]
-        [Tooltip("Velocity of the SCORED loom in m/s. This is the asset's NATIVE unit: trial " +
-                 "duration is derived from it and the scored travel (LoomStartDistance - " +
-                 "LoomEndDistance).\n\n" +
-                 "Speed is the primary construct because it is what the design manipulates. " +
-                 "Storing it directly means changing the distances rescales the timing while " +
-                 "holding approach speed constant, instead of silently changing the speed.\n\n" +
-                 "The warm-up is additional and runs at this same velocity, so it is NOT " +
-                 "included here.\n\n" +
-                 "Defaults reproduce the original 1.5s / 0.5  over the default 2.00m travel.")]
+        [Tooltip("Velocity of the SCORED loom in m/s.")]
         [SerializeField] float m_FastSpeedMps = 1.5f;
         [SerializeField] float m_SlowSpeedMps = 0.5f;
 
@@ -111,7 +103,7 @@ namespace HitOrMiss.Pps
         [Header("Spatial layout (all values in METERS, from the body anchor)")]
 
         [Tooltip("Distance forward from the body anchor to the fixation crosshair (meters).")]
-        [SerializeField, Min(0.01f)] float m_CrosshairDistance = 5.0f;
+        [SerializeField, Min(0.01f)] float m_CrosshairDistance = 4.0f;
 
         [Tooltip("Height of the fixation crosshair ABOVE THE BODY ANCHOR, in meters.\n\n" +
                  "The anchor sits at SHOULDER height (ChestAnchorCalibrator places it one " +
@@ -136,7 +128,7 @@ namespace HitOrMiss.Pps
                  "deliberately raise or lower them relative to the shoulders.\n\n" +
                  "If the lights appear at floor height, the anchor did not calibrate: check the " +
                  "Console for the ANCHOR CALIBRATION COMPLETE block.")]
-        [SerializeField] float m_LedHeight = 0.25f;
+        [SerializeField] float m_LedHeight = -0.10f;
 
         [Header("Distance stages")]
 
@@ -351,12 +343,12 @@ namespace HitOrMiss.Pps
         /// Mutates this asset (call only on a session clone) so values from
         /// the clinician panel's task1_parameters drive the run. A field is
         /// applied only when the metadata value is &gt; 0; 0 means "use the
-        /// asset value". Trial counts are additionally validated against the
-        /// design-cell divisibility that PpsTrialGenerator enforces
+        /// asset value". Trial counts are checked against the design cells
         /// (VT: distances x speeds x widths; V: speeds x widths;
-        /// T: distances x speeds) — an indivisible panel value is rejected
-        /// with a console error and the asset value is kept, so a typo on the
-        /// panel can never crash the generator mid-session.
+        /// T: distances x speeds), but only a count BELOW the cell count is
+        /// rejected. A count that simply does not divide evenly is accepted:
+        /// PpsTrialGenerator allocates the remainder one trial per cell and
+        /// rotates which cells receive it with the block index.
         /// </summary>
         public void ApplyTask1SessionOverrides(SessionMetadata md)
         {
@@ -406,13 +398,32 @@ namespace HitOrMiss.Pps
         {
             if (requested <= 0) return; // 0 = use the asset value
 
-            if (cells > 0 && requested % cells != 0)
+            // Non-divisible counts are ACCEPTED now. PpsTrialGenerator spreads the
+            // remainder over distinct cells and rotates which cells get it by block,
+            // so the worst case is one trial of imbalance per cell within a block.
+            // The old behaviour rejected the value outright, which silently ran the
+            // asset default instead of what the clinician typed.
+            //
+            // A count BELOW the cell count is still rejected: that leaves whole cells
+            // with no trials at all in a block, which is a different failure.
+            if (cells > 0 && requested < cells)
             {
                 Debug.LogError(
                     $"[PpsTaskAsset] Panel override REJECTED: {label} trials per block = {requested} " +
-                    $"is not divisible by the {cells} design cells. Keeping the asset value ({field}). " +
-                    $"Valid values are multiples of {cells}.");
+                    $"is fewer than the {cells} design cells, so {cells - requested} cell(s) would be " +
+                    $"empty. Keeping the asset value ({field}). Minimum is {cells}.");
                 return;
+            }
+
+            if (cells > 0 && requested % cells != 0)
+            {
+                int baseReps  = requested / cells;
+                int remainder = requested - baseReps * cells;
+
+                Debug.Log(
+                    $"[PpsTaskAsset] {label} trials per block = {requested} over {cells} cells: " +
+                    $"{cells - remainder} cell(s) x {baseReps}, {remainder} cell(s) x {baseReps + 1}. " +
+                    $"Surplus rotates by block.");
             }
 
             field = requested;
@@ -726,8 +737,11 @@ namespace HitOrMiss.Pps
                     $"and choose 'Set Motion Curve to Linear'.", this);
             }
 
-            // Divisibility. PpsTrialGenerator throws on these; warn here so the Inspector
-            // tells you before you press Play.
+            // Cell allocation. Counts no longer have to divide evenly: PpsTrialGenerator
+            // spreads the remainder over distinct cells (max one trial of imbalance) and
+            // rotates which cells get the surplus with the block index, so the imbalance
+            // cancels across the session. These messages report the split rather than
+            // flagging an error, and only escalate when a cell would be left empty.
             int stages = Mathf.Clamp(m_DistanceStageCount, 2, 7);
             int widths = m_UseWidthFactor ? 2 : 1;
 
@@ -735,23 +749,12 @@ namespace HitOrMiss.Pps
             int tCells  = stages * 2;
             int vCells  = 2 * widths;
 
-            if (m_VtTrialsPerBlock % vtCells != 0)
-                Debug.LogWarning(
-                    $"[PpsTaskAsset] '{name}': VT trials ({m_VtTrialsPerBlock}) do not divide " +
-                    $"evenly by {stages} distances x 2 speeds x {widths} width(s) = {vtCells} cells. " +
-                    $"The design would be unbalanced. Use a multiple of {vtCells}.", this);
-
-            if (m_TactileOnlyTrialsPerBlock % tCells != 0)
-                Debug.LogWarning(
-                    $"[PpsTaskAsset] '{name}': T trials ({m_TactileOnlyTrialsPerBlock}) do not " +
-                    $"divide evenly by {stages} distances x 2 speeds = {tCells} cells. " +
-                    $"Use a multiple of {tCells}.", this);
-
-            if (m_VisualOnlyTrialsPerBlock % vCells != 0)
-                Debug.LogWarning(
-                    $"[PpsTaskAsset] '{name}': V trials ({m_VisualOnlyTrialsPerBlock}) do not " +
-                    $"divide evenly by 2 speeds x {widths} width(s) = {vCells} cells. " +
-                    $"Use a multiple of {vCells}.", this);
+            ReportAllocation("VT", m_VtTrialsPerBlock, vtCells,
+                             $"{stages} distances x 2 speeds x {widths} width(s)");
+            ReportAllocation("T", m_TactileOnlyTrialsPerBlock, tCells,
+                             $"{stages} distances x 2 speeds");
+            ReportAllocation("V", m_VisualOnlyTrialsPerBlock, vCells,
+                             $"2 speeds x {widths} width(s)");
 
             if (m_DefaultShoulderWidthMeters <= 0f) m_DefaultShoulderWidthMeters = 0.40f;
 
@@ -762,6 +765,43 @@ namespace HitOrMiss.Pps
 
             if (m_ItiMinSeconds < 0f) m_ItiMinSeconds = 0f;
             if (m_ItiMaxSeconds < m_ItiMinSeconds) m_ItiMaxSeconds = m_ItiMinSeconds;
+        }
+
+        /// <summary>
+        /// Inspector-time report of how a per-type count splits over its design cells.
+        /// Mirrors PpsTrialGenerator.AllocateCounts so the two can never disagree about
+        /// what a given count actually produces.
+        /// </summary>
+        void ReportAllocation(string label, int totalTrials, int cells, string cellDescription)
+        {
+            if (cells <= 0 || totalTrials <= 0) return;
+
+            int baseReps  = totalTrials / cells;
+            int remainder = totalTrials - baseReps * cells;
+
+            if (baseReps == 0)
+            {
+                Debug.LogWarning(
+                    $"[PpsTaskAsset] '{name}': {label} trials ({totalTrials}) is fewer than the " +
+                    $"{cells} cells ({cellDescription}), so {cells - totalTrials} cell(s) are EMPTY " +
+                    $"in any given block. Raise the count to at least {cells}.", this);
+                return;
+            }
+
+            if (remainder == 0)
+            {
+                Debug.Log(
+                    $"[PpsTaskAsset] '{name}': {label} {totalTrials}/block = {baseReps} per cell " +
+                    $"across {cells} cells ({cellDescription}). Fully balanced.", this);
+                return;
+            }
+
+            Debug.Log(
+                $"[PpsTaskAsset] '{name}': {label} {totalTrials}/block over {cells} cells " +
+                $"({cellDescription}) = {cells - remainder} cell(s) x {baseReps} and " +
+                $"{remainder} cell(s) x {baseReps + 1}. The surplus rotates by block, so over " +
+                $"{m_BlockCount} block(s) the per-cell totals stay within one trial of each other.",
+                this);
         }
     }
 }

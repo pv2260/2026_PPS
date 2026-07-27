@@ -125,6 +125,12 @@ namespace HitOrMiss
             int sn = m_Metadata.sessionNumber > 0 ? m_Metadata.sessionNumber : 1;
             string taskSlug = TaskFileSlug(taskKind);
 
+            // Claim a task-specific marker CSV before any trial markers are emitted.
+            // The emitter opens one shared markers.csv per session with append:false,
+            // so without this the second task to start in a session folder truncated
+            // the first task's marker stream and its EEG triggers were lost.
+            m_EegMarkerEmitter.BindTaskScope(taskSlug);
+
             m_TrialsCsvPath = Path.Combine(m_SessionDir, $"sub-{idSlug}_session-{sn}_{taskSlug}_trials.csv");
             m_EyeCsvPath    = Path.Combine(m_SessionDir, $"sub-{idSlug}_session-{sn}_{taskSlug}_eyetracking.csv");
             m_SetupJsonPath = Path.Combine(m_SessionDir, $"sub-{idSlug}_session-{sn}_setup.json");

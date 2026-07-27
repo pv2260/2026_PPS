@@ -65,7 +65,15 @@ namespace HitOrMiss
         // Crosshair height above the body anchor, in meters — the participant's
         // eye level. 0 = use the asset value.
         public float task1CrosshairHeightM;
-        public float task1NarrowOffsetCm;
+        // True when PpsTaskAsset.UseWidthFactor is on, i.e. narrow AND wide LED
+        // separations were both presented. When false only one width ran and
+        // task1WideOffsetCm is meaningless, so setup.json writes it as null.
+        public bool task1WidthFactor;
+        // Lateral LED separation on narrow trials, in cm. This is the
+        // participant's shoulder width (floored at the asset default), not an
+        // offset from anything. Replaces the old task1NarrowOffsetCm, which was
+        // hardcoded to 0 and therefore carried no information.
+        public float task1NarrowSeparationCm;
         public float task1WideOffsetCm;
         public string[] task1LoomingSpeeds;       // {"slow","medium","fast"} subset
         public int task1PracticeVtOnlyTrials;
@@ -128,8 +136,9 @@ namespace HitOrMiss
                 task1FastSpeedMps = 0f,
                 task1SlowSpeedMps = 0f,
                 task1CrosshairHeightM = 0f,
-                task1NarrowOffsetCm = 5f,
-                task1WideOffsetCm = 15f,
+                task1WidthFactor = false,
+                task1NarrowSeparationCm = 42f,
+                task1WideOffsetCm = 30f,
                 task1LoomingSpeeds = new[] { "slow", "fast" },
                 task1PracticeVtOnlyTrials = 2,
                 task1PracticeVtVisualTrials = 4,
@@ -198,9 +207,18 @@ namespace HitOrMiss
             task1FastSpeedMps = asset.FastSpeedMps;
             task1SlowSpeedMps = asset.SlowSpeedMps;
             task1CrosshairHeightM = asset.CrosshairHeight;
-            // Narrow = shoulder width itself (0 cm offset from shoulder).
-            // Wide   = shoulder width + WideOffsetMeters (cm).
-            task1NarrowOffsetCm = 0f;
+
+            // Width factor. When off, every trial ran at DefaultWidth and the wide
+            // offset was never applied, so setup.json must say so rather than
+            // archiving a number that did not shape the session.
+            task1WidthFactor = asset.UseWidthFactor;
+
+            // Narrow separation is the participant's shoulder width, floored at the
+            // asset default. Resolved through SeparationFor so this record and the
+            // renderer can never disagree about what the LEDs actually did.
+            task1NarrowSeparationCm =
+                asset.SeparationFor(HitOrMiss.Pps.PpsWidth.Narrow, shoulderWidthCm / 100f) * 100f;
+
             task1WideOffsetCm = asset.WideOffsetMeters * 100f;
             task1LoomingSpeeds = new[] { "slow", "fast" };
             task1PracticeVtOnlyTrials = 2;
@@ -269,6 +287,10 @@ namespace HitOrMiss
             // interpolation uses the current culture, which on a French or German
             // Swiss machine emits "1,5" and silently produces invalid JSON.
             string F(float v) => v.ToString(System.Globalization.CultureInfo.InvariantCulture);
+            // Writes null instead of a value when the parameter did not apply to
+            // this session. A stale number is worse than an explicit null: it reads
+            // as a setting that shaped the run when it did not.
+            string FOrNull(float v, bool applies) => applies ? F(v) : "null";
             var sb = new System.Text.StringBuilder();
             sb.AppendLine("{");
             sb.AppendLine("  \"subject\": {");
@@ -309,8 +331,14 @@ namespace HitOrMiss
                 sb.AppendLine($"    \"loom_fast_speed_mps\": {F(task1FastSpeedMps)},");
                 sb.AppendLine($"    \"loom_slow_speed_mps\": {F(task1SlowSpeedMps)},");
                 sb.AppendLine($"    \"crosshair_height_m\": {F(task1CrosshairHeightM)},");
-                sb.AppendLine($"    \"narrow_offset_cm\": {F(task1NarrowOffsetCm)},");
-                sb.AppendLine($"    \"wide_offset_cm\": {F(task1WideOffsetCm)},");
+                string[] widthLevels = task1WidthFactor
+                    ? new[] { "narrow", "wide" }
+                    : new[] { "narrow" };
+
+                sb.AppendLine($"    \"width_factor\": {B(task1WidthFactor)},");
+                sb.AppendLine($"    \"width_levels\": {ArrJson(widthLevels)},");
+                sb.AppendLine($"    \"narrow_separation_cm\": {F(task1NarrowSeparationCm)},");
+                sb.AppendLine($"    \"wide_offset_cm\": {FOrNull(task1WideOffsetCm, task1WidthFactor)},");
                 sb.AppendLine($"    \"looming_speeds\": {ArrJson(task1LoomingSpeeds)},");
                 sb.AppendLine($"    \"practice_vt_only_trials\": {task1PracticeVtOnlyTrials},");
                 sb.AppendLine($"    \"practice_vt_visual_trials\": {task1PracticeVtVisualTrials}");

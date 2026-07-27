@@ -28919,11 +28919,13 @@ MonoBehaviour:
     english: Back
     french: Retour
   - textTarget: {fileID: 283596564}
-    english: All good? You are on {trialInBlock}/{trialsInBlock}
-    french: 'Tout va bien? Vous etes dans le  '
+    english: 'You''re doing well! \nTake a moment if you need one.\n You are on trial
+      {trialInBlock}/{trialsInBlock}. '
+    french: "Vous vous d\xE9brouillez bien ! \\n Faites une petite pause si vous
+      en avez besoin. \\nVous en \xEAtes \xE0 l'essai {trialInBlock}/{trialsInBlock}."
   - textTarget: {fileID: 1364997379}
-    english: Yes, Continue!
-    french: Oui, on continue!
+    english: Continue
+    french: Continuer
 --- !u!114 &1643808110
 MonoBehaviour:
   m_ObjectHideFlags: 0
