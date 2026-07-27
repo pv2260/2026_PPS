@@ -84,6 +84,15 @@ namespace HitOrMiss
         [SerializeField] TaskPopupPanel m_BreakPopup;
         [SerializeField] TaskPopupPanel m_BlockReadyPopup;
 
+        [Header("Participant check-in")]
+        [Tooltip("Shown every TrajectoryTaskAsset.CheckInIntervalTrials trials inside a main block. " +
+                 "Leave empty to disable the panel; the block then continues without pausing.")]
+        [SerializeField] HitOrMissCheckInPanel m_CheckInPanel;
+
+        [Tooltip("Seconds the check-in panel ignores input after appearing. Without this the trigger " +
+                 "press that answered the previous trial can bounce straight through the panel.")]
+        [SerializeField] float m_CheckInArmDelaySeconds = 0.5f;
+
         [Header("End")]
         [SerializeField] TaskPopupPanel m_OutroPopup;
 
@@ -289,6 +298,9 @@ namespace HitOrMiss
 
             m_InputSource = composite;
             m_TaskManager.SetInputSource(m_InputSource);
+
+            m_TaskManager.CheckInDue -= OnCheckInDue;
+            m_TaskManager.CheckInDue += OnCheckInDue;
 
             // Metadata source: the clinical panel (via SetSessionMetadata) or the
             // SessionConfig (assembled in Start, or here as a fallback).
@@ -621,14 +633,19 @@ namespace HitOrMiss
             bool leftPressed = false;
             bool rightPressed = false;
 
+            // Which hand a command came from, for the demo highlight only.
+            // RIGHT = Hit ("yes, it will hit me"), LEFT = Miss. This has to stay
+            // in step with ControllerButtonInput and HandPinchInput, or the demo
+            // lights up the opposite controller to the one actually pressed and
+            // the participant is taught the wrong mapping.
             void Handler(ResponseEvent ev)
             {
-                if (ev.command == SemanticCommand.Hit)
+                if (ev.command == SemanticCommand.Miss)
                 {
                     leftPressed = true;
                     m_ControllerIntroDemo.LeftTriggerPressed();
                 }
-                else if (ev.command == SemanticCommand.Miss)
+                else if (ev.command == SemanticCommand.Hit)
                 {
                     rightPressed = true;
                     m_ControllerIntroDemo.RightTriggerPressed();
@@ -681,14 +698,15 @@ namespace HitOrMiss
             bool leftPressed = false;
             bool rightPressed = false;
 
+            // Same hand mapping as the trigger demo above: RIGHT = Hit, LEFT = Miss.
             void Handler(ResponseEvent ev)
             {
-                if (ev.command == SemanticCommand.Hit)
+                if (ev.command == SemanticCommand.Miss)
                 {
                     leftPressed = true;
                     m_ResponseMappingDemo.LeftPressed();
                 }
-                else if (ev.command == SemanticCommand.Miss)
+                else if (ev.command == SemanticCommand.Hit)
                 {
                     rightPressed = true;
                     m_ResponseMappingDemo.RightPressed();
@@ -839,6 +857,62 @@ namespace HitOrMiss
                 onErrorCount?.Invoke(errors);
         }
 
+        // The manager raises this from Update(), so the work has to move into a
+        // coroutine. The block is already paused when we get here and stays paused
+        // until ResumeFromCheckIn().
+        void OnCheckInDue(int trialsCompleted, int trialsInBlock)
+        {
+            StartCoroutine(RunCheckIn(trialsCompleted, trialsInBlock));
+        }
+
+        IEnumerator RunCheckIn(int trialsCompleted, int trialsInBlock)
+        {
+            if (m_CheckInPanel == null)
+            {
+                Debug.LogWarning("[HitOrMissAppController] Check-in due but no panel assigned. Continuing.");
+                m_TaskManager.ResumeFromCheckIn();
+                yield break;
+            }
+
+            m_CheckInPanel.Show(trialsCompleted, trialsInBlock, m_Language);
+
+            // Deliberate dead time before input is armed. The participant pressed a
+            // trigger a moment ago to answer trial N; without this the panel can be
+            // dismissed by that same press before they have read it.
+            if (m_CheckInArmDelaySeconds > 0f)
+                yield return new WaitForSeconds(m_CheckInArmDelaySeconds);
+
+            if (m_InputSource != null)
+            {
+                bool dismissed = false;
+                void OnDismiss(ResponseEvent _) => dismissed = true;
+
+                m_InputSource.ResponseReceived += OnDismiss;
+
+                // PauseBlock disabled input on the way in. Re-enable it for the
+                // dismiss press only; the manager ignores responses while paused,
+                // so this cannot be scored as a trial.
+                m_InputSource.Enable();
+
+                try
+                {
+                    while (!dismissed)
+                        yield return null;
+                }
+                finally
+                {
+                    m_InputSource.ResponseReceived -= OnDismiss;
+                }
+            }
+            else
+            {
+                yield return new WaitForSeconds(3f);
+            }
+
+            m_CheckInPanel.Hide();
+            m_TaskManager.ResumeFromCheckIn();
+        }
+
         IEnumerator FlashTooSlowPanel()
         {
             if (m_TooSlowPanel == null)
@@ -905,6 +979,8 @@ namespace HitOrMiss
         {
             if (m_TaskManager != null)
             {
+                m_TaskManager.CheckInDue -= OnCheckInDue;
+
                 if (m_TaskLogger != null)
                     m_TaskManager.TrialJudged -= m_TaskLogger.LogTrial;
 
@@ -966,6 +1042,7 @@ namespace HitOrMiss
             if (m_BlockReadyPopup != null) m_BlockReadyPopup.Hide();
             if (m_OutroPopup != null) m_OutroPopup.Hide();
             if (m_WelcomePanel != null) m_WelcomePanel.SetActive(false);
+            if (m_CheckInPanel != null) m_CheckInPanel.Hide();
         }
 
         static void HideArray(TaskPopupPanel[] arr)

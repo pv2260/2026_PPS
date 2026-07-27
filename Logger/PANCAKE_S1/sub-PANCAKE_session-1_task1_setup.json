@@ -1,6 +1,6 @@
-﻿{
+{
   "subject": {
-    "subject_id": "pampam",
+    "subject_id": "PANCAKE",
     "age_years": 0,
     "dominant_hand": "unspecified",
     "height_cm": 170,
@@ -24,17 +24,20 @@
     "eye_tracking": false
   },
   "task1_parameters": {
-    "number_of_blocks": 3,
-    "trials_per_block": 154,
-    "vt_trials_per_block": 70,
-    "visual_only_trials_per_block": 28,
-    "tactile_only_trials_per_block": 56,
+    "number_of_blocks": 4,
+    "trials_per_block": 96,
+    "vt_trials_per_block": 53,
+    "visual_only_trials_per_block": 29,
+    "tactile_only_trials_per_block": 14,
     "break_duration_seconds": 30,
     "loom_fast_speed_mps": 1.5,
     "loom_slow_speed_mps": 0.5,
     "crosshair_height_m": 0,
-    "narrow_offset_cm": 0,
-    "wide_offset_cm": 30,
+    "crosshair_height_reference": "metres from eye level; 0 = at eye level, negative = below eye level",
+    "width_factor": false,
+    "width_levels": ["narrow"],
+    "narrow_separation_cm": 42,
+    "wide_offset_cm": null,
     "looming_speeds": ["slow", "fast"],
     "practice_vt_only_trials": 2,
     "practice_vt_visual_trials": 4

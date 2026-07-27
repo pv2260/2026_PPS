@@ -40,7 +40,7 @@ namespace HitOrMiss
 
         [TextArea(2, 5)]
         [SerializeField] private string m_Text =
-            "You will see a ball with two panels around it:\n\nY = YES\nN = NO\n\nPress LEFT trigger for YES.\nPress RIGHT trigger for NO.\n\nThe selected controller and panel will turn orange.";
+            "You will see a ball with two panels around it:\n\nY = YES\nN = NO\n\nPress RIGHT trigger for YES.\nPress LEFT trigger for NO.\n\nThe selected controller and panel will turn orange.";
 
         [Header("Fade")]
         [SerializeField] private float m_TextFadeSeconds = 0.35f;
@@ -153,49 +153,16 @@ namespace HitOrMiss
 
             m_LeftPressed = true;
 
-            Debug.Log("[HIT OR MISS RESPONSE MAPPING] LEFT = YES pressed.");
+            Debug.Log("[HIT OR MISS RESPONSE MAPPING] LEFT = NO pressed.");
 
             FadeInstructionText();
 
             if (m_LeftTriggerHighlight != null)
                 m_LeftTriggerHighlight.SetActive(true);
 
-            // Turn left trigger and Y panel orange.
+            // Turn left trigger and N panel orange. The trigger highlight stays
+            // tied to the HAND; only which panel it selects follows the mapping.
             SetRendererMaterial(m_LeftTriggerRenderer, m_SelectedOrangeMaterial);
-            SetRendererMaterial(m_YesPanelRenderer, m_SelectedOrangeMaterial);
-            SetTMPTextColor(m_YesText, m_TextSelectedColor);
-
-            if (m_YesPanel != null)
-            {
-                if (m_YesPopCoroutine != null)
-                    StopCoroutine(m_YesPopCoroutine);
-
-                m_YesPopCoroutine = StartCoroutine(PopObject(m_YesPanel, m_YesPanelOriginalScale));
-            }
-            else
-            {
-                Debug.LogError("[HIT OR MISS RESPONSE MAPPING] YesPanel is not assigned.");
-            }
-
-            CheckBothResponsesCompleted();
-        }
-
-        public void RightPressed()
-        {
-            if (m_RightPressed)
-                return;
-
-            m_RightPressed = true;
-
-            Debug.Log("[HIT OR MISS RESPONSE MAPPING] RIGHT = NO pressed.");
-
-            FadeInstructionText();
-
-            if (m_RightTriggerHighlight != null)
-                m_RightTriggerHighlight.SetActive(true);
-
-            // Turn right trigger and N panel orange.
-            SetRendererMaterial(m_RightTriggerRenderer, m_SelectedOrangeMaterial);
             SetRendererMaterial(m_NoPanelRenderer, m_SelectedOrangeMaterial);
             SetTMPTextColor(m_NoText, m_TextSelectedColor);
 
@@ -209,6 +176,40 @@ namespace HitOrMiss
             else
             {
                 Debug.LogError("[HIT OR MISS RESPONSE MAPPING] NoPanel is not assigned.");
+            }
+
+            CheckBothResponsesCompleted();
+        }
+
+        public void RightPressed()
+        {
+            if (m_RightPressed)
+                return;
+
+            m_RightPressed = true;
+
+            Debug.Log("[HIT OR MISS RESPONSE MAPPING] RIGHT = YES pressed.");
+
+            FadeInstructionText();
+
+            if (m_RightTriggerHighlight != null)
+                m_RightTriggerHighlight.SetActive(true);
+
+            // Turn right trigger and Y panel orange.
+            SetRendererMaterial(m_RightTriggerRenderer, m_SelectedOrangeMaterial);
+            SetRendererMaterial(m_YesPanelRenderer, m_SelectedOrangeMaterial);
+            SetTMPTextColor(m_YesText, m_TextSelectedColor);
+
+            if (m_YesPanel != null)
+            {
+                if (m_YesPopCoroutine != null)
+                    StopCoroutine(m_YesPopCoroutine);
+
+                m_YesPopCoroutine = StartCoroutine(PopObject(m_YesPanel, m_YesPanelOriginalScale));
+            }
+            else
+            {
+                Debug.LogError("[HIT OR MISS RESPONSE MAPPING] YesPanel is not assigned.");
             }
 
             CheckBothResponsesCompleted();

@@ -290,12 +290,12 @@ namespace HitOrMiss
             GameObject panel;
             Color tint;
 
-            if (command == SemanticCommand.Hit)
+            if (command == SemanticCommand.Miss)
             {
                 panel = m_LeftPanel;
                 tint = m_LeftPanelColor;
             }
-            else if (command == SemanticCommand.Miss)
+            else if (command == SemanticCommand.Hit)
             {
                 panel = m_RightPanel;
                 tint = m_RightPanelColor;
@@ -325,13 +325,13 @@ namespace HitOrMiss
         {
             if (isYesState)
             {
-                if (m_LeftPanelImage  != null) m_LeftPanelImage.color  = m_LeftPanelColor;
-                if (m_RightPanelImage != null) m_RightPanelImage.color = m_LightGrey;
+                if (m_LeftPanelImage  != null) m_LeftPanelImage.color  = m_LightGrey;
+                if (m_RightPanelImage != null) m_RightPanelImage.color = m_RightPanelColor;
             }
             else
             {
-                if (m_LeftPanelImage  != null) m_LeftPanelImage.color  = m_LightGrey;
-                if (m_RightPanelImage != null) m_RightPanelImage.color = m_RightPanelColor;
+                if (m_LeftPanelImage  != null) m_LeftPanelImage.color  = m_LeftPanelColor;
+                if (m_RightPanelImage != null) m_RightPanelImage.color = m_LightGrey;
             }
         }
 

@@ -6,7 +6,11 @@ using UnityEngine.XR.Hands;
 namespace HitOrMiss
 {
     /// <summary>
-    /// Hand pinch input via XR Hands. Left pinch = HIT, right pinch = MISS.
+    /// Hand pinch input via XR Hands. RIGHT pinch = HIT ("yes, it will hit me"),
+    /// LEFT pinch = MISS ("no, it will miss me"). Matches ControllerButtonInput,
+    /// which matters because both feed the same CompositeInputSource: if they
+    /// disagreed, the answer recorded would depend on whether the participant
+    /// happened to use a controller or their hands on that trial.
     ///
     /// Requirements on a Meta Quest build:
     ///   • Package <c>com.unity.xr.hands</c> installed.
@@ -160,10 +164,15 @@ namespace HitOrMiss
 
                 Debug.Log($"[HandPinchInput] PINCH: {handedness} (distance {distance:F3}m)");
 
+                // Left pinch answers "no, it will miss me"; right pinch answers
+                // "yes, it will hit me". This is the only line here that carries
+                // the mapping, and it has to agree with ControllerButtonInput.
+                bool isLeft = handedness == Handedness.Left;
+
                 ResponseReceived?.Invoke(new ResponseEvent
                 {
-                    rawSource = handedness == Handedness.Left ? "hand_left_pinch" : "hand_right_pinch",
-                    command = handedness == Handedness.Left ? SemanticCommand.Hit : SemanticCommand.Miss,
+                    rawSource = isLeft ? "hand_left_pinch" : "hand_right_pinch",
+                    command = isLeft ? SemanticCommand.Miss : SemanticCommand.Hit,
                     confidence = 1f,
                     timestamp = Time.timeAsDouble,
                 });

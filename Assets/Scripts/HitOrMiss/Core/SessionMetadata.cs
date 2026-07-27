@@ -330,7 +330,12 @@ namespace HitOrMiss
                 sb.AppendLine($"    \"break_duration_seconds\": {F(task1BreakDurationSeconds)},");
                 sb.AppendLine($"    \"loom_fast_speed_mps\": {F(task1FastSpeedMps)},");
                 sb.AppendLine($"    \"loom_slow_speed_mps\": {F(task1SlowSpeedMps)},");
+                // Heights are measured from EYE level, not from the floor and not
+                // from the chest anchor, so 0 is a meaningful value rather than an
+                // unset one. Without this note an analyst reading the archive has no
+                // way to tell 0 = "at eye level" from 0 = "never configured".
                 sb.AppendLine($"    \"crosshair_height_m\": {F(task1CrosshairHeightM)},");
+                sb.AppendLine("    \"crosshair_height_reference\": \"metres from eye level; 0 = at eye level, negative = below eye level\",");
                 string[] widthLevels = task1WidthFactor
                     ? new[] { "narrow", "wide" }
                     : new[] { "narrow" };

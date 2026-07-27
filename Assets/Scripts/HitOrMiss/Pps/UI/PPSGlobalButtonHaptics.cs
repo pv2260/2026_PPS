@@ -28,8 +28,6 @@ namespace HitOrMiss.Pps
             {
                 InstallOnButton(button);
             }
-
-            Debug.Log($"PPSGlobalButtonHaptics installed on {buttons.Length} buttons.");
         }
 
         private void InstallOnButton(Button button)

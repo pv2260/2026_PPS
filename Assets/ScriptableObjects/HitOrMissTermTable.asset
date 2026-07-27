@@ -85,19 +85,10 @@ MonoBehaviour:
       maintenant ! "
   - key: trigger_mapping
     english: 'Each time a ball moves toward you, decide whether it will hit you or
-      miss you.\n\nLEFT= YES, it will hit me.\nRIGHT= NO, it will miss me. '
+      miss you.\n\nLEFT= NO, it will hit me.\nRIGHT=YES, it will miss me. '
     french: "Chaque fois qu\u2019une balle se d\xE9place vers vous, d\xE9cidez si
-      elle va vous toucher ou vous manquer.\\n\\n GAUCHE = OUI, elle va me toucher.\\
-      nDROITE = NON, elle va me manquer. "
-  - key: trigger_mapping
-    english: 'Each time a ball moves toward you, decide whether it will hit you or
-      miss you.\n\nLEFT= YES, it will hit me.\nRIGHT= NO, it will miss me. '
-    french: "Chaque fois qu\u2019une balle se d\xE9place vers vous, d\xE9cidez si
-      elle va vous toucher ou vous manquer.\\n\\nGAUCHE / O = OUI, elle va me toucher.\\nDROITE
-      /= NON, elle va me manquer. "
-  - key: intro_continue
-    english: Continue
-    french: Continuer
+      elle va vous toucher ou vous manquer.\\n\\n GAUCHE = NO, elle va me toucher.\\
+      nDROITE = OUI, elle va me manquer. "
   - key: intro_continue
     english: Continue
     french: Continuer
@@ -116,6 +107,3 @@ MonoBehaviour:
   - key: welcome_start
     english: Start
     french: Commencer
-  - key: diff_practice
-    english: Begin Practice
-    french: "Commencer l\u2019entra\xEEnement "

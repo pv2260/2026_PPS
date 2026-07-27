@@ -61,6 +61,21 @@ namespace HitOrMiss
         /// </summary>
         public event Action<TrialDefinition> TooSlow;
 
+        /// <summary>
+        /// Fires when the participant check-in is due: after every
+        /// TrajectoryTaskAsset.CheckInIntervalTrials completed trials, in main
+        /// blocks only. The block is already paused when this fires, and stays
+        /// paused until ResumeFromCheckIn() is called.
+        ///
+        /// It fires at the SPAWN GATE, not the moment a trial resolves, so no
+        /// ball is in the air. That matters because PauseBlock discards in-flight
+        /// balls without scoring them; firing this mid-flight would silently drop
+        /// a trial from the block and nothing downstream would notice.
+        ///
+        /// Payload = (trials completed so far, total trials in the block).
+        /// </summary>
+        public event Action<int, int> CheckInDue;
+
         // Runtime state
         readonly List<RuntimeTrial> m_ActiveTrials = new();
         // Trials whose ball has despawned (deadline elapsed) but which are still
@@ -75,6 +90,11 @@ namespace HitOrMiss
         float m_NextSpawnEarliest;
         bool m_Running;
         bool m_Paused;
+
+        // Check-in state. m_LastCheckInAtTrial stops the gate re-firing on every
+        // frame while the count sits on a multiple of the interval.
+        bool m_AwaitingCheckIn;
+        int m_LastCheckInAtTrial = -1;
 
         // When true, timed-out trials auto-resolve as NoResponse instead of waiting
         // for a late press. Used by practice so timeouts count as errors and the
@@ -106,6 +126,7 @@ namespace HitOrMiss
         public IReadOnlyList<TrialJudgement> Results => m_AllResults;
         public bool IsRunning => m_Running;
         public bool IsPaused => m_Paused;
+        public bool IsAwaitingCheckIn => m_AwaitingCheckIn;
         public int CurrentBlock => m_CurrentBlock;
         public int TrialsCompletedInBlock { get; private set; }
         public int TotalTrialsInBlock => m_BlockTrials != null ? m_BlockTrials.Length : 0;
@@ -179,6 +200,9 @@ namespace HitOrMiss
             m_LastSpawnEndTime = 0f;
             m_ActiveTrials.Clear();
             m_AwaitingLateResponse.Clear();
+
+            m_AwaitingCheckIn = false;
+            m_LastCheckInAtTrial = -1;
 
             m_Running = true;
             m_InputSource?.Enable();
@@ -281,10 +305,36 @@ namespace HitOrMiss
         public void ResumeBlock()
         {
             if (!m_Running || !m_Paused) return;
+
+            // A check-in freezes the block through the same pause mechanism. If the
+            // clinician hits Resume while the panel is up, the block would restart
+            // underneath a participant who is still reading it.
+            if (m_AwaitingCheckIn)
+            {
+                Debug.Log("[TrajectoryTaskManager] ResumeBlock ignored: waiting on the participant check-in.");
+                return;
+            }
+
             m_Paused = false;
             m_InputSource?.Enable();
             m_NextSpawnEarliest = Time.time + NextItiSeconds();
             m_MarkerEmitter?.Emit("block_resumed");
+        }
+
+        /// <summary>
+        /// Clears the check-in and restarts the block. Called by the controller once
+        /// the participant dismisses the panel. Separate from ResumeBlock so the
+        /// clinician Resume button cannot be used to skip a check-in the participant
+        /// has not answered.
+        /// </summary>
+        public void ResumeFromCheckIn()
+        {
+            if (!m_AwaitingCheckIn) return;
+
+            m_AwaitingCheckIn = false;
+            m_MarkerEmitter?.Emit("check_in_end");
+
+            ResumeBlock();
         }
 
         void Update()
@@ -308,6 +358,31 @@ namespace HitOrMiss
             }
 
             bool gateOnPriorResponse = m_RequireResponseToAdvance && hasUnresolvedTrial;
+
+            // Participant check-in. Deliberately placed BEFORE the spawn and gated
+            // on nothing being unresolved, so the block is at a clean boundary when
+            // it pauses. Main blocks only: practice uses blockIndex -1.
+            int checkInInterval = m_TaskAsset != null ? m_TaskAsset.CheckInIntervalTrials : 0;
+
+            if (checkInInterval > 0
+                && m_CurrentBlock >= 0
+                && !hasUnresolvedTrial
+                && TrialsCompletedInBlock > 0
+                && TrialsCompletedInBlock % checkInInterval == 0
+                && TrialsCompletedInBlock != m_LastCheckInAtTrial
+                && m_NextTrialIndex < m_BlockTrials.Length)
+            {
+                m_LastCheckInAtTrial = TrialsCompletedInBlock;
+                m_AwaitingCheckIn = true;
+
+                PauseBlock();
+                m_MarkerEmitter?.Emit("check_in_start");
+
+                Debug.Log($"[TrajectoryTaskManager] Check-in due at trial {TrialsCompletedInBlock}/{TotalTrialsInBlock}.");
+
+                CheckInDue?.Invoke(TrialsCompletedInBlock, TotalTrialsInBlock);
+                return;
+            }
 
             if (m_NextTrialIndex < m_BlockTrials.Length
                 && Time.time >= m_NextSpawnEarliest

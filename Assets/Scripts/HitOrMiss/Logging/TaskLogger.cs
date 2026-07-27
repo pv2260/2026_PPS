@@ -15,8 +15,8 @@ namespace HitOrMiss
     /// Layout per session, under
     /// <c>{cwd}/Logger/{participantId}_{sessionId}/</c>:
     ///
-    ///   metadata.json                                  — flat snapshot for server reloads
-    ///   sub-{id}_session-{n}_setup.json                — nested spec; only active task's params
+    ///   metadata_{task1|task2}.json                    — flat snapshot for server reloads
+    ///   sub-{id}_session-{n}_task{1|2}_setup.json      — nested spec; only active task's params
     ///   sub-{id}_session-{n}_task{1|2}_trials.csv      — per-task schema
     ///   sub-{id}_session-{n}_task{1|2}_eyetracking.csv — header-only stub
     ///   sub-{id}_session-{n}_task{1|2}_session.json    — final consolidated dump
@@ -41,9 +41,16 @@ namespace HitOrMiss
         string m_TrialsCsvPath;
         string m_EyeCsvPath;
         string m_SetupJsonPath;
+        string m_FlatMetadataPath;
         string m_FinalJsonPath;
 
         StreamWriter m_TrialsWriter;
+
+        // UTF-8 WITHOUT a byte order mark. Encoding.UTF8 emits a BOM, which turns
+        // the first CSV header cell into "\ufeffsubject_id" for readers that do not
+        // strip it, and makes the session JSON fail a strict parse before the first
+        // token. Every file this class writes uses this instead.
+        static readonly UTF8Encoding k_Utf8NoBom = new UTF8Encoding(false);
 
         // Each task has its own in-memory trial list because the schemas
         // and final session.json structures differ.
@@ -133,20 +140,24 @@ namespace HitOrMiss
 
             m_TrialsCsvPath = Path.Combine(m_SessionDir, $"sub-{idSlug}_session-{sn}_{taskSlug}_trials.csv");
             m_EyeCsvPath    = Path.Combine(m_SessionDir, $"sub-{idSlug}_session-{sn}_{taskSlug}_eyetracking.csv");
-            m_SetupJsonPath = Path.Combine(m_SessionDir, $"sub-{idSlug}_session-{sn}_setup.json");
+            // Task-scoped. Both files used to be session-scoped, so whichever task
+            // ran second in a session folder silently overwrote the first task's
+            // record. Same failure mode as the marker CSV.
+            m_SetupJsonPath = Path.Combine(m_SessionDir, $"sub-{idSlug}_session-{sn}_{taskSlug}_setup.json");
+            m_FlatMetadataPath = Path.Combine(m_SessionDir, $"metadata_{taskSlug}.json");
             m_FinalJsonPath = Path.Combine(m_SessionDir, $"sub-{idSlug}_session-{sn}_{taskSlug}_session.json");
 
             EnsureMetadataDefaults(taskName);
             WriteMetadataJson();
 
-            m_TrialsWriter = new StreamWriter(m_TrialsCsvPath, false, Encoding.UTF8);
+            m_TrialsWriter = new StreamWriter(m_TrialsCsvPath, false, k_Utf8NoBom);
             m_TrialsWriter.WriteLine(TrialsHeaderFor(taskKind));
             m_TrialsWriter.Flush();
 
             // Eye-tracking CSV is stubbed (header only) for now so the
             // EyeTrackingLogger has a known sibling file to append to once
             // wired up. Same header is fine for both tasks.
-            using (var eye = new StreamWriter(m_EyeCsvPath, false, Encoding.UTF8))
+            using (var eye = new StreamWriter(m_EyeCsvPath, false, k_Utf8NoBom))
             {
                 eye.WriteLine("trial_id,block_number,timestamp,gaze_origin_x,gaze_origin_y,gaze_origin_z,gaze_dir_x,gaze_dir_y,gaze_dir_z,left_pupil_diam_mm,right_pupil_diam_mm");
             }
@@ -250,7 +261,7 @@ namespace HitOrMiss
                     metadata    = m_Metadata,
                     timestamp   = DateTime.Now.ToString("o"),
                     totalTrials = m_Task1Results.Count,
-                    results     = m_Task1Results.ToArray(),
+                    results     = m_Task1Results.ConvertAll(ToTrialJson).ToArray(),
                 }, true)
                 : JsonUtility.ToJson(new Task2SessionLog
                 {
@@ -261,8 +272,9 @@ namespace HitOrMiss
                 }, true);
 
             json = StripInactiveTaskMetadata(json, m_TaskKind);
+            json = SanitizeJsonNumbers(json);
 
-            File.WriteAllText(m_FinalJsonPath, json, Encoding.UTF8);
+            File.WriteAllText(m_FinalJsonPath, json, k_Utf8NoBom);
 
             m_SessionOpen = false;
             Debug.Log($"[TaskLogger] Session ended. Logs saved to {m_SessionDir}");
@@ -294,7 +306,7 @@ namespace HitOrMiss
                 nextTrialIndex    = nextTrialIndex,
                 trialsCompleted   = trialsCompleted,
             }, true);
-            File.WriteAllText(progressPath, json, Encoding.UTF8);
+            File.WriteAllText(progressPath, json, k_Utf8NoBom);
 
             Debug.Log($"[TaskLogger] Flushed. Progress snapshot: {progressPath}");
         }
@@ -344,7 +356,9 @@ namespace HitOrMiss
         /// zeros are indistinguishable from values that were deliberately set,
         /// so the keys are dropped instead.
         ///
-        /// Operates on the "metadata" object only. Trial rows are untouched.
+        /// Operates on the metadata keys only, whether they sit inside a
+        /// "metadata" object (session log) or at the document root (flat dump).
+        /// Trial rows are untouched.
         /// </summary>
         static string StripInactiveTaskMetadata(string json, TaskKind taskKind)
         {
@@ -363,11 +377,21 @@ namespace HitOrMiss
                 }
             }
 
-            // No metadata block found: leave the document exactly as it was.
-            if (metaIndex < 0) return json;
+            // No "metadata" wrapper: this is the FLAT JsonUtility dump, where the
+            // task keys sit at the document root. Treat the opening brace as the
+            // container and strip at root level instead of bailing out. Without this
+            // the flat file kept every key of the task that never ran.
+            if (metaIndex < 0)
+            {
+                if (lines.Length == 0) return json;
+                metaIndex = 0;
+            }
 
             int metaIndent  = IndentWidth(lines[metaIndex]);
             int childIndent = metaIndent + 4;
+
+            // Both writers indent with 4 spaces per level, so a root-level container
+            // gives childIndent 4 and a nested "metadata" object gives 8.
 
             var kept = new List<string>();
             for (int i = 0; i <= metaIndex; i++)
@@ -439,12 +463,16 @@ namespace HitOrMiss
         {
             // setup.json: only the active task's parameter block is included
             // so Task 1 sessions don't carry Task 2 settings (and vice versa).
-            File.WriteAllText(m_SetupJsonPath, m_Metadata.ToSetupJson(m_TaskKind), Encoding.UTF8);
-            // metadata.json: flat JsonUtility format for server-side reload
+            File.WriteAllText(m_SetupJsonPath, m_Metadata.ToSetupJson(m_TaskKind), k_Utf8NoBom);
+
+            // metadata_{task}.json: flat JsonUtility format for server-side reload
             // (sessions browser uses this to read back participant id /
-            // session date when listing past sessions).
-            string flatPath = Path.Combine(m_SessionDir, "metadata.json");
-            File.WriteAllText(flatPath, JsonUtility.ToJson(m_Metadata, true), Encoding.UTF8);
+            // session date when listing past sessions). The inactive task's keys
+            // are stripped here too, so a Task 1 record no longer carries a full
+            // block of Task 2 settings that were never used.
+            string flat = JsonUtility.ToJson(m_Metadata, true);
+            flat = StripInactiveTaskMetadata(flat, m_TaskKind);
+            File.WriteAllText(m_FlatMetadataPath, flat, k_Utf8NoBom);
         }
 
         // ---- Task 2 row + header ----
@@ -515,7 +543,124 @@ namespace HitOrMiss
             public SessionMetadata metadata;
             public string timestamp;
             public int totalTrials;
-            public HitOrMiss.Pps.PpsTrialResult[] results;
+            public Task1TrialJson[] results;
+        }
+
+        /// <summary>
+        /// Readable JSON view of one PPS trial.
+        ///
+        /// Serializing PpsTrialResult directly wrote the enums as their backing
+        /// integers, so a trial read "modality: 1, speed: 0, width: 1,
+        /// vibrationStage: 5" and could not be interpreted without the enum
+        /// declarations to hand. Times were also in seconds here but milliseconds
+        /// in the CSV, so the two files disagreed on units for the same trial.
+        ///
+        /// Field names and units match PpsTrialResult.CsvHeader deliberately: the
+        /// JSON and the CSV describe the same trial the same way.
+        /// </summary>
+        [Serializable]
+        struct Task1TrialJson
+        {
+            public string trial_id;
+            public int block_number;
+            public int trial_number;
+            public bool is_practice;
+
+            public string trial_type;      // VT | T | V
+            public string current_speed;   // slow | fast
+            public string width;           // narrow | wide
+            public string distance_level;  // D7..D1, empty on V trials
+
+            public bool response_made;
+
+            public double trial_start_ms;
+            public double loom_onset_ms;
+            public double d7_onset_ms;
+            public double position_D7_ms;
+            public double position_D6_ms;
+            public double position_D5_ms;
+            public double position_D4_ms;
+            public double position_D3_ms;
+            public double position_D2_ms;
+            public double position_D1_ms;
+            public double vibrotactile_onset_ms;
+            public double response_time_ms;
+            public float  reaction_time_ms;
+
+            public float distance_m;
+            public float loom_start_m;
+            public float loom_end_m;
+
+            public string vibration_device;
+        }
+
+        static Task1TrialJson ToTrialJson(HitOrMiss.Pps.PpsTrialResult r)
+        {
+            var d = r.definition;
+
+            static double Ms(double seconds) => double.IsNaN(seconds) ? double.NaN : seconds * 1000.0;
+
+            return new Task1TrialJson
+            {
+                trial_id     = d.trialId,
+                block_number = d.blockIndex + 1,
+                trial_number = d.trialIndex + 1,
+                is_practice  = d.isPractice,
+
+                trial_type = d.modality switch
+                {
+                    HitOrMiss.Pps.PpsModality.Both        => "VT",
+                    HitOrMiss.Pps.PpsModality.TactileOnly => "T",
+                    HitOrMiss.Pps.PpsModality.VisualOnly  => "V",
+                    _ => "?",
+                },
+                current_speed = d.speed.ToString().ToLowerInvariant(),
+                width         = d.width.ToString().ToLowerInvariant(),
+                distance_level = d.vibrationStage == HitOrMiss.Pps.DistanceStage.None
+                    ? string.Empty
+                    : d.vibrationStage.ToString(),
+
+                response_made = r.responded,
+
+                trial_start_ms        = Ms(r.trialStartTime),
+                loom_onset_ms         = Ms(r.loomOnsetTime),
+                d7_onset_ms           = Ms(r.d7OnsetTime),
+                position_D7_ms        = Ms(r.crossingD7Time),
+                position_D6_ms        = Ms(r.crossingD6Time),
+                position_D5_ms        = Ms(r.crossingD5Time),
+                position_D4_ms        = Ms(r.crossingD4Time),
+                position_D3_ms        = Ms(r.crossingD3Time),
+                position_D2_ms        = Ms(r.crossingD2Time),
+                position_D1_ms        = Ms(r.crossingD1Time),
+                vibrotactile_onset_ms = Ms(r.vibrationFiredTime),
+                response_time_ms      = Ms(r.responseTime),
+                reaction_time_ms      = r.reactionTimeMs,
+
+                distance_m    = r.vibrationDistanceMeters,
+                loom_start_m  = r.loomStartMeters,
+                loom_end_m    = r.loomEndMeters,
+
+                vibration_device = r.vibrationDeviceName,
+            };
+        }
+
+        /// <summary>
+        /// Replaces bare NaN and Infinity value tokens with null.
+        ///
+        /// JsonUtility writes float.NaN as the literal NaN, which is not valid
+        /// JSON. Python tolerates it, but JSON.parse and jsonlite both reject the
+        /// document outright, so the file could not be read in JavaScript or R.
+        /// Only tokens in value position are touched, so a device name containing
+        /// the letters NaN is left alone.
+        /// </summary>
+        static string SanitizeJsonNumbers(string json)
+        {
+            if (string.IsNullOrEmpty(json)) return json;
+
+            return System.Text.RegularExpressions.Regex.Replace(
+                json,
+                @"(?<=:\s)(NaN|-?Infinity)(?=\s*[,}\]\r\n])",
+                "null");
         }
 
         [Serializable]

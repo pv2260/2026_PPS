@@ -33,6 +33,12 @@ namespace HitOrMiss
         [Tooltip("Half-width of the grey zone in cm (VR tracking uncertainty). Grey trials draw an edge offset uniformly in [-half, +half].")]
         [SerializeField] float m_GreyZoneHalfWidthCm = 2f;
 
+        [Header("Participant check-in")]
+        [Tooltip("Show the check-in panel after every N completed trials within a block. " +
+                 "0 disables it. Practice blocks are always exempt. The check fires at a trial " +
+                 "boundary with nothing in flight, so no trial is ever lost to it.")]
+        [SerializeField] int m_CheckInIntervalTrials = 20;
+
         [Header("Timing")]
         [SerializeField] float m_IntroDuration = 20f;
         [SerializeField] float m_RestDuration = 30f;
@@ -182,6 +188,8 @@ namespace HitOrMiss
             + m_ClearMissTrialsPerBlock
             + m_GreyZoneTrialsPerBlock;
 
+
+        public int CheckInIntervalTrials => m_CheckInIntervalTrials;
 
         public float IntroDuration => m_IntroDuration;
         public float RestDuration => m_RestDuration;
@@ -369,6 +377,7 @@ namespace HitOrMiss
             m_ClearMissTrialsPerBlock = Mathf.Max(0, m_ClearMissTrialsPerBlock);
             m_GreyZoneTrialsPerBlock = Mathf.Max(0, m_GreyZoneTrialsPerBlock);
             m_GreyZoneHalfWidthCm = Mathf.Max(0f, m_GreyZoneHalfWidthCm);
+            m_CheckInIntervalTrials = Mathf.Max(0, m_CheckInIntervalTrials);
 
             if (TrialsPerBlock < 1)
                 m_ClearHitTrialsPerBlock = 1;

@@ -175,17 +175,6 @@ namespace HitOrMiss.Pps
             // Record the protocol that will run into the metadata for setup.json.
             // One-directional (clone -> record); never read back to drive the run.
             m_SessionMetadata.PopulateFromPpsTaskAsset(m_RuntimeProtocol);
-
-            Debug.Log("[PPSAppController] Protocol from asset (sole authority): " +
-                      $"participant={m_SessionMetadata.participantId}, " +
-                      $"session={m_SessionMetadata.sessionNumber}, " +
-                      $"BlockCount={Protocol.BlockCount}, " +
-                      $"VT={Protocol.VtTrialsPerBlock}, " +
-                      $"V={Protocol.VisualOnlyTrialsPerBlock}, " +
-                      $"T={Protocol.TactileOnlyTrialsPerBlock}, " +
-                      $"Break={Protocol.RestDurationSeconds}s, " +
-                      $"WideOffset={Protocol.WideOffsetMeters}m");
-
             m_StopRequested = false;
             m_SessionCoroutine = StartCoroutine(RunSessionInternal());
         }
@@ -289,8 +278,6 @@ namespace HitOrMiss.Pps
 
             // Panel off: this SessionConfig drives a panel-free run.
             SetSessionMetadata(m_SessionConfig.BuildMetadata());
-            Debug.Log($"[PPSAppController] PpsSessionConfig drives the run (panel off): " +
-                      $"participant={m_SessionConfig.ParticipantId}, session={m_SessionConfig.SessionNumber}.");
 
             if (m_AutoStartWhenPanelOff)
             {

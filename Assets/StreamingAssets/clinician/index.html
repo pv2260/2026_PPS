@@ -140,32 +140,33 @@
           <legend>Task 1 — PPS / vibrotactile</legend>
           <div class="form-grid">
             <label>Number of blocks
-              <input name="task1NumberOfBlocks" type="number" min="1" value="3" />
+              <input name="task1NumberOfBlocks" type="number" min="1" value="4" />
             </label>
             <label>VT trials per block
-              <input name="task1VtTrialsPerBlock" type="number" min="0" step="14" value="70" />
-              <small class="muted">multiple of 14</small>
+              <input name="task1VtTrialsPerBlock" type="number" min="0" step="1" value="53" />
+              <small class="muted">14 cells, minimum 14</small>
             </label>
             <label>Visual-only trials per block
-              <input name="task1VisualOnlyTrialsPerBlock" type="number" min="0" step="2" value="28" />
-              <small class="muted">multiple of 2</small>
+              <input name="task1VisualOnlyTrialsPerBlock" type="number" min="0" step="1" value="29" />
+              <small class="muted">2 cells, minimum 2</small>
             </label>
             <label>Tactile-only trials per block
-              <input name="task1TactileOnlyTrialsPerBlock" type="number" min="0" step="14" value="56" />
-              <small class="muted">multiple of 14</small>
+              <input name="task1TactileOnlyTrialsPerBlock" type="number" min="0" step="1" value="14" />
+              <small class="muted">14 cells, minimum 14</small>
             </label>
             <label>Break duration (s)
               <input name="task1BreakDurationSeconds" type="number" min="0" value="30" />
             </label>
             <label>Fast loom speed (m/s)
-              <input name="task1FastSpeedMps" type="number" min="0" step="0.01" placeholder="1.33 (protocol)" />
+              <input name="task1FastSpeedMps" type="number" min="0" step="0.01" placeholder="1.50 (protocol)" />
             </label>
             <label>Slow loom speed (m/s)
               <input name="task1SlowSpeedMps" type="number" min="0" step="0.01" placeholder="0.50 (protocol)" />
             </label>
           </div>
-          <p class="muted">Trials per block = VT + V + T = <b><span id="task1TrialTotal">154</span></b>. <span id="task1CountWarn" class="count-warn" hidden></span></p>
-          <p class="muted">Counts must fill whole design cells (7 distances × 2 speeds × 1 width). 0 = use protocol default. Assumes the asset's width factor is off; if you enable it, VT becomes a multiple of 28 and visual-only a multiple of 4.</p>
+          <p class="muted">Trials per block = VT + V + T = <b><span id="task1TrialTotal">96</span></b>. <span id="task1CountWarn" class="count-warn" hidden></span></p>
+          <p class="muted"><b>Protocol:</b> 4 blocks × 96 trials = 384 total (VT 212, T 56, V 116). Per block VT 53, T 14, V 29, giving a 30% visual-only catch rate. Loom speeds 0.50 m/s slow and 1.50 m/s fast, a 3:1 ratio.</p>
+          <p class="muted">Counts fill 7 distances × 2 speeds × 1 width. They do not have to divide evenly: any remainder is spread one trial per cell and rotates by block, so per-cell totals stay within one trial of each other across the session. A count below the number of cells is rejected, because whole cells would sit empty. 0 = use protocol default. With the width factor on, VT has 28 cells and visual-only has 4. <span id="task1CellNote"></span></p>
           <p class="muted">Scored loom only; the warm-up glide follows at the same velocity. Leave blank to run the protocol speed exactly — type a value only to slow a participant down.</p>
           <p class="muted">Fixed by the protocol asset (not adjustable per session): distance stages D1–D7, ITI, response window, practice compositions, warm-up distance, motion curve. Light spacing follows the shoulder width above.</p>
         </fieldset>
@@ -202,6 +203,7 @@
             </label>
           </div>
           <p class="muted">Trials per block = CH + NH + NM + CM + grey = <b><span id="task2TrialTotal">72</span></b>. No divisibility constraint: each category is drawn independently. 0 = use protocol default. Leave the speeds blank to run the protocol exactly.</p>
+          <p class="muted"><b>Protocol:</b> 3 blocks × 72 trials = 216 total. Per block clear-hit 9, near-hit 24, near-miss 24, clear-miss 9, grey-zone 6. Ball speeds 1.5 m/s slow and 3.5 m/s fast.</p>
           <p class="muted">Fixed by the protocol asset (not adjustable per session): shoulder-edge-anchored offset bands scaled by the shoulder width above, grey-zone half-width, and ITI.</p>
         </fieldset>
 

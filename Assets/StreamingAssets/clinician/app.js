@@ -59,10 +59,15 @@
   // ---- Task 1 trial-count total ----
   // Live "trials per block" totals, plus the Task 1 design-cell check.
   //
-  // Task 1 counts are REJECTED by PpsTaskAsset.ApplyCount unless each is
-  // divisible by its design cells, and a rejected value silently runs the asset
-  // default instead. So the panel enforces it here rather than letting the
-  // clinician type a number that will be quietly discarded.
+  // Task 1 counts NO LONGER have to divide evenly by their design cells.
+  // PpsTrialGenerator spreads any remainder one trial per cell and rotates which
+  // cells receive it with the block index, so the worst case is one trial of
+  // imbalance per cell within a block, cancelling across the session. The panel
+  // therefore reports the split instead of blocking it.
+  //
+  // What PpsTaskAsset.ApplyCount still rejects is a count BELOW the cell count,
+  // which would leave whole cells with no trials at all in a block. A rejected
+  // value silently runs the asset default, so the panel refuses to start on it.
   //
   // Cells assume the asset's width factor is OFF (ActiveWidths = 1):
   //   VT = distances(7) x speeds(2) x widths(1) = 14
@@ -96,9 +101,11 @@
     Object.keys(TASK1_CELLS).forEach((name) => {
       const el = form?.querySelector(`[name="${name}"]`);
       if (!el) return;
-      el.step = String(TASK1_CELLS[name]);
+      // step stays 1: any integer at or above the cell count is now valid.
+      el.step = '1';
+      el.min = '0';
       const hint = el.parentElement?.querySelector('small');
-      if (hint) hint.textContent = `multiple of ${TASK1_CELLS[name]}`;
+      if (hint) hint.textContent = `${TASK1_CELLS[name]} cells, minimum ${TASK1_CELLS[name]}`;
     });
     renderTask1Warning();
   }
@@ -146,9 +153,10 @@
       const v = parseInt(el.value, 10);
       if (isNaN(v) || v === 0) return; // 0 = use protocol default, always valid
       const cells = TASK1_CELLS[name];
-      if (v % cells !== 0) {
-        const lo = Math.max(cells, Math.floor(v / cells) * cells);
-        out.push(`${labels[name]} ${v} is not a multiple of ${cells} (nearest: ${lo} or ${lo + cells})`);
+      // Only a count below the cell count is fatal: cells would sit empty.
+      // Anything at or above it is allocated with a bounded remainder.
+      if (v < cells) {
+        out.push(`${labels[name]} ${v} is below the ${cells} design cells (minimum ${cells})`);
       }
     });
     return out;
@@ -156,10 +164,43 @@
 
   function renderTask1Warning() {
     const warn = $('#task1CountWarn');
-    if (!warn) return;
-    const errs = task1CountErrors();
-    warn.hidden = errs.length === 0;
-    warn.textContent = errs.length ? `Will be rejected — ${errs.join('; ')}.` : '';
+    if (warn) {
+      const errs = task1CountErrors();
+      warn.hidden = errs.length === 0;
+      warn.textContent = errs.length ? `Will be rejected: ${errs.join('; ')}.` : '';
+    }
+    renderTask1Allocation();
+  }
+
+  // Shows how each count splits over its cells, so the clinician can see the
+  // imbalance a non-round number produces rather than having to trust it.
+  function renderTask1Allocation() {
+    const note = $('#task1CellNote');
+    const form = $('#sessionForm');
+    if (!note || !form) return;
+
+    const labels = {
+      task1VtTrialsPerBlock: 'VT',
+      task1VisualOnlyTrialsPerBlock: 'V',
+      task1TactileOnlyTrialsPerBlock: 'T',
+    };
+
+    const parts = [];
+    Object.keys(TASK1_CELLS).forEach((name) => {
+      const el = form.querySelector(`[name="${name}"]`);
+      if (!el) return;
+      const v = parseInt(el.value, 10);
+      const cells = TASK1_CELLS[name];
+      if (isNaN(v) || v === 0 || v < cells) return;
+
+      const base = Math.floor(v / cells);
+      const rem  = v - base * cells;
+      parts.push(rem === 0
+        ? `${labels[name]} ${base}/cell`
+        : `${labels[name]} ${cells - rem}×${base} + ${rem}×${base + 1}`);
+    });
+
+    note.textContent = parts.length ? `This block: ${parts.join(', ')}.` : '';
   }
 
   // ---- Start session ----
@@ -167,13 +208,13 @@
     e.preventDefault();
     $('#startError').textContent = '';
 
-    // Task 1 counts that fail the design-cell check are discarded by Unity and
-    // the asset default runs instead. Refuse to start rather than run a
-    // protocol the clinician did not choose.
+    // A count below the cell count is discarded by Unity and the asset default
+    // runs instead. Refuse to start rather than run a protocol the clinician
+    // did not choose. Non-round counts are fine and are not checked here.
     if (state.currentTaskKind !== 'Task2HitOrMiss') {
       const errs = task1CountErrors();
       if (errs.length) {
-        $('#startError').textContent = `Fix the Task 1 trial counts first — ${errs.join('; ')}.`;
+        $('#startError').textContent = `Fix the Task 1 trial counts first: ${errs.join('; ')}.`;
         return;
       }
     }
@@ -217,15 +258,15 @@
       eyeTrackingEnabled:   ck('eyeTrackingEnabled'),
 
       // Task 1 parameters (defaults verified against PpsTaskAsset:
-      // 3 blocks, VT 70 + V 28 + T 56 = 154 trials/block, 30 s rest)
-      task1NumberOfBlocks:           int('task1NumberOfBlocks', 3),
-      task1VtTrialsPerBlock:         int('task1VtTrialsPerBlock', 70),
-      task1VisualOnlyTrialsPerBlock: int('task1VisualOnlyTrialsPerBlock', 28),
-      task1TactileOnlyTrialsPerBlock:int('task1TactileOnlyTrialsPerBlock', 56),
+      // 4 blocks, VT 53 + V 29 + T 14 = 96 trials/block, 30 s rest)
+      task1NumberOfBlocks:           int('task1NumberOfBlocks', 4),
+      task1VtTrialsPerBlock:         int('task1VtTrialsPerBlock', 53),
+      task1VisualOnlyTrialsPerBlock: int('task1VisualOnlyTrialsPerBlock', 29),
+      task1TactileOnlyTrialsPerBlock:int('task1TactileOnlyTrialsPerBlock', 14),
       task1TrialsPerBlock:
-        int('task1VtTrialsPerBlock', 70) +
-        int('task1VisualOnlyTrialsPerBlock', 28) +
-        int('task1TactileOnlyTrialsPerBlock', 56),
+        int('task1VtTrialsPerBlock', 53) +
+        int('task1VisualOnlyTrialsPerBlock', 29) +
+        int('task1TactileOnlyTrialsPerBlock', 14),
       task1BreakDurationSeconds:  num('task1BreakDurationSeconds', 30),
       // Loom velocities in m/s. The PPS asset now stores speed natively, so the
       // value is used as typed with no conversion. Blank -> 0 -> keep the asset
