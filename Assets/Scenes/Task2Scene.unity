@@ -4316,52 +4316,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 486866400}
   m_CullTransparentMesh: 1
---- !u!1 &494572505
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 494572507}
-  - component: {fileID: 494572506}
-  m_Layer: 0
-  m_Name: WatchDog
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &494572506
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 494572505}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 26a2288c91d52de45bdaa68c1cc7632d, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::HitOrMiss.NanTransformWatchdog
-  m_BreakOnDetect: 1
-  m_ReportSubsequent: 1
---- !u!4 &494572507
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 494572505}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -1.94492, y: -0, z: -1.94492}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &497560395
 GameObject:
   m_ObjectHideFlags: 0
@@ -9368,7 +9322,7 @@ PrefabInstance:
     - target: {fileID: 316128335639633311, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
       propertyPath: m_SpawnOrigin
       value: 
-      objectReference: {fileID: 289207624}
+      objectReference: {fileID: 1308432171}
     - target: {fileID: 316128335639633311, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
       propertyPath: m_CrosshairPrefab
       value: 
@@ -9378,8 +9332,12 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 0}
     - target: {fileID: 316128335639633311, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
+      propertyPath: m_AnchorCalibrator
+      value: 
+      objectReference: {fileID: 1308432172}
+    - target: {fileID: 316128335639633311, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
       propertyPath: m_CrosshairHeightOffset
-      value: 0
+      value: 0.2
       objectReference: {fileID: 0}
     - target: {fileID: 316128335639633311, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
       propertyPath: m_CrosshairDefaultMaterial
@@ -9410,6 +9368,10 @@ PrefabInstance:
       value: 0.8470589
       objectReference: {fileID: 0}
     - target: {fileID: 651435361329216941, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1697939574519852235, guid: f1e161d1c0fc4714dbdb45d28347210a, type: 3}
       propertyPath: m_IsActive
       value: 0
       objectReference: {fileID: 0}
@@ -12773,8 +12735,8 @@ MonoBehaviour:
   m_BallObject: {fileID: 995901320}
   m_YesPanel: {fileID: 18111401}
   m_NoPanel: {fileID: 1672971247}
-  m_YesPanelRenderer: {fileID: 1672971250}
-  m_NoPanelRenderer: {fileID: 18111404}
+  m_YesPanelRenderer: {fileID: 18111404}
+  m_NoPanelRenderer: {fileID: 1672971250}
   m_YesText: {fileID: 1185857770}
   m_NoText: {fileID: 1278984514}
   m_PanelDefaultMaterial: {fileID: 2100000, guid: c7d49d96f21c8454b926a683303e68ac, type: 2}
@@ -14835,6 +14797,58 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1297622503}
   m_CullTransparentMesh: 0
+--- !u!1 &1308432170
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1308432171}
+  - component: {fileID: 1308432172}
+  m_Layer: 2
+  m_Name: ChestAnchor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1308432171
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1308432170}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1766750175}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1308432172
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1308432170}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 57f71adc8a7430349921704ee5e29758, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ChestAnchorCalibrator
+  mainCamera: {fileID: 1628024187}
+  xrOrigin: {fileID: 1766750175}
+  chestAnchor: {fileID: 1308432171}
+  distanceLayout: {fileID: 0}
+  eyeToAnchorDropMeters: 0.25
+  anchorForwardOffsetMeters: 0.08
+  minimumTrackedHeadHeight: 0.8
+  trackingWaitTimeoutSeconds: 20
 --- !u!1 &1320690133 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 1633624216599539986, guid: 849c46acce8682c44806d2b83f3d4027, type: 3}
@@ -19646,6 +19660,10 @@ PrefabInstance:
       propertyPath: m_IsActive
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 6383841202730774034, guid: 86a5bf68cb51f4e44bd3893bd22a2ba7, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 6391579207171690961, guid: 86a5bf68cb51f4e44bd3893bd22a2ba7, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -19921,6 +19939,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 5632266133985503989, guid: 86a5bf68cb51f4e44bd3893bd22a2ba7, type: 3}
       insertIndex: -1
       addedObject: {fileID: 289207624}
+    - targetCorrespondingSourceObject: {fileID: 5632266133985503989, guid: 86a5bf68cb51f4e44bd3893bd22a2ba7, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1308432171}
     - targetCorrespondingSourceObject: {fileID: 6484816944661230505, guid: 86a5bf68cb51f4e44bd3893bd22a2ba7, type: 3}
       insertIndex: -1
       addedObject: {fileID: 606453243}
@@ -25199,4 +25220,3 @@ SceneRoots:
   - {fileID: 984165669}
   - {fileID: 138103580}
   - {fileID: 1768455668}
-  - {fileID: 494572507}

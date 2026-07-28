@@ -17,6 +17,14 @@ using UnityEngine;
 /// Calibration retries until head tracking is live. The old version tried once
 /// in Start and gave up silently, which left the anchor at its editor transform
 /// of (0,0,0) — the floor — and made every stimulus appear at floor height.
+///
+/// Every pose is checked for finiteness before it is used. A tracking hiccup can
+/// report NaN, and NaN defeats ordinary range checks because every comparison
+/// against it is false: `NaN &lt; minimumTrackedHeadHeight` does not trip the guard.
+/// Without the explicit checks below a NaN pose is written straight into the
+/// anchor, IsCalibrated is set anyway, and everything measured from the anchor
+/// becomes corrupt ("Invalid localAABB / transform is corrupt" from every
+/// renderer downstream).
 /// </summary>
 public class ChestAnchorCalibrator : MonoBehaviour
 {
@@ -87,7 +95,7 @@ public class ChestAnchorCalibrator : MonoBehaviour
 
     /// <summary>
     /// Places the anchor. Returns true on success, false if tracking is not ready
-    /// yet or a reference is missing.
+    /// yet, the reported pose is non-finite, or a reference is missing.
     /// </summary>
     public bool CalibrateChestAnchor()
     {
@@ -109,7 +117,17 @@ public class ChestAnchorCalibrator : MonoBehaviour
             return false;
         }
 
+        // Non-finite head pose. This MUST be checked before the height test:
+        // NaN fails every comparison, so `NaN < minimumTrackedHeadHeight` is
+        // false and would let a corrupt pose straight through. Treated as
+        // "tracking not ready yet" so the coroutine simply retries.
+        if (!IsFinite(mainCamera.position) || !IsFinite(mainCamera.forward))
+            return false;
+
         Vector3 cameraRelativeToOrigin = xrOrigin.InverseTransformPoint(mainCamera.position);
+
+        if (!IsFinite(cameraRelativeToOrigin))
+            return false;
 
         // Not an error while we are still waiting for tracking — the coroutine retries.
         if (cameraRelativeToOrigin.y < minimumTrackedHeadHeight)
@@ -117,7 +135,7 @@ public class ChestAnchorCalibrator : MonoBehaviour
 
         Vector3 flatForward = Vector3.ProjectOnPlane(mainCamera.forward, Vector3.up);
 
-        if (flatForward.sqrMagnitude < 0.001f)
+        if (!IsFinite(flatForward) || flatForward.sqrMagnitude < 0.001f)
             return false;
 
         flatForward.Normalize();
@@ -126,6 +144,17 @@ public class ChestAnchorCalibrator : MonoBehaviour
             mainCamera.position
             - Vector3.up * eyeToAnchorDropMeters
             + flatForward * anchorForwardOffsetMeters;
+
+        // Last line of defence before the value is written. Nothing non-finite
+        // may reach the anchor: everything measured from it would be corrupt,
+        // and IsCalibrated would still report success.
+        if (!IsFinite(calibratedPosition) || !IsFinite(flatForward))
+        {
+            Debug.LogWarning(
+                "[Chest Calibration] Computed a non-finite anchor pose from an apparently valid " +
+                "head pose. Anchor left untouched; retrying.", this);
+            return false;
+        }
 
         chestAnchor.SetPositionAndRotation(
             calibratedPosition,
@@ -143,6 +172,7 @@ public class ChestAnchorCalibrator : MonoBehaviour
             "Eye-to-shoulder drop:        " + eyeToAnchorDropMeters.ToString("F3") + " m\n" +
             "Anchor (shoulder) height:    " + anchorHeight.ToString("F3") + " m\n" +
             "Anchor world position:       " + chestAnchor.position.ToString("F3") + "\n" +
+            "Anchor lossyScale:           " + chestAnchor.lossyScale.ToString("F3") + "\n" +
             "DistanceLayout world pos:    " +
             (distanceLayout != null ? distanceLayout.position.ToString("F3") : "not assigned") + "\n" +
             "Lights sit at anchor height + PpsTaskAsset.LedHeight.\n" +
@@ -152,4 +182,9 @@ public class ChestAnchorCalibrator : MonoBehaviour
 
         return true;
     }
+
+    static bool IsFinite(Vector3 v) =>
+        !(float.IsNaN(v.x) || float.IsInfinity(v.x) ||
+          float.IsNaN(v.y) || float.IsInfinity(v.y) ||
+          float.IsNaN(v.z) || float.IsInfinity(v.z));
 }

@@ -17,8 +17,16 @@ namespace HitOrMiss
         [SerializeField] TrajectoryTaskAsset m_TaskAsset;
         [SerializeField] GameObject m_LoomingObjectPrefab;
 
-        [Tooltip("Player anchor. Balls spawn at (position + forward × SpawnDistance) and travel toward this point.")]
+        [Tooltip("Player anchor. Balls spawn at (position + forward × SpawnDistance) and travel toward this point. " +
+                 "Assign the SHOULDER-height anchor placed by ChestAnchorCalibrator, not the camera and not a " +
+                 "floor-level object: this transform defines the ball height, the impact plane, and the lateral " +
+                 "midline that the shoulder-width model in TrialGenerator is measured from.")]
         [SerializeField] Transform m_SpawnOrigin;
+
+        [Tooltip("The ChestAnchorCalibrator that places SpawnOrigin (shared with Task 1). A block will not start " +
+                 "until it reports IsCalibrated, so balls can never spawn from the anchor's uncalibrated editor " +
+                 "position. Leave empty only if SpawnOrigin is a fixed transform that needs no calibration.")]
+        [SerializeField] ChestAnchorCalibrator m_AnchorCalibrator;
 
         [Tooltip("Optional: existing scene GameObject to use as the crosshair. If left empty, the manager instantiates CrosshairPrefab (or a built-in default) at the spawn point.")]
         [SerializeField] GameObject m_CrosshairTarget;
@@ -32,8 +40,11 @@ namespace HitOrMiss
 
         Renderer[] m_CrosshairRenderers;
 
-        [Tooltip("Vertical offset added to the spawned/instantiated crosshair (meters). Use this to lift the crosshair to eye level relative to the player anchor.")]
-        [SerializeField] float m_CrosshairHeightOffset = 1.5f;
+        [Tooltip("Vertical offset added to the spawned/instantiated crosshair (meters), measured from the player " +
+                 "anchor. With the anchor at shoulder height this only needs to lift the cross back to eye level, " +
+                 "so it should equal ChestAnchorCalibrator.EyeToAnchorDropMeters (0.25 by default). The old 1.5 " +
+                 "was for a floor-level anchor and puts the cross above the participant's head.")]
+        [SerializeField] float m_CrosshairHeightOffset = 0.25f;
 
         [Header("Response")]
         [Tooltip("Extra seconds after ball vanishes during which the participant can still respond")]
@@ -133,6 +144,13 @@ namespace HitOrMiss
         public int NextTrialIndex => m_NextTrialIndex;
 
         /// <summary>
+        /// True when the player anchor is usable: either no calibrator is wired
+        /// (a fixed anchor) or the calibrator has successfully placed it.
+        /// </summary>
+        public bool IsAnchorReady =>
+            m_SpawnOrigin != null && (m_AnchorCalibrator == null || m_AnchorCalibrator.IsCalibrated);
+
+        /// <summary>
         /// Shows or hides the trial crosshair outside of a running block — used by
         /// the fixation-acknowledgement step so the subject sees the exact cross
         /// (same position, same billboard) they'll fixate during trials.
@@ -191,6 +209,26 @@ namespace HitOrMiss
                 return;
             }
 
+            if (m_SpawnOrigin == null)
+            {
+                Debug.LogError("[TrajectoryTaskManager] No SpawnOrigin assigned. Refusing to start the block: " +
+                               "there is no player anchor to spawn balls from.");
+                return;
+            }
+
+            // The anchor defines the ball height, the impact plane, and the lateral
+            // midline the shoulder-width model is measured from. Uncalibrated, it
+            // sits at its editor transform (usually the floor) and every trial in the
+            // block is geometrically wrong while still looking plausible in the log.
+            if (m_AnchorCalibrator != null && !m_AnchorCalibrator.IsCalibrated)
+            {
+                Debug.LogError("[TrajectoryTaskManager] Player anchor is NOT calibrated. Refusing to start the " +
+                               "block: balls would spawn from the anchor's editor position, most likely at floor " +
+                               "level, and hit/miss geometry would be meaningless. Put the headset on so head " +
+                               "tracking comes up, then restart the session.");
+                return;
+            }
+
             m_CurrentBlock = blockIndex;
             m_BlockTrials = trials;
             m_NextTrialIndex = 0;
@@ -213,7 +251,14 @@ namespace HitOrMiss
             // m_MarkerEmitter?.Emit("block_triL_start");
             BlockStarted?.Invoke(blockIndex);
 
-            Debug.Log($"[TrajectoryTaskManager] Block {blockIndex + 1} started with {trials.Length} trials. requireResponseToAdvance={m_RequireResponseToAdvance}.");
+            // Anchor state is logged with the block so the geometry of any recorded
+            // session can be reconstructed afterwards from the console alone.
+            Debug.Log($"[TrajectoryTaskManager] Block {blockIndex + 1} started with {trials.Length} trials. " +
+                      $"requireResponseToAdvance={m_RequireResponseToAdvance}. " +
+                      $"anchor={m_SpawnOrigin.name} pos={m_SpawnOrigin.position.ToString("F3")} " +
+                      $"forward={m_SpawnOrigin.forward.ToString("F3")} " +
+                      $"calibrated={(m_AnchorCalibrator == null ? "n/a (no calibrator wired)" : m_AnchorCalibrator.IsCalibrated.ToString())} " +
+                      $"crosshairHeightOffset={m_CrosshairHeightOffset:F3}m.");
         }
 
         /// <summary>

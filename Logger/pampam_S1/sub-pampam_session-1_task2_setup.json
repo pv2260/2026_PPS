@@ -1,6 +1,6 @@
 {
   "subject": {
-    "subject_id": "pam-task2-test",
+    "subject_id": "pampam",
     "age_years": 33,
     "dominant_hand": "unspecified",
     "height_cm": 0,
@@ -11,7 +11,7 @@
   "session": {
     "session_number": 1,
     "session_id": "S1",
-    "session_date": "2026-07-27",
+    "session_date": "2026-07-28",
     "session_type": "healthy_s1",
     "dbs_status": "na",
     "clinician_initials": "",

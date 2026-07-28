@@ -6,50 +6,33 @@ using UnityEngine.XR.Hands;
 namespace HitOrMiss
 {
     /// <summary>
-    /// Hand pinch input via XR Hands. RIGHT pinch = HIT ("yes, it will hit me"),
-    /// LEFT pinch = MISS ("no, it will miss me"). Matches ControllerButtonInput,
-    /// which matters because both feed the same CompositeInputSource: if they
-    /// disagreed, the answer recorded would depend on whether the participant
-    /// happened to use a controller or their hands on that trial.
+    /// Hand pinch input via XR Hands.
     ///
-    /// Requirements on a Meta Quest build:
-    ///   • Package <c>com.unity.xr.hands</c> installed.
-    ///   • OpenXR Feature "Meta Hand Tracking Aim" (or equivalent provider hand-tracking
-    ///     feature) enabled in Project Settings → XR Plug-in Management → OpenXR → Android tab.
-    ///   • Hand tracking permission in the AndroidManifest (Meta XR SDK adds this automatically
-    ///     when the Hand Tracking feature is enabled).
-    ///   • Hand tracking enabled at the system level on the Quest.
+    /// RIGHT pinch = HIT ("yes, it will hit me").
+    /// LEFT pinch = MISS ("no, it will miss me").
     ///
-    /// If pinches don't fire on device, enable <see cref="m_VerboseLogging"/> and check
-    /// adb logcat / the Quest's developer console for the diagnostic lines below.
+    /// This mapping matches ControllerButtonInput so responses remain
+    /// consistent whether participants use controllers or their hands.
     /// </summary>
     public class HandPinchInput : MonoBehaviour, IResponseInputSource
     {
         [Header("Pinch thresholds (thumb-tip ↔ index-tip distance, meters)")]
-        [Tooltip("Distance at which pinch is detected (closing). Loosen if pinches don't register on device.")]
-        [SerializeField] float m_PinchThreshold = 0.025f;
-        [Tooltip("Distance at which pinch is released. Must be > PinchThreshold (hysteresis).")]
-        [SerializeField] float m_ReleaseThreshold = 0.045f;
+        [Tooltip("Distance at which a pinch is detected.")]
+        [SerializeField]
+        float m_PinchThreshold = 0.025f;
 
-        [Header("Diagnostics")]
-        [Tooltip("Log subsystem discovery, hand-tracking state, and per-frame pinch distances when verbose.")]
-        [SerializeField] bool m_VerboseLogging = true;
-        [Tooltip("Throttle distance logs to one every N seconds when verbose.")]
-        [SerializeField] float m_DistanceLogIntervalSeconds = 1f;
+        [Tooltip("Distance at which a pinch is released. Must be greater than PinchThreshold.")]
+        [SerializeField]
+        float m_ReleaseThreshold = 0.045f;
 
         public event Action<ResponseEvent> ResponseReceived;
 
         bool m_Enabled;
-        XRHandSubsystem m_HandSubsystem;
         bool m_Subscribed;
         bool m_LeftPinching;
         bool m_RightPinching;
 
-        // Diagnostics state
-        float m_NextDistanceLogTime;
-        bool m_LoggedNoSubsystem;
-        bool m_LoggedNoHandTracking_Left;
-        bool m_LoggedNoHandTracking_Right;
+        XRHandSubsystem m_HandSubsystem;
 
         static readonly List<XRHandSubsystem> s_HandSubsystems = new();
 
@@ -58,7 +41,6 @@ namespace HitOrMiss
             m_Enabled = true;
             m_LeftPinching = false;
             m_RightPinching = false;
-            if (m_VerboseLogging) Debug.Log("[HandPinchInput] Enable() called. Subsystem subscribed: " + m_Subscribed);
         }
 
         public void Disable()
@@ -70,143 +52,186 @@ namespace HitOrMiss
 
         void Update()
         {
-            // Re-attempt subscription whenever we're not subscribed OR the subsystem stopped.
-            if (m_Subscribed && m_HandSubsystem != null && m_HandSubsystem.running)
+            // Nothing to do while subscribed to a running subsystem.
+            if (m_Subscribed &&
+                m_HandSubsystem != null &&
+                m_HandSubsystem.running)
+            {
                 return;
+            }
 
+            // The previous subsystem stopped, so clean up its subscription.
             if (m_Subscribed)
             {
-                // Subsystem dropped — clean up before re-attempting.
                 Unsubscribe();
             }
 
-            if (TryGetRunningHandSubsystem(out var subsystem))
+            // Keep looking for a running hand-tracking subsystem.
+            if (TryGetRunningHandSubsystem(out XRHandSubsystem subsystem))
             {
                 m_HandSubsystem = subsystem;
                 Subscribe();
-                m_LoggedNoSubsystem = false;
-            }
-            else if (m_VerboseLogging && !m_LoggedNoSubsystem)
-            {
-                Debug.LogWarning("[HandPinchInput] No running XRHandSubsystem found. " +
-                                 "Verify the OpenXR Hand Tracking feature is enabled and the Quest has hand tracking on.");
-                m_LoggedNoSubsystem = true;
             }
         }
 
         void Subscribe()
         {
-            if (m_Subscribed || m_HandSubsystem == null) return;
+            if (m_Subscribed || m_HandSubsystem == null)
+            {
+                return;
+            }
+
             m_HandSubsystem.updatedHands += OnUpdatedHands;
             m_Subscribed = true;
-            if (m_VerboseLogging)
-                Debug.Log("[HandPinchInput] Subscribed to XRHandSubsystem (running=" + m_HandSubsystem.running + ").");
         }
 
         void Unsubscribe()
         {
-            if (!m_Subscribed) return;
+            if (!m_Subscribed)
+            {
+                return;
+            }
+
             if (m_HandSubsystem != null)
+            {
                 m_HandSubsystem.updatedHands -= OnUpdatedHands;
+            }
+
             m_Subscribed = false;
+            m_HandSubsystem = null;
         }
 
-        void OnUpdatedHands(XRHandSubsystem subsystem,
+        void OnUpdatedHands(
+            XRHandSubsystem subsystem,
             XRHandSubsystem.UpdateSuccessFlags updateSuccessFlags,
             XRHandSubsystem.UpdateType updateType)
         {
-            if (!m_Enabled) return;
-            // Pinch is normally evaluated in Dynamic, not BeforeRender, to avoid double-fires.
-            if (updateType != XRHandSubsystem.UpdateType.Dynamic) return;
-
-            if ((updateSuccessFlags & XRHandSubsystem.UpdateSuccessFlags.LeftHandJoints) != 0)
-                CheckHand(subsystem.leftHand, Handedness.Left);
-            else if (m_VerboseLogging && !m_LoggedNoHandTracking_Left)
+            if (!m_Enabled)
             {
-                Debug.Log("[HandPinchInput] Left hand joints not yet updated.");
-                m_LoggedNoHandTracking_Left = true;
+                return;
             }
 
-            if ((updateSuccessFlags & XRHandSubsystem.UpdateSuccessFlags.RightHandJoints) != 0)
-                CheckHand(subsystem.rightHand, Handedness.Right);
-            else if (m_VerboseLogging && !m_LoggedNoHandTracking_Right)
+            // Evaluate during Dynamic only to avoid duplicate responses
+            // from Dynamic and BeforeRender updates.
+            if (updateType != XRHandSubsystem.UpdateType.Dynamic)
             {
-                Debug.Log("[HandPinchInput] Right hand joints not yet updated.");
-                m_LoggedNoHandTracking_Right = true;
+                return;
+            }
+
+            if ((updateSuccessFlags &
+                 XRHandSubsystem.UpdateSuccessFlags.LeftHandJoints) != 0)
+            {
+                CheckHand(subsystem.leftHand, Handedness.Left);
+            }
+
+            if ((updateSuccessFlags &
+                 XRHandSubsystem.UpdateSuccessFlags.RightHandJoints) != 0)
+            {
+                CheckHand(subsystem.rightHand, Handedness.Right);
             }
         }
 
         void CheckHand(XRHand hand, Handedness handedness)
         {
-            if (!hand.isTracked) return;
-
-            var thumbTip = hand.GetJoint(XRHandJointID.ThumbTip);
-            var indexTip = hand.GetJoint(XRHandJointID.IndexTip);
-
-            if (!thumbTip.TryGetPose(out Pose thumbPose) || !indexTip.TryGetPose(out Pose indexPose))
-                return;
-
-            float distance = Vector3.Distance(thumbPose.position, indexPose.position);
-            bool isPinching = handedness == Handedness.Left ? m_LeftPinching : m_RightPinching;
-
-            if (m_VerboseLogging && Time.time >= m_NextDistanceLogTime)
+            if (!hand.isTracked)
             {
-                Debug.Log($"[HandPinchInput] {handedness} thumb-index distance: {distance:F3}m " +
-                          $"(pinch<{m_PinchThreshold:F3}, release>{m_ReleaseThreshold:F3}, currentlyPinching={isPinching})");
-                if (handedness == Handedness.Right)
-                    m_NextDistanceLogTime = Time.time + m_DistanceLogIntervalSeconds;
+                return;
             }
+
+            XRHandJoint thumbTip = hand.GetJoint(XRHandJointID.ThumbTip);
+            XRHandJoint indexTip = hand.GetJoint(XRHandJointID.IndexTip);
+
+            if (!thumbTip.TryGetPose(out Pose thumbPose) ||
+                !indexTip.TryGetPose(out Pose indexPose))
+            {
+                return;
+            }
+
+            float distance = Vector3.Distance(
+                thumbPose.position,
+                indexPose.position);
+
+            bool isLeft = handedness == Handedness.Left;
+            bool isPinching = isLeft
+                ? m_LeftPinching
+                : m_RightPinching;
 
             if (!isPinching && distance < m_PinchThreshold)
             {
-                if (handedness == Handedness.Left) m_LeftPinching = true;
-                else m_RightPinching = true;
-
-                Debug.Log($"[HandPinchInput] PINCH: {handedness} (distance {distance:F3}m)");
-
-                // Left pinch answers "no, it will miss me"; right pinch answers
-                // "yes, it will hit me". This is the only line here that carries
-                // the mapping, and it has to agree with ControllerButtonInput.
-                bool isLeft = handedness == Handedness.Left;
+                if (isLeft)
+                {
+                    m_LeftPinching = true;
+                }
+                else
+                {
+                    m_RightPinching = true;
+                }
 
                 ResponseReceived?.Invoke(new ResponseEvent
                 {
-                    rawSource = isLeft ? "hand_left_pinch" : "hand_right_pinch",
-                    command = isLeft ? SemanticCommand.Miss : SemanticCommand.Hit,
+                    rawSource = isLeft
+                        ? "hand_left_pinch"
+                        : "hand_right_pinch",
+
+                    command = isLeft
+                        ? SemanticCommand.Miss
+                        : SemanticCommand.Hit,
+
                     confidence = 1f,
-                    timestamp = Time.timeAsDouble,
+                    timestamp = Time.timeAsDouble
                 });
             }
             else if (isPinching && distance > m_ReleaseThreshold)
             {
-                if (handedness == Handedness.Left) m_LeftPinching = false;
-                else m_RightPinching = false;
+                if (isLeft)
+                {
+                    m_LeftPinching = false;
+                }
+                else
+                {
+                    m_RightPinching = false;
+                }
             }
         }
 
-        static bool TryGetRunningHandSubsystem(out XRHandSubsystem handSubsystem)
+        static bool TryGetRunningHandSubsystem(
+            out XRHandSubsystem handSubsystem)
         {
             s_HandSubsystems.Clear();
             SubsystemManager.GetSubsystems(s_HandSubsystems);
+
             for (int i = 0; i < s_HandSubsystems.Count; i++)
             {
-                if (s_HandSubsystems[i].running)
+                XRHandSubsystem subsystem = s_HandSubsystems[i];
+
+                if (subsystem != null && subsystem.running)
                 {
-                    handSubsystem = s_HandSubsystems[i];
+                    handSubsystem = subsystem;
                     return true;
                 }
             }
-            handSubsystem = default;
+
+            handSubsystem = null;
             return false;
         }
 
         void OnValidate()
         {
-            if (m_PinchThreshold <= 0f) m_PinchThreshold = 0.005f;
-            if (m_ReleaseThreshold <= m_PinchThreshold) m_ReleaseThreshold = m_PinchThreshold + 0.01f;
+            if (m_PinchThreshold <= 0f)
+            {
+                m_PinchThreshold = 0.005f;
+            }
+
+            if (m_ReleaseThreshold <= m_PinchThreshold)
+            {
+                m_ReleaseThreshold = m_PinchThreshold + 0.01f;
+            }
         }
 
-        void OnDisable() => Unsubscribe();
+        void OnDisable()
+        {
+            Unsubscribe();
+        }
 
         void OnDestroy()
         {

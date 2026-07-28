@@ -48,8 +48,7 @@ namespace HitOrMiss
         [SerializeField] LocalizedUITextBinder[] m_UITextBinders;
 
         [Header("Welcome")]
-        [Tooltip("Plain panel shown once at session start, before the popup sequence. A GameObject, " +
-                 "not part of the TaskPopupPanel system. Dismissed by any trigger press.")]
+        [Tooltip("Plain panel shown once at session start, before the popup sequence.")]
         [SerializeField] GameObject m_WelcomePanel;
 
         [Header("Pre-practice popups")]
@@ -454,33 +453,34 @@ namespace HitOrMiss
             SetPhase(TaskPhase.Intro);
             m_EegMarkerEmitter?.Emit("phase_intro");
 
-            // Welcome panel: a plain GameObject shown once before the popup flow.
-            // Dismissed by any trigger press; falls back to a short timer if no
-            // input source is wired, so the session can never hang here.
+        // Welcome panel
+        
             if (m_WelcomePanel != null)
             {
                 m_WelcomePanel.SetActive(true);
 
-                if (m_InputSource != null)
+                if (m_InputSource == null)
                 {
-                    bool advance = false;
-                    void OnWelcomeResponse(ResponseEvent _) => advance = true;
-
-                    m_InputSource.ResponseReceived += OnWelcomeResponse;
-                    m_InputSource.Enable();
-                    try
-                    {
-                        while (!advance)
-                            yield return null;
-                    }
-                    finally
-                    {
-                        m_InputSource.ResponseReceived -= OnWelcomeResponse;
-                    }
+                    Debug.LogError("[HitOrMissAppController] Welcome panel is showing but no input " +
+                                   "source is wired, so it can never be dismissed. Ending session.");
+                    m_WelcomePanel.SetActive(false);
+                    EndSession();
+                    yield break;
                 }
-                else
+
+                bool advance = false;
+                void OnWelcomeResponse(ResponseEvent _) => advance = true;
+
+                m_InputSource.ResponseReceived += OnWelcomeResponse;
+                m_InputSource.Enable();
+                try
                 {
-                    yield return new WaitForSeconds(3f);
+                    while (!advance)
+                        yield return null;
+                }
+                finally
+                {
+                    m_InputSource.ResponseReceived -= OnWelcomeResponse;
                 }
 
                 m_WelcomePanel.SetActive(false);
